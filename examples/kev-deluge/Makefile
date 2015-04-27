@@ -3,9 +3,9 @@ all: $(CONTIKI_PROJECT)
 
 #UIP_CONF_TCP=1
 
-#TARGET=iotlab-m3
+TARGET=sky
 
-#APPS+= deluge
+APPS+= deluge
 
 CONTIKI = ../..
 include $(CONTIKI)/Makefile.include
