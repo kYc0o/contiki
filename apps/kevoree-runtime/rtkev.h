@@ -31,6 +31,13 @@ typedef struct {
 int registerComponent(const char* name, ComponentInterface* interface);
 int unregisterComponent(const char* name);
 
+/* Notify about a new model, normally this will be mostly used Groups.
+ * However, it is also available for "smart"components.
+ * it receive a ContainerRoot as parameter
+ * */
+int notifyNewModel(/*ContainerRoot* model*/);
+
+/* macro to register a component */
 #define REGISTER_COMPONENT(Name, I) \
 PROCESS(PRegister##I,"ProcessToRegisterComponent"); \
 AUTOSTART_PROCESSES(&PRegister##I); \
