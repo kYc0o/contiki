@@ -22,10 +22,21 @@ typedef struct {
  * */
 
 /* Error codes used by the runtime */
-#define ERR_KEV_REGISTRATION_FAIL -1
-
+#define ERR_KEV_REGISTRATION_FAIL ((int)-1)
+#define ERR_KEV_UNKNOWN_TYPE ((int)-2)
 
 /* register component type */
 int registerComponent(const char* name, ComponentInterface* interface);
+int unregisterComponent(const char* name);
+
+#define REGISTER_COMPONENT(Name, I) \
+PROCESS(PRegister##I,"ProcessToRegisterComponent"); \
+AUTOSTART_PROCESSES(&PRegister##I); \
+PROCESS_THREAD(PRegister##I, ev, data) \
+{ \
+    PROCESS_START(); \
+    registerComponent(Name, &I); \
+    PROCESS_END(); \
+}
 
 #endif
