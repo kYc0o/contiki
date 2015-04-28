@@ -26,11 +26,12 @@ typedef struct {
 
 /* this process is in charge of registering types */
 PROCESS(kev_reg, "kev_reg");
-AUTOSTART_PROCESS(&kev_reg);
+AUTOSTART_PROCESSES(&kev_reg);
+
 PROCESS_THREAD(kev_reg, ev, data)
 {
 	Pair* p;
-    PROCESS_START();
+    PROCESS_BEGIN();
 
 	/* register new event type */
 	NEW_KEV_TYPE = process_alloc_event(); 
@@ -41,7 +42,7 @@ PROCESS_THREAD(kev_reg, ev, data)
 		if (ev == NEW_KEV_TYPE) {
 			p = (Pair*) data;
 			
-			printf("Hey, a new type is being reported. Its name is %s\n", (char*)data->first);
+			printf("Hey, a new type is being reported. Its name is %s\n", (char*)p->first);
 
 			free (p);	
 		}
@@ -51,10 +52,10 @@ PROCESS_THREAD(kev_reg, ev, data)
 }
 
 PROCESS(kev_model_listener, "kev_model_listener");
-AUTOSTART_PROCESS(&kev_model_listener);
-PROCESS_THREAD(kev_model_listener, "kev_model_listener")
+AUTOSTART_PROCESSES(&kev_model_listener);
+PROCESS_THREAD(kev_model_listener, ev, data)
 {
-    PROCESS_START();
+    PROCESS_BEGIN();
 
 	/* register new event type */
 	NEW_MODEL = process_alloc_event();
@@ -79,7 +80,7 @@ int registerComponent(const char* name, ComponentInterface* interface)
 	/* it essentially sends a message to the process kev_reg
 	 well, I am guessing everything is Ok if I can send the message, :-) */
 	Pair* pair = (Pair*)malloc(sizeof(Pair));
-	pair->first = name;
+	pair->first = (void*)name;
 	pair->second = interface;
 
 	return process_post(&kev_reg, NEW_KEV_TYPE, pair); 
