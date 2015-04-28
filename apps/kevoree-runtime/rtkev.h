@@ -1,6 +1,8 @@
 #ifndef __RT_KEV__
 #define __RT_KEV__
 
+#include "contiki.h"
+
 /* proto to handle component instances */
 typedef void* (*NewComponentInstance)(const char* componentType);
 typedef int (*StartComponent)(void*);
