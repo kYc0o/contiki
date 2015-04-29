@@ -16,6 +16,13 @@ const ComponentInterface helloWorld = {
     .update = updateHelloWorld
 };
 
+const ComponentInterface helloWorld_Second = {
+    .newInstance = newHelloWorld,
+    .start = startHelloWorld,
+    .stop = stopHelloWorld,
+    .update = updateHelloWorld
+};
+
 typedef struct {
     char name[30];
 } HelloWorld;
@@ -45,4 +52,4 @@ int updateHelloWorld(void* instance)
     return 0;
 }
 
-REGISTER_COMPONENT(1, "HelloWorldComponent", &helloWorld)
+REGISTER_COMPONENT(2, "HelloWorldComponent", &helloWorld, "A second component type", &helloWorld_Second)
