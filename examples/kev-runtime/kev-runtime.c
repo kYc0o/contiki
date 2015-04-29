@@ -71,10 +71,24 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				printf("Formatted with result %ld\n", fdFile);
 			}
 			else if (strstr(data, "cat") == (int)data) {
-				printf("cat, Unimplemented\n");
+				int n, jj;
+				char* tmp = strstr(data, " ");
+				tmp++;
+				fdFile = cfs_open(tmp, CFS_READ);
+				if (fdFile < 0) printf("error opening the file %s\n", tmp);
+				while ((n = cfs_read(fdFile, buf, 60)) > 0) {
+				  for (jj = 0 ; jj < n ; jj++) printf("%c", (char)buf[jj]);
+				}
+				printf("\n");
+				cfs_close(fdFile);
+				if (n!=0)
+					printf("Some error reading the file\n");
 			}
 			else if (strstr(data, "rm") == (int)data) {
-
+				int n, jj;
+				char* tmp = strstr(data, " ");
+				tmp++;
+				cfs_remove(tmp);
 			}
 			else if (strstr(data, "loadelf") == (int)data) {
 				filename = strstr(data, " ");
