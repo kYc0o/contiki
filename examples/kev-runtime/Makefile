@@ -1,5 +1,7 @@
 CONTIKI_PROJECT = kev-runtime
-CONTIKI_SOURCEFILES += kev-runtime.c components.c
+CONTIKI_SOURCEFILES += kev-runtime.c components.c myencode.c
+
+ELF_LOADER=1
 
 APPS += kevoree-runtime
 
