@@ -33,10 +33,14 @@ PROCESS(shellGroupP, "shellGroupProcess");
 PROCESS_THREAD(shellGroupP, ev, data)
 {
 	int fd_read;
+	uint32_t length;
 	char *jsonModel;
+	static ShellGroup *instance;
 
 	PROCESS_BEGIN();
-	static ShellGroup *instance = (ShellGroup*)data;
+
+	instance = (ShellGroup*)data;
+	
 	printf("Ok, here I have my instance %p\n", (struct ShellGroup*)data);
 
 	/* define new event */
