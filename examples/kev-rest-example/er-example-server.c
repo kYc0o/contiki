@@ -1599,6 +1599,7 @@ PROCESS_THREAD(kevoree_adaptations, ev, dt)
 
 		if(new_model != NULL)
 		{
+			/* Inti es aqui!! */
 			visitor_print->action = actionprintpath;
 			visitor_print->secondAction = NULL;
 			current_model->VisitPaths(current_model, visitor_print);
