@@ -1,4 +1,5 @@
 #include "rtkev.h"
+#include "lib/list.h"
 
 #include <stdarg.h>
 
@@ -11,10 +12,16 @@
  *
  */
 
-struct Runtime {
+struct TypeEntry {
+	struct TypeEntry* next;
+	ComponentInterface* interface;
+};
+
+static struct Runtime {
     /* the current model */
     /* hash_map from type name to type definition */
-};
+	LIST_STRUCT(types);
+} runtime;
 
 /* kevoree event types */
 static process_event_t NEW_KEV_TYPE;
@@ -30,7 +37,7 @@ typedef struct {
 PROCESS(kev_reg, "kev_reg");
 PROCESS_THREAD(kev_reg, ev, data)
 {
-	Pair* p;
+	ComponentInterface* p;
     PROCESS_BEGIN();
 
 	printf("Ejecutando proceso kev_reg\n");
@@ -42,11 +49,14 @@ PROCESS_THREAD(kev_reg, ev, data)
         /* it runs forever, waiting for a request of new type */
 		PROCESS_WAIT_EVENT();
 		if (ev == NEW_KEV_TYPE) {
-			p = (Pair*) data;
+			p = (ComponentInterface*) data;
 			
-			printf("Hey, a new type is being reported. Its name is %s\n", (char*)p->first);
+			struct TypeEntry* entry = (struct TypeEntry*)malloc(sizeof(struct TypeEntry));
+			entry->interface = p;
 
-			free (p);	
+			list_add(runtime.types, entry);			
+
+			printf("Hey, a new type is being reported. Its name is %s\n", (char*)p->name);
 		}
     }
 
@@ -79,6 +89,9 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 
 int initKevRuntime()
 {
+
+	LIST_STRUCT_INIT(&runtime, types);
+
 	process_start(&kev_reg, NULL);
 	process_start(&kev_model_listener, NULL);
 	return 0;
@@ -88,9 +101,7 @@ int initKevRuntime()
 int registerComponent(int count, ... )
 {
 	va_list ap;
-	char* name;
 	ComponentInterface* interface;
-	int i;
 	
 	/* this is here for debug, when you deploy an example which is a component 
 	 * you must start the runtime somehow	
@@ -102,19 +113,15 @@ int registerComponent(int count, ... )
 
 	/* iterate to register arguments */
 	while (count) {
-		name = va_arg(ap, char*);
 		interface = va_arg(ap, ComponentInterface*);
 		count--;
 
-		printf("En registrar componente %s %p\n", name, interface);
+		printf("En registrar componente %s %p\n", interface->name, interface);
 		
 		/* it essentially sends a message to the process kev_reg
 	 	well, I am guessing everything is Ok if I can send the message, :-) */
-		Pair* pair = (Pair*)malloc(sizeof(Pair));
-		pair->first = (void*)name;
-		pair->second = (void*)interface;
-
-		process_post(&kev_reg, NEW_KEV_TYPE, pair);
+		
+		process_post(&kev_reg, NEW_KEV_TYPE, interface);
 	}
 
 	/* done with the variadic arguments*/
@@ -132,4 +139,19 @@ int notifyNewModel(/*ContainerRoot* model*/)
 	// it essentially sends a message to the process kev_model_listener
 	// well, I am guessing everything is Ok, :-)
 	return process_post(&kev_model_listener, NEW_MODEL, NULL);
+}
+
+/* create an instance of some type */
+int createInstance(char* typeName, char* instanceName, void** instance)
+{
+	struct TypeEntry* entry;
+	/* iterate through list of ComponentInterface */
+	for(entry = list_head(runtime.types);
+      entry != NULL;
+      entry = list_item_next(entry)) {
+		if (!strcmp(typeName, entry->interface->name)) {
+			printf("\tType Found\n");
+			*instance = entry->interface->newInstance(entry->interface->name);
+		}
+  }
 }

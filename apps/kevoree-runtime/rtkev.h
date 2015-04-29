@@ -13,6 +13,7 @@ typedef int (*UpdateComponent)(void*);
  * It describes how the Kevoree Runtime interacts with this component type.
  * */
 typedef struct {
+	const char* name;
     NewComponentInstance newInstance;
     StartComponent start;
     StopComponent stop;
@@ -40,8 +41,11 @@ int unregisterComponent(const char* name);
  * */
 int notifyNewModel(/*ContainerRoot* model*/);
 
-/* macro to register a component */
-#define REGISTER_COMPONENT(COMP_COUNT, ...) \
+/* create an instance of some type */
+int createInstance(char* typeName, char* instanceName, void** instance);
+
+/* macros to register a component */
+#define REGISTER_KEV_TYPES(COMP_COUNT, ...) \
 PROCESS(PRegister,"ProcessToRegisterComponent"); \
 AUTOSTART_PROCESSES(&PRegister); \
 PROCESS_THREAD(PRegister, ev, data) \
@@ -50,5 +54,16 @@ PROCESS_THREAD(PRegister, ev, data) \
     registerComponent(COMP_COUNT, __VA_ARGS__); \
     PROCESS_END(); \
 }
+
+#define DECLARE_KEV_TYPES(COMP_COUNT, ...) \
+PROCESS(PRegister,"ProcessToRegisterComponent"); \
+PROCESS_THREAD(PRegister, ev, data) \
+{ \
+    PROCESS_BEGIN(); \
+    registerComponent(COMP_COUNT, __VA_ARGS__); \
+    PROCESS_END(); \
+}
+
+#define REGISTER_KEV_TYPES_NOW() process_start(&PRegister, NULL)
 
 #endif
