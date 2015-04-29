@@ -8,11 +8,13 @@
 
 #include <stdio.h>
 
+/* built-in kevoree types */
 const ComponentInterface helloWorld;
 const ComponentInterface helloWorld_Second;
 const GroupInterface ShellGroupInterface;
-
 DECLARE_KEV_TYPES(3, &helloWorld, &helloWorld_Second, &ShellGroupInterface)
+
+struct process shellGroupP;
 
 PROCESS(kevRuntime, "KevRuntime");
 AUTOSTART_PROCESSES(&kevRuntime);
@@ -49,6 +51,9 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				  }
 				  cfs_closedir(&dir);
 				}
+			}
+			else if (!strcmp(data, "pushModel")) {
+				process_post(&shellGroupP, NEW_MODEL_IN_JSON, NULL);			
 			}
 			else if (strstr(data, "createInstance") == (int)data) {
 				printf("Executing createInstance\n");
@@ -91,6 +96,11 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				char* tmp = strstr(data, " ");
 				tmp++;
 				cfs_remove(tmp);
+			}
+			else if (strstr(data, "startInstance") == (int)data) {
+				filename = strstr(data, " ");
+				filename++;
+				startInstance(filename);				
 			}
 			else if (strstr(data, "loadelf") == (int)data) {
 				filename = strstr(data, " ");

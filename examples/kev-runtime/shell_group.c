@@ -65,6 +65,8 @@ int startShellGroup(void* instance)
 {
     ShellGroup* inst = (ShellGroup*) instance;
 
+	inst->fileNameWithModel = "new_model-compact.json";
+
 	process_start(&shellGroupP, instance);
 
     return 0;

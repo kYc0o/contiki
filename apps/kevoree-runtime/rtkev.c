@@ -29,6 +29,7 @@ struct TypeEntry {
 
 struct InstanceEntry {
 	struct InstanceEntry* next;
+	ComponentInterface* interface;
 	void* instance;
 	char* name;
 };
@@ -160,8 +161,29 @@ int createInstance(char* typeName, char* instanceName, void** instance)
 			if (!*instance)
 				return ERR_KEV_INSTANCE_CREATION_FAIL;
 			
-			struct InstanceEntry* entry = (struct InstanceEntry*)malloc(sizeof(struct InstanceEntry));
-			list_add(runtime.instances, entry);
+			struct InstanceEntry* entry2 = (struct InstanceEntry*)malloc(sizeof(struct InstanceEntry));
+			entry2->instance = *instance;
+			entry2->interface = entry->interface;
+			entry2->name = (char*)strdup(instanceName);
+
+			list_add(runtime.instances, entry2);
+		}
+	}
+	return 0;
+}
+
+/* start an instance */
+int startInstance(char* instanceName)
+{
+	struct InstanceEntry* entry;
+	/* iterate through list of ComponentInterface */
+	for(entry = list_head(runtime.instances);
+      entry != NULL;
+      entry = list_item_next(entry)) {
+		if (!strcmp(instanceName, entry->name)) {
+			PRINTF("Instance Found\n");
+			/* start instance using supplied component interface */
+			entry->interface->start(entry->instance);
 		}
 	}
 	return 0;

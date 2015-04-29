@@ -43,12 +43,20 @@ Command commands[] = {
     .exec = &oneArgumentCommand
   },
   {
+    .name = "startInstance",
+    .exec = &oneArgumentCommand
+  },
+  {
     .name = "cat",
     .exec = &oneArgumentCommand
   },
   {
     .name = "rm",
     .exec = &oneArgumentCommand
+  },
+  {
+	.name = "pushModel",
+	.exec = &noArgumentCommand
   },
   {
     .name = "format",

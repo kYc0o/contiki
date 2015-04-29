@@ -63,6 +63,7 @@ int notifyNewModel(ContainerRoot *model);
 
 /* create an instance of some type */
 int createInstance(char* typeName, char* instanceName, void** instance);
+int startInstance(char* instanceName);
 
 /* macros to register a component */
 #define REGISTER_KEV_TYPES(COMP_COUNT, ...) \
