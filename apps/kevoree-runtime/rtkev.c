@@ -6,6 +6,12 @@
 
 #include <stdarg.h>
 
+#ifdef DEBUG
+#define PRINTF(S, ...) printf(S, __VA_ARGS__)
+#else
+#define PRINTF(S, ...)
+#endif
+
 /**
  * The Kevoree runtime for contiki includes a set of processes
  * that perform different tasks.
@@ -25,6 +31,8 @@ static struct Runtime {
 	ContainerRoot *currentModel;
     /* hash_map from type name to type definition */
 	LIST_STRUCT(types);
+	/* instanaces */
+	LIST_STRUCT(instances);
 } runtime;
 
 static const char *DEFAULTMODEL = "{\"eClass\" : \"org.kevoree.ContainerRoot\",\"generated_KMF_ID\" : \"BXX5q3eV\",\"nodes\" : [{\"eClass\" : \"org.kevoree.ContainerNode\",\"name\" : \"node0\",\"metaData\" : \"\",\"started\" : \"1\",\"components\" : [],\"hosts\" : [],\"host\" : [],\"groups\" : [\"groups[group0]\"],\"networkInformation\" : [{\"eClass\" : \"org.kevoree.NetworkInfo\",\"name\" : \"ip\",\"values\" : [{\"eClass\" : \"org.kevoree.NetworkProperty\",\"name\" : \"front\",\"value\" : \"m3-XX.lille.iotlab.info\"},{\"eClass\" : \"org.kevoree.NetworkProperty\",\"name\" : \"local\",\"value\" : \"fe80:0000:0000:0000:0323:4501:4471:0343\"}]}],\"typeDefinition\" : [\"typeDefinitions[ContikiNode/0.0.1]\"],\"dictionary\" : [],\"fragmentDictionary\" : []}],\"typeDefinitions\" : [{\"eClass\" : \"org.kevoree.NodeType\",\"name\" : \"ContikiNode\",\"version\" : \"0.0.1\",\"factoryBean\" : \"\",\"bean\" : \"\",\"abstract\" : \"0\",\"deployUnit\" : [\"deployUnits[org.kevoree.library.c//kevoree-contiki-node/0.0.1]\"],\"dictionaryType\" : [{\"eClass\" : \"org.kevoree.DictionaryType\",\"generated_KMF_ID\" : \"o8AVQY3e\",\"attributes\" : []}],\"superTypes\" : []},{\"eClass\" : \"org.kevoree.GroupType\",\"name\" : \"CoAPGroup\",\"version\" : \"0.0.1\",\"factoryBean\" : \"\",\"bean\" : \"\",\"abstract\" : \"0\",\"deployUnit\" : [\"deployUnits[//kevoree-group-coap/0.0.1]\"],\"dictionaryType\" : [{\"eClass\" : \"org.kevoree.DictionaryType\",\"generated_KMF_ID\" : \"3dddTFpd\",\"attributes\" : [{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"proxy_port\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"int\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"20000\"},{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"port\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"number\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"\"},{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"path\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"string\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"\"}]}],\"superTypes\" : []}],\"repositories\" : [],\"dataTypes\" : [],\"libraries\" : [{\"eClass\" : \"org.kevoree.TypeLibrary\",\"name\" : \"ContikiLib\",\"subTypes\" : [\"typeDefinitions[ContikiNode/0.0.1]\",\"typeDefinitions[CoAPGroup/0.0.1]\"]},{\"eClass\" : \"org.kevoree.TypeLibrary\",\"name\" : \"Default\",\"subTypes\" : []}],\"hubs\" : [],\"mBindings\" : [],\"deployUnits\" : [{\"eClass\" : \"org.kevoree.DeployUnit\",\"name\" : \"kevoree-group-coap\",\"groupName\" : \"\",\"version\" : \"0.0.1\",\"url\" : \"\",\"hashcode\" : \"\",\"type\" : \"ce\"},{\"eClass\" : \"org.kevoree.DeployUnit\",\"name\" : \"kevoree-contiki-node\",\"groupName\" : \"org.kevoree.library.c\",\"version\" : \"0.0.1\",\"url\" : \"\",\"hashcode\" : \"\",\"type\" : \"ce\"}],\"nodeNetworks\" : [],\"groups\" : [{\"eClass\" : \"org.kevoree.Group\",\"name\" : \"group0\",\"metaData\" : \"\",\"started\" : \"1\",\"subNodes\" : [\"nodes[node0]\"],\"typeDefinition\" : [\"typeDefinitions[CoAPGroup/0.0.1]\"],\"dictionary\" : [],\"fragmentDictionary\" : [{\"eClass\" : \"org.kevoree.FragmentDictionary\",\"generated_KMF_ID\" : \"VEj2RlNr\",\"name\" : \"contiki-node\",\"values\" : []}]}]}";
@@ -39,42 +47,12 @@ typedef struct {
 	void* second;
 } Pair;
 
-/* this process is in charge of registering types */
-PROCESS(kev_reg, "kev_reg");
-PROCESS_THREAD(kev_reg, ev, data)
-{
-	ComponentInterface* p;
-    PROCESS_BEGIN();
-
-	printf("Ejecutando proceso kev_reg\n");
-
-	/* register new event type */
-	NEW_KEV_TYPE = process_alloc_event(); 
-
-    while (1) {
-        /* it runs forever, waiting for a request of new type */
-		PROCESS_WAIT_EVENT();
-		if (ev == NEW_KEV_TYPE) {
-			p = (ComponentInterface*) data;
-			
-			struct TypeEntry* entry = (struct TypeEntry*)malloc(sizeof(struct TypeEntry));
-			entry->interface = p;
-
-			list_add(runtime.types, entry);			
-
-			printf("Hey, a new type is being reported. Its name is %s\n", (char*)p->name);
-		}
-    }
-
-    PROCESS_END();
-}
-
 PROCESS(kev_model_listener, "kev_model_listener");
 PROCESS_THREAD(kev_model_listener, ev, data)
 {
     PROCESS_BEGIN();
 
-	printf("Ejecutando proceso kev_model_listener\n");
+	PRINTF("Ejecutando proceso kev_model_listener\n");
 
 	/* register new event type */
 	NEW_MODEL = process_alloc_event();
@@ -85,7 +63,7 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 		if (ev == NEW_MODEL) {
 
 			/* wow I ave a new model, do te magic with the traces and so on */
-			printf("Here a new model is coming\n");
+			PRINTF("Here a new model is coming\n");
 		
 		}
     }
@@ -96,19 +74,19 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 int initKevRuntime()
 {
 	LIST_STRUCT_INIT(&runtime, types);
+	LIST_STRUCT_INIT(&runtime, instances);
 
-	process_start(&kev_reg, NULL);
-	process_start(&kev_model_listener, NULL);
-
+	/* let's assign the empty model as the current model */
 	struct jsonparse_state jsonState;
 
 	jsonparse_setup(&jsonState, DEFAULTMODEL, strlen(DEFAULTMODEL) + 1);
-
 	runtime.currentModel = JSONKevDeserializer(&jsonState, jsonparse_next(&jsonState));
 
-	if (runtime.currentModel == NULL) {
+	if (runtime.currentModel == NULL)
 		return ERR_KEV_INIT_FAILURE;
-	}
+
+	/* start support protothreads */
+	process_start(&kev_model_listener, NULL);
 
 	return 0;
 }
@@ -132,12 +110,13 @@ int registerComponent(int count, ... )
 		interface = va_arg(ap, ComponentInterface*);
 		count--;
 
-		printf("En registrar componente %s %p\n", interface->name, interface);
+		PRINTF("En registrar componente %s %p\n", interface->name, interface);
 		
-		/* it essentially sends a message to the process kev_reg
-	 	well, I am guessing everything is Ok if I can send the message, :-) */
-		
-		process_post(&kev_reg, NEW_KEV_TYPE, interface);
+		/* it add a new entry to the list :-) */
+		struct TypeEntry* entry = (struct TypeEntry*)malloc(sizeof(struct TypeEntry));
+		entry->interface = interface;
+
+		list_add(runtime.types, entry);
 	}
 
 	/* done with the variadic arguments*/
@@ -166,8 +145,9 @@ int createInstance(char* typeName, char* instanceName, void** instance)
       entry != NULL;
       entry = list_item_next(entry)) {
 		if (!strcmp(typeName, entry->interface->name)) {
-			printf("\tType Found\n");
+			PRINTF("\tType Found\n");
 			*instance = entry->interface->newInstance(entry->interface->name);
 		}
-  }
+	}
+	return 0;
 }
