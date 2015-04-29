@@ -26,7 +26,11 @@ PROCESS_THREAD(kevRuntime, ev, data)
 
 	/* definitively we want to dynamically load modules */
 	elfloader_init();
-	
+	if (initKevRuntime()) {
+		printf("ERROR: Model cannot be loaded\n");
+		printf("Runtime initialization error\n");
+		PROCESS_EXIT();
+	}
 	/* let's register core components */
 	REGISTER_KEV_TYPES_NOW();
 

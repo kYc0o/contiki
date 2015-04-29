@@ -2,8 +2,9 @@ CONTIKI_PROJECT = kev-runtime
 CONTIKI_SOURCEFILES += kev-runtime.c components.c myencode.c
 
 ELF_LOADER=1
+TARGET=iotlab-m3
 
-APPS += kevoree-runtime
+APPS += json kevoree kevoree-runtime
 
 CONSOLE_CLIENT_SRCS = client.c myencode.c
 

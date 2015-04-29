@@ -3,6 +3,8 @@
 
 #include "contiki.h"
 
+typedef struct _ContainerRoot ContainerRoot;
+
 /* proto to handle component instances */
 typedef void* (*NewComponentInstance)(const char* componentType);
 typedef int (*StartComponent)(void*);
@@ -27,6 +29,7 @@ typedef struct {
 /* Error codes used by the runtime */
 #define ERR_KEV_REGISTRATION_FAIL ((int)-1)
 #define ERR_KEV_UNKNOWN_TYPE ((int)-2)
+#define ERR_KEV_INIT_FAILURE ((int) -3)
 
 /* init runtime */
 int initKevRuntime();
@@ -39,7 +42,7 @@ int unregisterComponent(const char* name);
  * However, it is also available for "smart"components.
  * it receive a ContainerRoot as parameter
  * */
-int notifyNewModel(/*ContainerRoot* model*/);
+int notifyNewModel(ContainerRoot *model);
 
 /* create an instance of some type */
 int createInstance(char* typeName, char* instanceName, void** instance);
