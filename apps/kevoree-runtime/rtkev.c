@@ -1,5 +1,7 @@
 #include "rtkev.h"
 
+#include <stdarg.h>
+
 /**
  * The Kevoree runtime for contiki includes a set of processes
  * that perform different tasks.
@@ -83,22 +85,42 @@ int initKevRuntime()
 }
 
 /* register component type */
-int registerComponent(const char* name, const ComponentInterface* interface)
+int registerComponent(int count, ... )
 {
-	printf("En registrar componente %s %p\n", name, interface);
-
+	va_list ap;
+	char* name;
+	ComponentInterface* interface;
+	int i;
+	
 	/* this is here for debug, when you deploy an example which is a component 
 	 * you must start the runtime somehow	
 	*/	
 	initKevRuntime();
 
-	/* it essentially sends a message to the process kev_reg
-	 well, I am guessing everything is Ok if I can send the message, :-) */
-	Pair* pair = (Pair*)malloc(sizeof(Pair));
-	pair->first = (void*)name;
-	pair->second = (void*)interface;
+	/* get the arguments */
+	va_start(ap, count);
 
-	return process_post(&kev_reg, NEW_KEV_TYPE, pair); 
+	/* iterate to register arguments */
+	while (count) {
+		name = va_arg(ap, char*);
+		interface = va_arg(ap, ComponentInterface*);
+		count--;
+
+		printf("En registrar componente %s %p\n", name, interface);
+		
+		/* it essentially sends a message to the process kev_reg
+	 	well, I am guessing everything is Ok if I can send the message, :-) */
+		Pair* pair = (Pair*)malloc(sizeof(Pair));
+		pair->first = (void*)name;
+		pair->second = (void*)interface;
+
+		process_post(&kev_reg, NEW_KEV_TYPE, pair);
+	}
+
+	/* done with the variadic arguments*/
+	va_end(ap);
+
+	return 0; 
 }
 
 /* Notify about a new model, normally this will be mostly used Groups.

@@ -31,7 +31,7 @@ typedef struct {
 int initKevRuntime();
 
 /* register component type */
-int registerComponent(const char* name, const ComponentInterface* interface);
+int registerComponent(int count, ... );
 int unregisterComponent(const char* name);
 
 /* Notify about a new model, normally this will be mostly used Groups.
@@ -41,13 +41,13 @@ int unregisterComponent(const char* name);
 int notifyNewModel(/*ContainerRoot* model*/);
 
 /* macro to register a component */
-#define REGISTER_COMPONENT(Name, I) \
-PROCESS(PRegister##I,"ProcessToRegisterComponent"); \
-AUTOSTART_PROCESSES(&PRegister##I); \
-PROCESS_THREAD(PRegister##I, ev, data) \
+#define REGISTER_COMPONENT(COMP_COUNT, ...) \
+PROCESS(PRegister,"ProcessToRegisterComponent"); \
+AUTOSTART_PROCESSES(&PRegister); \
+PROCESS_THREAD(PRegister, ev, data) \
 { \
     PROCESS_BEGIN(); \
-    registerComponent(Name, &I); \
+    registerComponent(COMP_COUNT, __VA_ARGS__); \
     PROCESS_END(); \
 }
 
