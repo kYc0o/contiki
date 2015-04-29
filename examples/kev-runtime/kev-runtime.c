@@ -1,15 +1,18 @@
 #include "contiki.h"
 #include "dev/serial-line.h"
-#include "rtkev.h"
 #include "cfs/cfs-coffee.h"
 #include "loader/elfloader.h"
+
+#include "rtkev.h"
+#include "shell_group.h"
 
 #include <stdio.h>
 
 const ComponentInterface helloWorld;
 const ComponentInterface helloWorld_Second;
+const GroupInterface ShellGroupInterface;
 
-DECLARE_KEV_TYPES(2, &helloWorld, &helloWorld_Second)
+DECLARE_KEV_TYPES(3, &helloWorld, &helloWorld_Second, &ShellGroupInterface)
 
 PROCESS(kevRuntime, "KevRuntime");
 AUTOSTART_PROCESSES(&kevRuntime);
@@ -27,7 +30,6 @@ PROCESS_THREAD(kevRuntime, ev, data)
 	/* definitively we want to dynamically load modules */
 	elfloader_init();
 	if (initKevRuntime()) {
-		printf("ERROR: Model cannot be loaded\n");
 		printf("Runtime initialization error\n");
 		PROCESS_EXIT();
 	}
@@ -59,7 +61,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				printf("\tParam 1 : %s\n", tmp2);
 				void* ins;
 				createInstance(tmp, tmp2, &ins);
-				printf("\tThe created instance has adress %p\n", ins);	
+				printf("\tThe created instance has address %p\n", ins);	
 			}
 			else if (!strcmp(data, "format")) {
 				/* format the flash */

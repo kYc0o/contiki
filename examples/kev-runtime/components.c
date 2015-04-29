@@ -10,7 +10,7 @@ static int stopHelloWorld(void* instance);
 static int updateHelloWorld(void* instance);
 
 const ComponentInterface helloWorld = {
-	.name = "HelloWordType_0", 
+	.name = "HelloWorldType_0", 
     .newInstance = newHelloWorld,
     .start = startHelloWorld,
     .stop = stopHelloWorld,
@@ -18,7 +18,7 @@ const ComponentInterface helloWorld = {
 };
 
 const ComponentInterface helloWorld_Second = {
-	.name = "HelloWordType_1",    
+	.name = "HelloWorldType_1",    
 	.newInstance = newHelloWorld,
     .start = startHelloWorld,
     .stop = stopHelloWorld,
