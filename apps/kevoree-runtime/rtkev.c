@@ -6,8 +6,9 @@
 
 #include <stdarg.h>
 
+#define DEBUG
 #ifdef DEBUG
-#define PRINTF(S, ...) printf(S, __VA_ARGS__)
+#define PRINTF printf
 #else
 #define PRINTF(S, ...)
 #endif
@@ -24,6 +25,12 @@
 struct TypeEntry {
 	struct TypeEntry* next;
 	ComponentInterface* interface;
+};
+
+struct InstanceEntry {
+	struct InstanceEntry* next;
+	void* instance;
+	char* name;
 };
 
 static struct Runtime {
@@ -146,7 +153,15 @@ int createInstance(char* typeName, char* instanceName, void** instance)
       entry = list_item_next(entry)) {
 		if (!strcmp(typeName, entry->interface->name)) {
 			PRINTF("\tType Found\n");
+			
+			/* create instance using supplied component interface */
 			*instance = entry->interface->newInstance(entry->interface->name);
+
+			if (!*instance)
+				return ERR_KEV_INSTANCE_CREATION_FAIL;
+			
+			struct InstanceEntry* entry = (struct InstanceEntry*)malloc(sizeof(struct InstanceEntry));
+			list_add(runtime.instances, entry);
 		}
 	}
 	return 0;

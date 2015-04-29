@@ -5,13 +5,13 @@
 
 typedef struct _ContainerRoot ContainerRoot;
 
-/* proto to handle component instances */
+/* protos to handle component instances */
 typedef void* (*NewComponentInstance)(const char* componentType);
 typedef int (*StartComponent)(void*);
 typedef int (*StopComponent)(void*);
 typedef int (*UpdateComponent)(void*);
-
-/* Each component type must define a variable of this type.
+/* 
+ * Each component type must define a variable of this type.
  * It describes how the Kevoree Runtime interacts with this component type.
  * */
 typedef struct {
@@ -22,6 +22,22 @@ typedef struct {
     UpdateComponent update;
 } ComponentInterface;
 
+/* protos to handle group instances */
+typedef void* (*NewGroupInstance)(const char* componentType);
+typedef int (*StartGroup)(void*);
+typedef int (*StopGroup)(void*);
+typedef int (*UpdateGroup)(void*);
+/*
+ * Each group type must define a variable of this type
+ */
+typedef struct {
+	const char* name;
+	NewGroupInstance newInstance;
+    StartGroup start;
+    StopGroup stop;
+    UpdateGroup update;
+} GroupInterface;
+
 /*
  * The runime offers many functions to components, channels, groups and nodes
  * */
@@ -30,6 +46,7 @@ typedef struct {
 #define ERR_KEV_REGISTRATION_FAIL ((int)-1)
 #define ERR_KEV_UNKNOWN_TYPE ((int)-2)
 #define ERR_KEV_INIT_FAILURE ((int) -3)
+#define ERR_KEV_INSTANCE_CREATION_FAIL ((int) -4)
 
 /* init runtime */
 int initKevRuntime();
