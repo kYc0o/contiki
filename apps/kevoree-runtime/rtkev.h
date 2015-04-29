@@ -27,8 +27,11 @@ typedef struct {
 #define ERR_KEV_REGISTRATION_FAIL ((int)-1)
 #define ERR_KEV_UNKNOWN_TYPE ((int)-2)
 
+/* init runtime */
+int initKevRuntime();
+
 /* register component type */
-int registerComponent(const char* name, ComponentInterface* interface);
+int registerComponent(const char* name, const ComponentInterface* interface);
 int unregisterComponent(const char* name);
 
 /* Notify about a new model, normally this will be mostly used Groups.
@@ -43,7 +46,7 @@ PROCESS(PRegister##I,"ProcessToRegisterComponent"); \
 AUTOSTART_PROCESSES(&PRegister##I); \
 PROCESS_THREAD(PRegister##I, ev, data) \
 { \
-    PROCESS_START(); \
+    PROCESS_BEGIN(); \
     registerComponent(Name, &I); \
     PROCESS_END(); \
 }

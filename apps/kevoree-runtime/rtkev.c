@@ -26,12 +26,12 @@ typedef struct {
 
 /* this process is in charge of registering types */
 PROCESS(kev_reg, "kev_reg");
-AUTOSTART_PROCESSES(&kev_reg);
-
 PROCESS_THREAD(kev_reg, ev, data)
 {
 	Pair* p;
     PROCESS_BEGIN();
+
+	printf("Ejecutando proceso kev_reg\n");
 
 	/* register new event type */
 	NEW_KEV_TYPE = process_alloc_event(); 
@@ -52,10 +52,11 @@ PROCESS_THREAD(kev_reg, ev, data)
 }
 
 PROCESS(kev_model_listener, "kev_model_listener");
-AUTOSTART_PROCESSES(&kev_model_listener);
 PROCESS_THREAD(kev_model_listener, ev, data)
 {
     PROCESS_BEGIN();
+
+	printf("Ejecutando proceso kev_model_listener\n");
 
 	/* register new event type */
 	NEW_MODEL = process_alloc_event();
@@ -74,14 +75,28 @@ PROCESS_THREAD(kev_model_listener, ev, data)
     PROCESS_END();
 }
 
-/* register component type */
-int registerComponent(const char* name, ComponentInterface* interface)
+int initKevRuntime()
 {
+	process_start(&kev_reg, NULL);
+	process_start(&kev_model_listener, NULL);
+	return 0;
+}
+
+/* register component type */
+int registerComponent(const char* name, const ComponentInterface* interface)
+{
+	printf("En registrar componente %s %p\n", name, interface);
+
+	/* this is here for debug, when you deploy an example which is a component 
+	 * you must start the runtime somehow	
+	*/	
+	initKevRuntime();
+
 	/* it essentially sends a message to the process kev_reg
 	 well, I am guessing everything is Ok if I can send the message, :-) */
 	Pair* pair = (Pair*)malloc(sizeof(Pair));
 	pair->first = (void*)name;
-	pair->second = interface;
+	pair->second = (void*)interface;
 
 	return process_post(&kev_reg, NEW_KEV_TYPE, pair); 
 }
