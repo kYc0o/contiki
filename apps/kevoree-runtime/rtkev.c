@@ -3,6 +3,8 @@
 
 #include "ContainerRoot.h"
 #include "JSONModelLoader.h"
+#include "ModelCompare.h"
+#include "TraceSequence.h"
 
 #include <stdarg.h>
 
@@ -34,7 +36,7 @@ struct InstanceEntry {
 	char* name;
 };
 
-static struct Runtime {
+struct Runtime {
     /* the current model */
 	ContainerRoot *currentModel;
     /* hash_map from type name to type definition */
@@ -55,24 +57,35 @@ typedef struct {
 	void* second;
 } Pair;
 
+/* List of traces to execute */
+
 PROCESS(kev_model_listener, "kev_model_listener");
 PROCESS_THREAD(kev_model_listener, ev, data)
 {
-    PROCESS_BEGIN();
-
 	PRINTF("Ejecutando proceso kev_model_listener\n");
+
+    PROCESS_BEGIN();
 
 	/* register new event type */
 	NEW_MODEL = process_alloc_event();
+	printf("INFO: NEW_MODEL event was allocated %d\n", NEW_MODEL);
 
     while (1) {
         /* it runs forever, waiting for some update to the model */
 		PROCESS_WAIT_EVENT();
+		PRINTF("INFO: An event is coming to the listener ev:%d\n", ev);
 		if (ev == NEW_MODEL) {
-
 			/* wow I ave a new model, do te magic with the traces and so on */
 			PRINTF("Here a new model is coming\n");
-		
+			if (data != NULL && runtime.currentModel != NULL) {
+				/*TraceSequence *ts = ModelCompare((ContainerRoot*)data, runtime.currentModel);*/
+			} else {
+				if (data == NULL) {
+					PRINTF("ERROR: New model is NULL!\n");
+				} else if (runtime.currentModel == NULL) {
+					PRINTF("ERROR: Current model is NULL!\n");
+				}
+			}
 		}
     }
 
@@ -139,9 +152,12 @@ int registerComponent(int count, ... )
  * */
 int notifyNewModel(ContainerRoot *model)
 {
+	PRINTF("INFO: Sending model %p\n", model);
 	// it essentially sends a message to the process kev_model_listener
 	// well, I am guessing everything is Ok, :-)
-	return process_post(&kev_model_listener, NEW_MODEL, model);
+	/*process_post_synch(&kev_model_listener, NEW_MODEL, model);*/
+	TraceSequence *ts = ModelCompare(model, runtime.currentModel);
+	return 0;
 }
 
 /* create an instance of some type */
@@ -183,7 +199,11 @@ int startInstance(char* instanceName)
 		if (!strcmp(instanceName, entry->name)) {
 			PRINTF("Instance Found\n");
 			/* start instance using supplied component interface */
-			entry->interface->start(entry->instance);
+			if (!entry->interface->start(entry->instance)) {
+				PRINTF("INFO: starting instance OK\n");
+			} else {
+				PRINTF("ERROR: instance cannot be started!\n");
+			}
 		}
 	}
 	return 0;
