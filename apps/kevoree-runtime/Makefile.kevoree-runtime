@@ -1,2 +1,2 @@
-kevoree-runtime_src = rtkev.c
+kevoree-runtime_src = rtkev.c ModelCompare.c
 
