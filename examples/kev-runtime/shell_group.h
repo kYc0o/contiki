@@ -2,6 +2,6 @@
 #define __SHELL_GROUP__
 
 /* event used to notify about the new model */
-process_event_t NEW_MODEL_IN_JSON;
+extern process_event_t NEW_MODEL_IN_JSON;
 
 #endif
