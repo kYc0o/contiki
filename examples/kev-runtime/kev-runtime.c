@@ -1,20 +1,27 @@
 #include "contiki.h"
 #include "dev/serial-line.h"
-#include "cfs/cfs-coffee.h"
+#include "cfs/cfs.h"
 #include "loader/elfloader.h"
+#include "jsonparse.h"
 
 #include "rtkev.h"
 #include "shell_group.h"
 
+#include "ContainerRoot.h"
+#include "JSONModelLoader.h"
+
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* built-in kevoree types */
+
 const ComponentInterface helloWorld;
 const ComponentInterface helloWorld_Second;
 const GroupInterface ShellGroupInterface;
 DECLARE_KEV_TYPES(3, &helloWorld, &helloWorld_Second, &ShellGroupInterface)
 
-struct process shellGroupP;
+extern struct process shellGroupP;
 
 PROCESS(kevRuntime, "KevRuntime");
 AUTOSTART_PROCESSES(&kevRuntime);
@@ -27,6 +34,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 	static struct cfs_dir dir;
 	static uint32_t fdFile;
 	static char *filename;
+
 	PROCESS_BEGIN();
 
 	/* definitively we want to dynamically load modules */
@@ -39,34 +47,37 @@ PROCESS_THREAD(kevRuntime, ev, data)
 	REGISTER_KEV_TYPES_NOW();
 
 	printf("Kevoree server started !\n");
+
+
 	while(1) {
 
-		PROCESS_YIELD();
+		PROCESS_WAIT_EVENT();
+		printf("INFO: Event received\n");
 		if (ev == serial_line_event_message) {
 			if (!strcmp(data, "ls")) {
 				if(cfs_opendir(&dir, ".") == 0) {
-				  while(cfs_readdir(&dir, &dirent) != -1) {
-					printf("File: %s (%ld bytes)\n",
-						dirent.name, (long)dirent.size);
-				  }
-				  cfs_closedir(&dir);
+					while(cfs_readdir(&dir, &dirent) != -1) {
+						printf("File: %s (%ld bytes)\n",
+								dirent.name, (long)dirent.size);
+					}
+					cfs_closedir(&dir);
 				}
 			}
 			else if (!strcmp(data, "pushModel")) {
-				process_post(&shellGroupP, NEW_MODEL_IN_JSON, NULL);			
+				process_post(&shellGroupP, NEW_MODEL_IN_JSON, NULL);
 			}
-			else if (strstr(data, "createInstance") == (int)data) {
+			else if (strstr(data, "createInstance") == data) {
 				printf("Executing createInstance\n");
 				char* tmp = strstr(data, " ");
-        		tmp++;
+				tmp++;
 				char* tmp2 = strstr(tmp, " ");
 				*tmp2 = 0;
 				printf("\tParam 0 : %s\n", tmp);
-        		tmp2++;
+				tmp2++;
 				printf("\tParam 1 : %s\n", tmp2);
 				void* ins;
 				createInstance(tmp, tmp2, &ins);
-				printf("\tThe created instance has address %p\n", ins);	
+				printf("\tThe created instance has address %p\n", ins);
 			}
 			else if (!strcmp(data, "format")) {
 				/* format the flash */
@@ -77,32 +88,32 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				fdFile = cfs_coffee_format();
 				printf("Formatted with result %ld\n", fdFile);
 			}
-			else if (strstr(data, "cat") == (int)data) {
+			else if (strstr(data, "cat") == data) {
 				int n, jj;
 				char* tmp = strstr(data, " ");
 				tmp++;
 				fdFile = cfs_open(tmp, CFS_READ);
 				if (fdFile < 0) printf("error opening the file %s\n", tmp);
 				while ((n = cfs_read(fdFile, buf, 60)) > 0) {
-				  for (jj = 0 ; jj < n ; jj++) printf("%c", (char)buf[jj]);
+					for (jj = 0 ; jj < n ; jj++) printf("%c", (char)buf[jj]);
 				}
 				printf("\n");
 				cfs_close(fdFile);
 				if (n!=0)
 					printf("Some error reading the file\n");
 			}
-			else if (strstr(data, "rm") == (int)data) {
+			else if (strstr(data, "rm") == data) {
 				int n, jj;
 				char* tmp = strstr(data, " ");
 				tmp++;
 				cfs_remove(tmp);
 			}
-			else if (strstr(data, "startInstance") == (int)data) {
+			else if (strstr(data, "startInstance") == data) {
 				filename = strstr(data, " ");
 				filename++;
-				startInstance(filename);				
+				startInstance(filename);
 			}
-			else if (strstr(data, "loadelf") == (int)data) {
+			else if (strstr(data, "loadelf") == data) {
 				filename = strstr(data, " ");
 				filename++;
 				// Cleanup previous loads
@@ -128,10 +139,10 @@ PROCESS_THREAD(kevRuntime, ev, data)
 					}
 				}
 				else if (ELFLOADER_SYMBOL_NOT_FOUND == received) {
-				  printf("Symbol not found: '%s'\n", elfloader_unknown);
+					printf("Symbol not found: '%s'\n", elfloader_unknown);
 				}
 			}
-			else if (strstr(data, "upload") == (int)data) {
+			else if (strstr(data, "upload") == data) {
 				char* tmp = strstr(data, " ");
 				tmp++;
 				fdFile = cfs_open(tmp, CFS_READ | CFS_WRITE);
