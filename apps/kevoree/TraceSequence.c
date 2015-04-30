@@ -34,15 +34,13 @@ TraceSequence *new_TraceSequence()
 	}
 
 	/*pTraceSeqObj->traces_list = NULL;*/
-	pTraceSeqObj->traces_list_list = NULL;
-	pTraceSeqObj->traces_list = (list_t)&(pTraceSeqObj->traces_list_list);
-	list_init(pTraceSeqObj->traces_list);
+	pTraceSeqObj->traces_list = NULL;
+	/*list_init(pTraceSeqObj->traces_list);*/
+	LIST_STRUCT_INIT(pTraceSeqObj, traces_list);
 	pTraceSeqObj->append = TraceSequence_append;
 	pTraceSeqObj->populate = TraceSequence_populate;
 	pTraceSeqObj->toString = TraceSequence_toString;
 	pTraceSeqObj->delete = delete_TraceSequence;
-
-	PRINTF("TraceSequence created at: %p \n", pTraceSeqObj);
 
 	return pTraceSeqObj;
 }
