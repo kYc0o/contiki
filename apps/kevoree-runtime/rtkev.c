@@ -36,13 +36,15 @@ struct InstanceEntry {
 	char* name;
 };
 
-struct Runtime {
+static struct Runtime {
     /* the current model */
 	ContainerRoot *currentModel;
     /* hash_map from type name to type definition */
 	LIST_STRUCT(types);
 	/* instanaces */
 	LIST_STRUCT(instances);
+	/* deployUnit retriever */
+	DeployUnitRetriver* deployUnitRetriever;
 } runtime;
 
 static const char *DEFAULTMODEL = "{\"eClass\" : \"org.kevoree.ContainerRoot\",\"generated_KMF_ID\" : \"BXX5q3eV\",\"nodes\" : [{\"eClass\" : \"org.kevoree.ContainerNode\",\"name\" : \"node0\",\"metaData\" : \"\",\"started\" : \"1\",\"components\" : [],\"hosts\" : [],\"host\" : [],\"groups\" : [\"groups[group0]\"],\"networkInformation\" : [{\"eClass\" : \"org.kevoree.NetworkInfo\",\"name\" : \"ip\",\"values\" : [{\"eClass\" : \"org.kevoree.NetworkProperty\",\"name\" : \"front\",\"value\" : \"m3-XX.lille.iotlab.info\"},{\"eClass\" : \"org.kevoree.NetworkProperty\",\"name\" : \"local\",\"value\" : \"fe80:0000:0000:0000:0323:4501:4471:0343\"}]}],\"typeDefinition\" : [\"typeDefinitions[ContikiNode/0.0.1]\"],\"dictionary\" : [],\"fragmentDictionary\" : []}],\"typeDefinitions\" : [{\"eClass\" : \"org.kevoree.NodeType\",\"name\" : \"ContikiNode\",\"version\" : \"0.0.1\",\"factoryBean\" : \"\",\"bean\" : \"\",\"abstract\" : \"0\",\"deployUnit\" : [\"deployUnits[org.kevoree.library.c//kevoree-contiki-node/0.0.1]\"],\"dictionaryType\" : [{\"eClass\" : \"org.kevoree.DictionaryType\",\"generated_KMF_ID\" : \"o8AVQY3e\",\"attributes\" : []}],\"superTypes\" : []},{\"eClass\" : \"org.kevoree.GroupType\",\"name\" : \"CoAPGroup\",\"version\" : \"0.0.1\",\"factoryBean\" : \"\",\"bean\" : \"\",\"abstract\" : \"0\",\"deployUnit\" : [\"deployUnits[//kevoree-group-coap/0.0.1]\"],\"dictionaryType\" : [{\"eClass\" : \"org.kevoree.DictionaryType\",\"generated_KMF_ID\" : \"3dddTFpd\",\"attributes\" : [{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"proxy_port\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"int\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"20000\"},{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"port\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"number\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"\"},{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"path\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"string\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"\"}]}],\"superTypes\" : []}],\"repositories\" : [],\"dataTypes\" : [],\"libraries\" : [{\"eClass\" : \"org.kevoree.TypeLibrary\",\"name\" : \"ContikiLib\",\"subTypes\" : [\"typeDefinitions[ContikiNode/0.0.1]\",\"typeDefinitions[CoAPGroup/0.0.1]\"]},{\"eClass\" : \"org.kevoree.TypeLibrary\",\"name\" : \"Default\",\"subTypes\" : []}],\"hubs\" : [],\"mBindings\" : [],\"deployUnits\" : [{\"eClass\" : \"org.kevoree.DeployUnit\",\"name\" : \"kevoree-group-coap\",\"groupName\" : \"\",\"version\" : \"0.0.1\",\"url\" : \"\",\"hashcode\" : \"\",\"type\" : \"ce\"},{\"eClass\" : \"org.kevoree.DeployUnit\",\"name\" : \"kevoree-contiki-node\",\"groupName\" : \"org.kevoree.library.c\",\"version\" : \"0.0.1\",\"url\" : \"\",\"hashcode\" : \"\",\"type\" : \"ce\"}],\"nodeNetworks\" : [],\"groups\" : [{\"eClass\" : \"org.kevoree.Group\",\"name\" : \"group0\",\"metaData\" : \"\",\"started\" : \"1\",\"subNodes\" : [\"nodes[node0]\"],\"typeDefinition\" : [\"typeDefinitions[CoAPGroup/0.0.1]\"],\"dictionary\" : [],\"fragmentDictionary\" : [{\"eClass\" : \"org.kevoree.FragmentDictionary\",\"generated_KMF_ID\" : \"VEj2RlNr\",\"name\" : \"contiki-node\",\"values\" : []}]}]}";
@@ -50,6 +52,9 @@ static const char *DEFAULTMODEL = "{\"eClass\" : \"org.kevoree.ContainerRoot\",\
 /* kevoree event types */
 static process_event_t NEW_KEV_TYPE;
 static process_event_t NEW_MODEL;
+
+static process_event_t NEW_TRACE_MODEL;
+static process_event_t DEPLOY_UNIT_DOWNLOADED;
 
 /* internal structures used to send data along events */
 typedef struct {
@@ -59,6 +64,46 @@ typedef struct {
 
 /* List of traces to execute */
 
+const char* deployUnitsToDownload[] = {"pepeDeployUnit0", "pepeDeployUnit1", "pepeDeployUnit2", "pepeDeployUnit3", "pepeDeployUnit4", "pepeDeployUnit5"};
+
+/* this process downloads, installs and removes the necessesary deploy units */
+PROCESS(kev_model_installer, "kev_model_installer");
+PROCESS_THREAD(kev_model_installer, ev, data)
+{
+	static int idx;
+	PROCESS_BEGIN();
+	
+	/* register new event types */
+	NEW_TRACE_MODEL = process_alloc_event();
+	DEPLOY_UNIT_DOWNLOADED = process_alloc_event();
+
+	while (1) {
+		/* it runs forever, waiting for a new trace model */
+		PROCESS_WAIT_EVENT();
+		if (ev == NEW_TRACE_MODEL) {
+			/* data should point to a trace model */
+			
+			/* I will fake some deploy units */
+			idx = 0;
+			runtime.deployUnitRetriever->getDeployUnit(deployUnitsToDownload[idx]);
+		}
+		else if (ev == DEPLOY_UNIT_DOWNLOADED) {
+			/* data contains the deploy unit ID */
+			PRINTF("The deploy unit %s was downloaded and now I can install the types inside\n", (char*)data);
+			/* here I must free the memory */			
+			free(data);
+			idx++;
+			if (idx < 6)
+				runtime.deployUnitRetriever->getDeployUnit(deployUnitsToDownload[idx]);
+		}
+	}
+
+	PROCESS_END();
+}
+
+/* this process wait for new models in order to analysis them 
+ * It builds a trace model
+*/
 PROCESS(kev_model_listener, "kev_model_listener");
 PROCESS_THREAD(kev_model_listener, ev, data)
 {
@@ -86,16 +131,25 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 					PRINTF("ERROR: Current model is NULL!\n");
 				}
 			}
+
+			// TODO : this is temporarary, only to check mechanism to deal with the download of deploy units
+			//if (data == NULL) {
+			//	return process_post(&kev_model_installer, NEW_TRACE_MODEL, NULL);
+			//}
 		}
     }
 
     PROCESS_END();
 }
 
-int initKevRuntime()
+int initKevRuntime(DeployUnitRetriver* retriever)
 {
 	LIST_STRUCT_INIT(&runtime, types);
 	LIST_STRUCT_INIT(&runtime, instances);
+
+	runtime.deployUnitRetriever = retriever;
+
+	PRINTF("%p %p JEJEJJEJ\n", retriever, retriever->getDeployUnit);
 
 	/* let's assign the empty model as the current model */
 	struct jsonparse_state jsonState;
@@ -108,6 +162,7 @@ int initKevRuntime()
 
 	/* start support protothreads */
 	process_start(&kev_model_listener, NULL);
+	process_start(&kev_model_installer, NULL);
 
 	return 0;
 }
@@ -207,4 +262,10 @@ int startInstance(char* instanceName)
 		}
 	}
 	return 0;
+}
+
+/* dealing with deploy units */
+void notifyDeployUnitDownloaded(const char* fileName)
+{
+	process_post(&kev_model_installer, DEPLOY_UNIT_DOWNLOADED, fileName);
 }

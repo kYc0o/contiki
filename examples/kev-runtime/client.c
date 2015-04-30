@@ -97,6 +97,28 @@ int uploadfile (char* params[])
   send_data("endupload\n");
   return 1;
 }
+
+int uploadUnit (char* params[])
+{
+  unsigned char buf[4096];
+  char out[4096 + 1000];
+  char b[100];
+  int n;
+  sprintf(buf, "uploadUnit %s\n", params[1]);
+  send_data(buf);
+  sprintf(b, "units/%s", params[1]);
+  int fd = open(b, O_RDONLY);
+  while ((n = read(fd, buf, 4096)) > 0) {
+    int r = encode(buf, n, out);
+    out[r] = 0;
+    send_data(out);
+    send_data("\n");
+  }
+  close(fd);
+  send_data("enduploadUnit\n");
+  return 1;
+}
+
 int noArgumentCommand(char* params[])
 {
   send_data(params[0]); send_data("\n");
@@ -168,13 +190,65 @@ void send_data(char* msg)
 #define KCYN  "\x1B[36m"
 #define KWHT  "\x1B[37m"
 
+#define TOKEN_START "__012345"
+#define TOKEN_END "543210__"
+
+/* I am too lazy , hehehe*/
+int total = 0;
+char hugeBuffer[40*1024*1024];
+
+int isDeployUnitRequest(char* buff, int len, char* deployUnit)
+{
+	buff[len] = 0;
+	strcpy(&hugeBuffer[total], buff);
+	total += len;
+	hugeBuffer[total] = 0;
+	
+	char* init = strstr(hugeBuffer, TOKEN_START);
+	if (init) {
+		char* end = strstr(hugeBuffer, TOKEN_END);
+		if (end) {
+			init += 1 + strlen(TOKEN_START);
+			end --;
+			*end = 0;
+			strcpy(deployUnit, init);
+			// clean te buffer
+			total = 0;
+			return 1;
+		}	
+	}
+	return 0;
+}
+
+void *answering_to_remote(void *x_void_ptr)
+{
+	char* params[] = {
+		"uploadUnit",
+		""
+	};
+	
+	params[1] = (char*) x_void_ptr;
+	uploadUnit(params);
+}
+
 void receive_data()
 {
   char buff[101];
+  char deployUnitName[100];
   int n = read(sockfd,buff,100);
   while (n > 0) {
-    for (int i = 0 ; i < n ; i++)
-      printf(KGRN "%c", buff[i]);
+	if (!isDeployUnitRequest(buff, n, deployUnitName))
+		
+    	for (int i = 0 ; i < n ; i++)
+      		printf(KGRN "%c", buff[i]);
+	else {
+		printf(KNRM "\nWell ... someone is requesting %s; so let's upload the file\n", deployUnitName);
+		pthread_t receiver;
+		/* create a second thread which executes inc_x(&x) */
+		if (pthread_create(&receiver, NULL, answering_to_remote, strdup(deployUnitName))) {
+
+		}
+	}
     n = read(sockfd,buff,100);
   }
 }

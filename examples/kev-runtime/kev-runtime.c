@@ -6,6 +6,7 @@
 
 #include "rtkev.h"
 #include "shell_group.h"
+#include "ShellBasedDeployUnitRetriever.h"
 
 #include "ContainerRoot.h"
 #include "JSONModelLoader.h"
@@ -15,10 +16,9 @@
 #include <string.h>
 
 /* built-in kevoree types */
-
-const ComponentInterface helloWorld;
-const ComponentInterface helloWorld_Second;
-const GroupInterface ShellGroupInterface;
+extern const ComponentInterface helloWorld;
+extern const ComponentInterface helloWorld_Second;
+extern const GroupInterface ShellGroupInterface;
 DECLARE_KEV_TYPES(3, &helloWorld, &helloWorld_Second, &ShellGroupInterface)
 
 extern struct process shellGroupP;
@@ -39,7 +39,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 
 	/* definitively we want to dynamically load modules */
 	elfloader_init();
-	if (initKevRuntime()) {
+	if (initKevRuntime(&shellBasedRetriever)) {
 		printf("Runtime initialization error\n");
 		PROCESS_EXIT();
 	}
@@ -64,7 +64,8 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				}
 			}
 			else if (!strcmp(data, "pushModel")) {
-				process_post(&shellGroupP, NEW_MODEL_IN_JSON, NULL);
+				notifyNewModel(NULL);				
+				//process_post(&shellGroupP, NEW_MODEL_IN_JSON, NULL);			
 			}
 			else if (strstr(data, "createInstance") == data) {
 				printf("Executing createInstance\n");
@@ -142,7 +143,24 @@ PROCESS_THREAD(kevRuntime, ev, data)
 					printf("Symbol not found: '%s'\n", elfloader_unknown);
 				}
 			}
-			else if (strstr(data, "upload") == data) {
+			else if (strstr(data, "uploadUnit") == (int)data) {
+				char* tmp = strstr(data, " ");
+				tmp++;
+				fdFile = cfs_open(tmp, CFS_READ | CFS_WRITE);
+				printf("Uploading deploy unit %s\n", tmp);
+				processingFile = 1;
+				filename = strdup(tmp);
+			}
+			else if (!strcmp(data, "enduploadUnit")) {
+				cfs_close(fdFile);
+				printf("File %s uploaded (%ld bytes)\n", filename, received);
+				received = 0;
+				processingFile = 0;
+				// so we can notify to the other DeployUnitRetriever
+				notifyDeployUnitDownloaded(filename);
+				filename = 0;
+			}
+			else if (strstr(data, "upload") == (int)data) {
 				char* tmp = strstr(data, " ");
 				tmp++;
 				fdFile = cfs_open(tmp, CFS_READ | CFS_WRITE);
