@@ -314,6 +314,7 @@ int resolveReferences(any_t root, any_t objRef)
 				Group *group = model->FindGroupsByID(model, srcId);
 				if(typdef != NULL && group != NULL)
 				{
+					PRINTF("Adding typeDefinition %s to group %s\n", typdef->internalGetKey(typdef), group->internalGetKey(group));
 					group->super->AddTypeDefinition(group->super, typdef);
 					return MAP_OK;
 				}
@@ -806,11 +807,14 @@ ContainerRoot *JSONKevDeserializer(struct jsonparse_state *jsonState, char _json
 		if(hashmap_iterate(loader->objects, resolveReferences, new_model) == MAP_OK)
 		{
 			loader->delete(loader);
+
+			PRINTF("INFO: Dependencies solved successfully\n");
 			return new_model;
 		}
 		else
 		{
 			loader->delete(loader);
+			PRINTF("ERROR: Dependencies cannot be resolved!\n");
 			return NULL;
 		}
 	}
