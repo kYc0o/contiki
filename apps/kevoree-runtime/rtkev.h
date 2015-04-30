@@ -38,6 +38,10 @@ typedef struct {
     UpdateGroup update;
 } GroupInterface;
 
+typedef struct {
+	int (*getDeployUnit)(const char *);
+} DeployUnitRetriver;
+
 /*
  * The runime offers many functions to components, channels, groups and nodes
  * */
@@ -49,7 +53,7 @@ typedef struct {
 #define ERR_KEV_INSTANCE_CREATION_FAIL ((int) -4)
 
 /* init runtime */
-int initKevRuntime();
+int initKevRuntime(DeployUnitRetriver* retriever);
 
 /* register component type */
 int registerComponent(int count, ... );
@@ -64,6 +68,9 @@ int notifyNewModel(ContainerRoot *model);
 /* create an instance of some type */
 int createInstance(char* typeName, char* instanceName, void** instance);
 int startInstance(char* instanceName);
+
+/* dealing with deploy units */
+void notifyDeployUnitDownloaded(const char*);
 
 /* macros to register a component */
 #define REGISTER_KEV_TYPES(COMP_COUNT, ...) \
