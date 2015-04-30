@@ -100,13 +100,13 @@ int resolveReferences(any_t root, any_t objRef)
 {
 	ContainerRoot *model = (ContainerRoot*)root;
 	char *srcObj = NULL;
-	char srcId[50];
+	char srcId[100];
 	char *srcObjId = NULL;
 	char *refObj = NULL;
-	char refId[50];
+	char refId[100];
 	char *refObjId = NULL;
 	char *srcObj2 = NULL;
-	char srcId2[50];
+	char srcId2[100];
 	char *srcObjId2 = NULL;
 
 	if(objRef != NULL && model != NULL)
