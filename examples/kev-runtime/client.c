@@ -98,16 +98,59 @@ int uploadfile (char* params[])
   return 1;
 }
 
+static char*
+getDeployUnitLocalPath(const char * deployUnitName)
+{
+	FILE* fp;
+	char * line = NULL;
+	size_t len = 0;
+    ssize_t read;
+
+	fp = fopen("kev-components/repository.repo", "r");
+	if (fp == NULL)
+	   return NULL;
+
+	while ((read = getline(&line, &len, fp)) != -1) {
+		if (strstr(line, deployUnitName) == line) {
+			fclose(fp);
+			char* retTmp = line + strlen(deployUnitName) + 1;
+			char* ret = retTmp + strlen(retTmp);
+			ret --;
+			*ret = 0;
+			ret = strdup(retTmp);
+			free(line);
+			return ret;
+		}
+	}
+
+	fclose(fp);
+	if (line)
+	   free(line);
+	return NULL;
+}
+
 int uploadUnit (char* params[])
 {
   unsigned char buf[4096];
   char out[4096 + 1000];
   char b[100];
   int n;
+
+  /* get Deploy Unit Location */
+  char* deployUnitLocalPath = getDeployUnitLocalPath(params[1]);
+  if (!deployUnitLocalPath) {
+	fprintf(stderr, "CLIENT-ERR: couldn't find local deploy unit %s\n", params[1]);
+	return 0;
+  }
+
+  sprintf(b, "kev-components/%s", deployUnitLocalPath);
+  int fd = open(b, O_RDONLY);
+  if (fd < 0 ) {
+  	fprintf(stderr, "CLIENT-ERR: couldn't open file %s which contains the deploy unit\n", b);
+	return 0;
+  }
   sprintf(buf, "uploadUnit %s\n", params[1]);
   send_data(buf);
-  sprintf(b, "units/%s", params[1]);
-  int fd = open(b, O_RDONLY);
   while ((n = read(fd, buf, 4096)) > 0) {
     int r = encode(buf, n, out);
     out[r] = 0;

@@ -10,6 +10,9 @@ CONSOLE_CLIENT_SRCS = client.c myencode.c
 
 all: $(CONTIKI_PROJECT)
 
+components:
+	cd kev-components && $(MAKE)
+
 client: $(CONSOLE_CLIENT_SRCS)
 	gcc -std=gnu99 $(CONSOLE_CLIENT_SRCS) -o client -lpthread
 
