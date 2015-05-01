@@ -50,7 +50,6 @@ PROCESS_THREAD(kevRuntime, ev, data)
 	while(1) {
 
 		PROCESS_WAIT_EVENT();
-		printf("INFO: Event received\n");
 		if (ev == serial_line_event_message) {
 			if (!strcmp(data, "ls")) {
 				if(cfs_opendir(&dir, ".") == 0) {
@@ -62,8 +61,8 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				}
 			}
 			else if (!strcmp(data, "pushModel")) {
-				//notifyNewModel(NULL);				
-				process_post(&shellGroupP, NEW_MODEL_IN_JSON, NULL);			
+				notifyNewModel(NULL);				
+				//process_post(&shellGroupP, NEW_MODEL_IN_JSON, NULL);			
 			}
 			else if (strstr(data, "createInstance") == data) {
 				printf("Executing createInstance\n");

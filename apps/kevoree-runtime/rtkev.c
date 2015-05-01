@@ -113,9 +113,8 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 PROCESS(kev_model_listener, "kev_model_listener");
 PROCESS_THREAD(kev_model_listener, ev, data)
 {
-	PRINTF("Ejecutando proceso kev_model_listener\n");
-
     PROCESS_BEGIN();
+	PRINTF("Ejecutando proceso kev_model_listener\n");
 
 	/* register new event type */
 	NEW_MODEL = process_alloc_event();
@@ -123,25 +122,22 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 
     while (1) {
         /* it runs forever, waiting for some update to the model */
-		PROCESS_WAIT_EVENT();
-		PRINTF("INFO: An event is coming to the listener ev:%d\n", ev);
-		if (ev == NEW_MODEL) {
-			/* wow I ave a new model, do te magic with the traces and so on */
-			PRINTF("Here a new model is coming\n");
-			if (data != NULL && runtime.currentModel != NULL) {
-				/*TraceSequence *ts = ModelCompare((ContainerRoot*)data, runtime.currentModel);*/
-			} else {
-				if (data == NULL) {
-					PRINTF("ERROR: New model is NULL!\n");
-				} else if (runtime.currentModel == NULL) {
-					PRINTF("ERROR: Current model is NULL!\n");
-				}
+		PROCESS_WAIT_EVENT_UNTIL(ev == NEW_MODEL);
+		/* wow I have a new model, do te magic with the traces and so on */
+		PRINTF("Here a new model is coming\n");
+		if (data != NULL && runtime.currentModel != NULL) {
+			/*TraceSequence *ts = ModelCompare((ContainerRoot*)data, runtime.currentModel);*/
+		} else {
+			if (data == NULL) {
+				PRINTF("ERROR: New model is NULL!\n");
+			} else if (runtime.currentModel == NULL) {
+				PRINTF("ERROR: Current model is NULL!\n");
 			}
+		}
 
-			// TODO : this is temporarary, only to check mechanism to deal with the download of deploy units
-			//if (data == NULL) {
-			//	return process_post(&kev_model_installer, NEW_TRACE_MODEL, NULL);
-			//}
+		// TODO : this is temporarary, only to check mechanism to deal with the download of deploy units
+		if (data == NULL) {
+			return process_post(&kev_model_installer, NEW_TRACE_MODEL, NULL);
 		}
     }
 
@@ -217,8 +213,8 @@ int notifyNewModel(ContainerRoot *model)
 	PRINTF("INFO: Sending model %p\n", model);
 	// it essentially sends a message to the process kev_model_listener
 	// well, I am guessing everything is Ok, :-)
-	/*process_post_synch(&kev_model_listener, NEW_MODEL, model);*/
-	TraceSequence *ts = ModelCompare(model, runtime.currentModel);
+	process_post(&kev_model_listener, NEW_MODEL, model);
+	//TraceSequence *ts = ModelCompare(model, runtime.currentModel);
 	return 0;
 }
 
