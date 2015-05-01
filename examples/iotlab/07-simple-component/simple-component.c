@@ -10,6 +10,7 @@ int stopHelloWorld(void* instance);
 int updateHelloWorld(void* instance);
 
 const ComponentInterface helloWorld = {
+	.name = "HelloWordType_0", 
     .newInstance = newHelloWorld,
     .start = startHelloWorld,
     .stop = stopHelloWorld,
@@ -17,7 +18,8 @@ const ComponentInterface helloWorld = {
 };
 
 const ComponentInterface helloWorld_Second = {
-    .newInstance = newHelloWorld,
+	.name = "HelloWordType_1",    
+	.newInstance = newHelloWorld,
     .start = startHelloWorld,
     .stop = stopHelloWorld,
     .update = updateHelloWorld
@@ -52,4 +54,4 @@ int updateHelloWorld(void* instance)
     return 0;
 }
 
-REGISTER_COMPONENT(2, "HelloWorldComponent", &helloWorld, "A second component type", &helloWorld_Second)
+REGISTER_KEV_TYPES(2, &helloWorld, &helloWorld_Second)
