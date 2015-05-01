@@ -16,10 +16,8 @@
 #include <string.h>
 
 /* built-in kevoree types */
-extern const ComponentInterface helloWorld;
-extern const ComponentInterface helloWorld_Second;
 extern const GroupInterface ShellGroupInterface;
-DECLARE_KEV_TYPES(3, &helloWorld, &helloWorld_Second, &ShellGroupInterface)
+DECLARE_KEV_TYPES(1, &ShellGroupInterface)
 
 extern struct process shellGroupP;
 
@@ -117,31 +115,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 			else if (strstr(data, "loadelf") == data) {
 				filename = strstr(data, " ");
 				filename++;
-				// Cleanup previous loads
-				if (elfloader_autostart_processes != NULL)
-					autostart_exit(elfloader_autostart_processes);
-				elfloader_autostart_processes = NULL;
-
-				// Load elf file
-				fdFile = cfs_open(filename, CFS_READ | CFS_WRITE);
-				received = elfloader_load(fdFile);
-				cfs_close(fdFile);
-				printf("Result of loading %lu\n", received);
-
-				// As the file has been modified and can't be reloaded, remove it
-				printf("Remove dirty firmware '%s'\n", filename);
-				cfs_remove(filename);
-
-				// execute the program
-				if (ELFLOADER_OK == received) {
-					if (elfloader_autostart_processes) {
-						//PRINT_PROCESSES(elfloader_autostart_processes);
-						autostart_start(elfloader_autostart_processes);
-					}
-				}
-				else if (ELFLOADER_SYMBOL_NOT_FOUND == received) {
-					printf("Symbol not found: '%s'\n", elfloader_unknown);
-				}
+				loadElfFile(filename);
 			}
 			else if (strstr(data, "uploadUnit") == (int)data) {
 				char* tmp = strstr(data, " ");
