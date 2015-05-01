@@ -1,3 +1,6 @@
+#include "cfs/cfs-coffee.h"
+#include "loader/elfloader.h"
+
 #include "rtkev.h"
 #include "lib/list.h"
 
@@ -62,15 +65,14 @@ typedef struct {
 	void* second;
 } Pair;
 
-/* List of traces to execute */
-
-const char* deployUnitsToDownload[] = {"pepeDeployUnit0", "pepeDeployUnit1", "pepeDeployUnit2", "pepeDeployUnit3", "pepeDeployUnit4", "pepeDeployUnit5"};
+const char* deployUnitsToDownload[] = {"helloWorldComponent"};
 
 /* this process downloads, installs and removes the necessesary deploy units */
 PROCESS(kev_model_installer, "kev_model_installer");
 PROCESS_THREAD(kev_model_installer, ev, data)
 {
 	static int idx;
+	static char* filename;
 	PROCESS_BEGIN();
 	
 	/* register new event types */
@@ -88,12 +90,16 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			runtime.deployUnitRetriever->getDeployUnit(deployUnitsToDownload[idx]);
 		}
 		else if (ev == DEPLOY_UNIT_DOWNLOADED) {
+			filename = (char*)data;
 			/* data contains the deploy unit ID */
-			PRINTF("The deploy unit %s was downloaded and now I can install the types inside\n", (char*)data);
+			PRINTF("The deploy unit %s was downloaded and now I can install the types inside\n", filename);
+			/* load elf file with the deploy unit */
+			loadElfFile(filename);
 			/* here I must free the memory */			
-			free(data);
+			free(filename);
+			/* downlaod next deploy unit */
 			idx++;
-			if (idx < 6)
+			if (idx < sizeof(deployUnitsToDownload)/sizeof(char*))
 				runtime.deployUnitRetriever->getDeployUnit(deployUnitsToDownload[idx]);
 		}
 	}
@@ -142,6 +148,7 @@ PROCESS_THREAD(kev_model_listener, ev, data)
     PROCESS_END();
 }
 
+/* init runtime */
 int initKevRuntime(DeployUnitRetriver* retriever)
 {
 	LIST_STRUCT_INIT(&runtime, types);
@@ -186,7 +193,7 @@ int registerComponent(int count, ... )
 		interface = va_arg(ap, ComponentInterface*);
 		count--;
 
-		PRINTF("En registrar componente %s %p\n", interface->name, interface);
+		PRINTF("Registering Kevoree Type %s located at %p\n", interface->name, interface);
 		
 		/* it add a new entry to the list :-) */
 		struct TypeEntry* entry = (struct TypeEntry*)malloc(sizeof(struct TypeEntry));
@@ -268,4 +275,35 @@ int startInstance(char* instanceName)
 void notifyDeployUnitDownloaded(const char* fileName)
 {
 	process_post(&kev_model_installer, DEPLOY_UNIT_DOWNLOADED, fileName);
+}
+
+/* loads an elf file into the system and executes its autostart processes */
+void loadElfFile(const char* filename)
+{
+	uint32_t fdFile, received;
+	// Cleanup previous loads
+	if (elfloader_autostart_processes != NULL)
+		autostart_exit(elfloader_autostart_processes);
+	elfloader_autostart_processes = NULL;
+
+	// Load elf file
+	fdFile = cfs_open(filename, CFS_READ | CFS_WRITE);
+	received = elfloader_load(fdFile);
+	cfs_close(fdFile);
+	PRINTF("INFO: Result of loading %lu\n", received);
+
+	// As the file has been modified and can't be reloaded, remove it
+	PRINTF("WARNING: Remove dirty firmware '%s'\n", filename);
+	cfs_remove(filename);
+
+	// execute the program
+	if (ELFLOADER_OK == received) {
+		if (elfloader_autostart_processes) {
+			//PRINT_PROCESSES(elfloader_autostart_processes);
+			autostart_start(elfloader_autostart_processes);
+		}
+	}
+	else if (ELFLOADER_SYMBOL_NOT_FOUND == received) {
+	  printf("Symbol not found: '%s'\n", elfloader_unknown);
+	}
 }

@@ -72,11 +72,14 @@ int startInstance(char* instanceName);
 /* dealing with deploy units */
 void notifyDeployUnitDownloaded(const char*);
 
+/* loads an elf file into the system and executes its autostart processes */
+void loadElfFile(const char* filename);
+
 /* macros to register a component */
-#define REGISTER_KEV_TYPES(COMP_COUNT, ...) \
-PROCESS(PRegister,"ProcessToRegisterComponent"); \
-AUTOSTART_PROCESSES(&PRegister); \
-PROCESS_THREAD(PRegister, ev, data) \
+#define REGISTER_KEV_TYPES(DEPLOY_UNIT_ID, COMP_COUNT, ...) \
+PROCESS(PReg##DEPLOY_UNIT_ID,"ProcessToRegisterComponent"); \
+AUTOSTART_PROCESSES(&PReg##DEPLOY_UNIT_ID); \
+PROCESS_THREAD(PReg##DEPLOY_UNIT_ID, ev, data) \
 { \
     PROCESS_BEGIN(); \
     registerComponent(COMP_COUNT, __VA_ARGS__); \
@@ -84,14 +87,14 @@ PROCESS_THREAD(PRegister, ev, data) \
 }
 
 #define DECLARE_KEV_TYPES(COMP_COUNT, ...) \
-PROCESS(PRegister,"ProcessToRegisterComponent"); \
-PROCESS_THREAD(PRegister, ev, data) \
+PROCESS(PReg,"ProcessToRegisterComponent"); \
+PROCESS_THREAD(PReg, ev, data) \
 { \
     PROCESS_BEGIN(); \
     registerComponent(COMP_COUNT, __VA_ARGS__); \
     PROCESS_END(); \
 }
 
-#define REGISTER_KEV_TYPES_NOW() process_start(&PRegister, NULL)
+#define REGISTER_KEV_TYPES_NOW() process_start(&PReg, NULL)
 
 #endif
