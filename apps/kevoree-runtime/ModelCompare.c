@@ -37,7 +37,7 @@ TraceSequence *ModelCompare(ContainerRoot *_newModel, ContainerRoot *_currentMod
 	current_model = _currentModel;
 	new_model = _newModel;
 
-	Visitor *visitor;
+	Visitor *visitor = malloc(sizeof(Visitor));
 	TraceSequence *ts = new_TraceSequence();
 	char *trace_sequence;
 
@@ -57,43 +57,12 @@ TraceSequence *ModelCompare(ContainerRoot *_newModel, ContainerRoot *_currentMod
 		printf("ERROR: Cannot create traces\n");
 		return NULL;
 	}
+	PRINTF("INFO: Traces created successfully\n");
 
-	int listLength = list_length(model_traces);
-	bool isFirst;
-	int i;
-	ModelTrace *mt;
-
-	for (i = 0; i < listLength; ++i) {
-		if (isFirst)	{
-			mt = list_head(model_traces);
-			char *strTrace = mt->ToString(mt->pDerivedObj);
-			/*if ((n = cfs_write(fd_write, strTrace, strlen(strTrace))) == -1) {
-				PRINTF("ERROR: could not write to memory\n");
-				free(strTrace);
-				break;
-			}*/
-			PRINTF(strTrace);
-			free(strTrace);
-			isFirst = false;
-		} else {
-			mt = list_item_next(mt);
-			char *strTrace = mt->ToString(mt->pDerivedObj);
-			PRINTF(strTrace);
-			free(strTrace);
-		}
-
-		/*if (i < listLength - 1) {
-			if ((n = cfs_write(fd_write, ",", strlen(","))) == -1) {
-				PRINTF("ERROR: could not write to memory\n");
-				break;
-			}
-		}*/
-	}
-
-	/*ts->populate(ts, model_traces);
+	ts->populate(ts, model_traces);
 	trace_sequence = ts->toString(ts);
 	printf("%s\n", trace_sequence);
-	free(trace_sequence);*/
+	free(trace_sequence);
 
 	return ts;
 }

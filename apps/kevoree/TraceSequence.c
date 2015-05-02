@@ -1,21 +1,13 @@
-#include "TraceSequence.h"
-
-/*#include <map>
-#include <list>*/
-#include "lib/list.h"
-#include <stdbool.h>
-#include "ModelTrace.h"
-/*#include <sstream>
-#include <microframework/api/json/Lexer.h>
-#include <stdlib.h>
-using std::string;
-using std::list;*/
-
-/**
+/*
  * Author: fco.ja.ac@gmail.com
  * Date: 24/10/13
  * Time: 18:36
  */
+
+#include "TraceSequence.h"
+#include "ModelTrace.h"
+
+#include <stdbool.h>
 
 #define DEBUG 1
 #if DEBUG
@@ -33,9 +25,6 @@ TraceSequence *new_TraceSequence()
 		return NULL;
 	}
 
-	/*pTraceSeqObj->traces_list = NULL;*/
-	pTraceSeqObj->traces_list = NULL;
-	/*list_init(pTraceSeqObj->traces_list);*/
 	LIST_STRUCT_INIT(pTraceSeqObj, traces_list);
 	pTraceSeqObj->append = TraceSequence_append;
 	pTraceSeqObj->populate = TraceSequence_populate;
@@ -97,25 +86,24 @@ TraceSequence *TraceSequence_populate(TraceSequence *const this, list_t addTrace
 char *TraceSequence_toString(TraceSequence *const this)
 {
 	char *sequences;
-	/*memset(&sequences[0], 0, sizeof(sequences));*/
 	bool isFirst = true;
-	int i;
+	int i, listLength;
 
 	ModelTrace *mt;
 
 	PRINTF("Creating string traces!\n");
 
+	listLength = list_length(this->traces_list);
 	sequences = malloc(strlen("[]"));
 	sprintf(sequences, "[");
 
-	for (i = 0; i < list_length(this->traces_list); ++i) {
+	for (i = 0; i < listLength; ++i) {
 		if (!isFirst) {
 			mt = list_item_next(mt);
 			sequences = realloc(sequences, strlen(sequences) +
 					strlen(",") +
 					strlen(mt->ToString(mt->pDerivedObj)) + 1);
 			sprintf(sequences, "%s,%s", sequences, mt->ToString(mt->pDerivedObj));
-			PRINTF("%s,%s", sequences, mt->ToString(mt->pDerivedObj));
 		}
 		else
 		{
@@ -123,69 +111,16 @@ char *TraceSequence_toString(TraceSequence *const this)
 			sequences = realloc(sequences, strlen(sequences) +
 					strlen(mt->ToString(mt->pDerivedObj)) + 1);
 			sprintf(sequences, "%s%s", sequences, mt->ToString(mt->pDerivedObj));
-			PRINTF("%s%s", sequences, mt->ToString(mt->pDerivedObj));
 			isFirst = false;
 		}
 	}
 
-	sprintf(sequences, "]");
+	sprintf(sequences, "%s]", sequences);
 
 	return sequences;
 }
 
-/*
-string TraceSequence::exportToString(){
-	string buffer;
-	buffer.append("[");
-	bool isFirst = true;
-	for (std::list<ModelTrace*>::const_iterator iterator = traces.begin(), end = traces.end(); iterator != end; ++iterator)
-	{
-		if(!isFirst){
-			buffer.append(",");
-		}
-		ModelTrace *t = *iterator;
-		buffer.append(t->toString());
-		isFirst = false;
-	}
-	buffer.append("]");
-	return buffer;
-}
-
-
-TraceSequence::TraceSequence(){
-
-}
-
-TraceSequence::~TraceSequence(){
-	for (std::list<ModelTrace*>::iterator iterator = traces.begin(), end = traces.end(); iterator != end; ++iterator)
-	{
-		delete *iterator;
-	}
-	traces.clear();
-}
-
-
-TraceSequence* TraceSequence::populate(std::list<ModelTrace*> *addtraces)
-{
-	std::copy(addtraces->begin(), addtraces->end(), std::back_insert_iterator<std::list<ModelTrace*> >(traces)); // addAll
-	delete addtraces;
-	return this;
-}
-
-
-void TraceSequence::append(TraceSequence *seq){
-	std::copy(seq->traces.begin(), seq->traces.end(), std::back_insert_iterator<std::list<ModelTrace*> >(traces)); // addAll
-}
-
-
-
-TraceSequence* TraceSequence::populateFromString(string addtracesTxt){
-	std::istringstream ss( addtracesTxt); // convert string to istream
-	return populateFromStream(ss);
-}
-
-
-TraceSequence* TraceSequence::populateFromStream(istream &inputStream )
+/*TraceSequence* TraceSequence::populateFromStream(istream &inputStream )
 {
 	Lexer *lexer= new Lexer(inputStream);
 	Token currentToken = lexer->nextToken();
@@ -314,13 +249,4 @@ TraceSequence* TraceSequence::populateFromStream(istream &inputStream )
 
 	return this;
 }
-
-
-string TraceSequence::toString()  {
-	return exportToString();
-}
-
-void TraceSequence::reverse(){
-	traces.reverse();
-}
- */
+*/
