@@ -50,7 +50,6 @@ PROCESS_THREAD(kevRuntime, ev, data)
 	while(1) {
 
 		PROCESS_WAIT_EVENT();
-		printf("INFO: Event received\n");
 		if (ev == serial_line_event_message) {
 			if (!strcmp(data, "ls")) {
 				if(cfs_opendir(&dir, ".") == 0) {
@@ -62,8 +61,8 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				}
 			}
 			else if (!strcmp(data, "pushModel")) {
-				//notifyNewModel(NULL);				
-				process_post(&shellGroupP, NEW_MODEL_IN_JSON, NULL);			
+				notifyNewModel(NULL);				
+				//process_post(&shellGroupP, NEW_MODEL_IN_JSON, NULL);			
 			}
 			else if (strstr(data, "createInstance") == data) {
 				printf("Executing createInstance\n");
@@ -117,7 +116,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				filename++;
 				loadElfFile(filename);
 			}
-			else if (strstr(data, "uploadUnit") == (int)data) {
+			else if (strstr(data, "uploadUnit") == data) {
 				char* tmp = strstr(data, " ");
 				tmp++;
 				fdFile = cfs_open(tmp, CFS_READ | CFS_WRITE);
@@ -134,7 +133,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				notifyDeployUnitDownloaded(filename);
 				filename = 0;
 			}
-			else if (strstr(data, "upload") == (int)data) {
+			else if (strstr(data, "upload") == data) {
 				char* tmp = strstr(data, " ");
 				tmp++;
 				fdFile = cfs_open(tmp, CFS_READ | CFS_WRITE);

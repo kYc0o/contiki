@@ -98,7 +98,7 @@ PROCESS_THREAD(shellGroupP, ev, data)
 				printf("ERROR: The model cannot be loaded!\n");
 			}
 		}
-		else if (ev == PROCESS_EVENT_EXITED || ev == PROCESS_EVENT_EXIT) {
+		else if (ev == PROCESS_EVENT_EXIT) {
 			PROCESS_EXIT();
 		}
 	}

@@ -34,7 +34,9 @@ static
 int startHelloWorld(void* instance)
 {
     HelloWorld* inst = (HelloWorld*) instance;
-	printf("Hey %s, this is the often abused Hello World application\n", inst->name);
+	KevContext* ctx = getContext(inst);
+	printf("Hey %s, this is the often abused Hello World application running in component %s\n", inst->name, getInstanceName(ctx));
+	free(ctx);
     return 0;
 }
 

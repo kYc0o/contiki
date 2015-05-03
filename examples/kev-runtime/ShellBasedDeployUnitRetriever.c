@@ -8,6 +8,7 @@ static int
 getDeployUnit00(const char* deployUnitName)
 {
 	printf("__012345 %s 543210__\n", deployUnitName);
+	return 0;
 }
 
 const DeployUnitRetriver shellBasedRetriever = {
