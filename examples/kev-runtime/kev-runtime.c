@@ -116,7 +116,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				filename++;
 				loadElfFile(filename);
 			}
-			else if (strstr(data, "uploadUnit") == (int)data) {
+			else if (strstr(data, "uploadUnit") == data) {
 				char* tmp = strstr(data, " ");
 				tmp++;
 				fdFile = cfs_open(tmp, CFS_READ | CFS_WRITE);
@@ -133,7 +133,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				notifyDeployUnitDownloaded(filename);
 				filename = 0;
 			}
-			else if (strstr(data, "upload") == (int)data) {
+			else if (strstr(data, "upload") == data) {
 				char* tmp = strstr(data, " ");
 				tmp++;
 				fdFile = cfs_open(tmp, CFS_READ | CFS_WRITE);
