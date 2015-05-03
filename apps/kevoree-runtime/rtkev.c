@@ -1,7 +1,8 @@
-#include "cfs/cfs-coffee.h"
+#include "cfs/cfs.h"
 #include "loader/elfloader.h"
 
 #include "rtkev.h"
+#include "SimpleTraces.h"
 #include "lib/list.h"
 
 #include "ContainerRoot.h"
@@ -58,26 +59,30 @@ static process_event_t NEW_MODEL;
 
 static process_event_t NEW_TRACE_MODEL;
 static process_event_t DEPLOY_UNIT_DOWNLOADED;
+static process_event_t TRACE_EXECUTED;
 
-/* internal structures used to send data along events */
-typedef struct {
-	void* first;
-	void* second;
-} Pair;
+LIST(simpleTraces);
 
-const char* deployUnitsToDownload[] = {"helloWorldComponent"};
+/* forward declaration */
+static void
+processTrace(struct SimpleTrace* t);
 
 /* this process downloads, installs and removes the necessesary deploy units */
 PROCESS(kev_model_installer, "kev_model_installer");
 PROCESS_THREAD(kev_model_installer, ev, data)
 {
-	static int idx;
 	static char* filename;
+	int fd, r;
+	struct SimpleTrace* trace;
 	PROCESS_BEGIN();
 	
 	/* register new event types */
 	NEW_TRACE_MODEL = process_alloc_event();
 	DEPLOY_UNIT_DOWNLOADED = process_alloc_event();
+	TRACE_EXECUTED = process_alloc_event();
+
+	/* initialize list of traces */
+	list_init(simpleTraces);
 
 	while (1) {
 		/* it runs forever, waiting for a new trace model */
@@ -85,9 +90,30 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 		if (ev == NEW_TRACE_MODEL) {
 			/* data should point to a trace model */
 			
-			/* I will fake some deploy units */
-			idx = 0;
-			runtime.deployUnitRetriever->getDeployUnit(deployUnitsToDownload[idx]);
+			/* I will fake some traces */
+			fd = cfs_open("traces.traces", CFS_READ);
+			do {
+				trace = (struct SimpleTrace*)malloc(sizeof(struct SimpleTrace));
+				r = nextTrace(fd, trace);
+				if (r < 0)	free(trace);
+				else list_add(simpleTraces, trace);
+			} while (r==0);
+			cfs_close(fd);
+			PRINTF("The number of traces is %d\n", list_length(simpleTraces));			
+#ifdef DEBUG
+			/* iterate through list of traces */
+			for(trace = list_head(simpleTraces);
+			  trace != NULL;
+			  trace = list_item_next(trace)) {
+				PRINTF("trace: %c %s %s\n", trace->type, trace->nodeName, trace->param0.deployUnit);
+			}
+#endif
+			/* execute next trace */
+			if (list_length(simpleTraces) > 0) {
+				trace = list_pop(simpleTraces);
+				processTrace(trace);
+				free(trace);			
+			}
 		}
 		else if (ev == DEPLOY_UNIT_DOWNLOADED) {
 			filename = (char*)data;
@@ -97,14 +123,42 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			loadElfFile(filename);
 			/* here I must free the memory */			
 			free(filename);
-			/* downlaod next deploy unit */
-			idx++;
-			if (idx < sizeof(deployUnitsToDownload)/sizeof(char*))
-				runtime.deployUnitRetriever->getDeployUnit(deployUnitsToDownload[idx]);
+			/* execute next trace */
+			if (list_length(simpleTraces) > 0) {
+				trace = list_pop(simpleTraces);
+				processTrace(trace);
+				free(trace);			
+			}
+		}
+		else if (ev == TRACE_EXECUTED) {
+			/* execute next trace */
+			if (list_length(simpleTraces) > 0) {
+				trace = list_pop(simpleTraces);
+				processTrace(trace);
+				free(trace);			
+			}
 		}
 	}
 
 	PROCESS_END();
+}
+
+static void
+processTrace(struct SimpleTrace* t) {
+	void* inst;
+	switch(t->type) {
+		case TRACE_INST_DEPLOY_UNIT:
+			runtime.deployUnitRetriever->getDeployUnit(t->param0.deployUnit);
+		break;
+		case TRACE_NEW_INSTANCE:
+			createInstance(t->param0.kevType, t->param1.instanceName, &inst);
+			process_post(&kev_model_installer, TRACE_EXECUTED, NULL);
+		break;
+		case TRACE_START_INSTANCE:
+			startInstance(t->param0.instanceName);
+			process_post(&kev_model_installer, TRACE_EXECUTED, NULL);
+		break;
+	}
 }
 
 /* this process wait for new models in order to analysis them 
@@ -125,15 +179,15 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 		PROCESS_WAIT_EVENT_UNTIL(ev == NEW_MODEL);
 		/* wow I have a new model, do te magic with the traces and so on */
 		PRINTF("Here a new model is coming\n");
-		if (data != NULL && runtime.currentModel != NULL) {
-			/*TraceSequence *ts = ModelCompare((ContainerRoot*)data, runtime.currentModel);*/
+		/*if (data != NULL && runtime.currentModel != NULL) {
+			//TraceSequence *ts = ModelCompare((ContainerRoot*)data, runtime.currentModel);
 		} else {
 			if (data == NULL) {
 				PRINTF("ERROR: New model is NULL!\n");
 			} else if (runtime.currentModel == NULL) {
 				PRINTF("ERROR: Current model is NULL!\n");
 			}
-		}
+		}*/
 
 		// TODO : this is temporarary, only to check mechanism to deal with the download of deploy units
 		if (data == NULL) {
