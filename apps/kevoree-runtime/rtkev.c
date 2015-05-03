@@ -35,7 +35,7 @@ struct TypeEntry {
 
 struct InstanceEntry {
 	struct InstanceEntry* next;
-	ComponentInterface* interface;
+	KevInterface* interface;
 	void* instance;
 	char* name;
 };
@@ -356,4 +356,32 @@ void loadElfFile(const char* filename)
 	else if (ELFLOADER_SYMBOL_NOT_FOUND == received) {
 	  printf("Symbol not found: '%s'\n", elfloader_unknown);
 	}
+}
+
+/* these functions deal with the context of each instance */
+struct _KevContext {
+	struct InstanceEntry* entry;
+};
+
+/** Get the context of an instance */
+KevContext* getContext(void* instance)
+{
+	struct InstanceEntry* entry;
+	/* iterate through list of ComponentInterface */
+	for(entry = list_head(runtime.instances);
+      entry != NULL;
+      entry = list_item_next(entry)) {
+		if (instance == entry->instance) {
+			KevContext* ctx = (KevContext*)malloc(sizeof(KevContext));
+			ctx->entry = entry;
+			return ctx; 
+		}
+	}
+	return NULL;
+}
+
+/* functionn to deal with the context */
+const char* getInstanceName(KevContext* context)
+{
+	return context->entry->name;
 }

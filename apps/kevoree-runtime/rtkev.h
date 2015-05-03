@@ -5,42 +5,57 @@
 
 typedef struct _ContainerRoot ContainerRoot;
 
-/* protos to handle component instances */
-typedef void* (*NewComponentInstance)(const char* componentType);
-typedef int (*StartComponent)(void*);
-typedef int (*StopComponent)(void*);
-typedef int (*UpdateComponent)(void*);
+/* protos to handle kevoree instances */
+typedef void* (*NewInstance)(const char* kevType);
+typedef int (*StartInstance)(void*);
+typedef int (*StopInstance)(void*);
+typedef int (*UpdateInstance)(void*);
+
+/* generic definition if kevoree types (components, channels, groups ans so on) */
+typedef struct {
+	const char* name;
+    NewInstance newInstance;
+    StartInstance start;
+    StopInstance stop;
+    UpdateInstance update;
+} KevInterface;
+
 /* 
  * Each component type must define a variable of this type.
  * It describes how the Kevoree Runtime interacts with this component type.
  * */
 typedef struct {
 	const char* name;
-    NewComponentInstance newInstance;
-    StartComponent start;
-    StopComponent stop;
-    UpdateComponent update;
+    NewInstance newInstance;
+    StartInstance start;
+    StopInstance stop;
+    UpdateInstance update;
 } ComponentInterface;
 
-/* protos to handle group instances */
-typedef void* (*NewGroupInstance)(const char* componentType);
-typedef int (*StartGroup)(void*);
-typedef int (*StopGroup)(void*);
-typedef int (*UpdateGroup)(void*);
 /*
  * Each group type must define a variable of this type
  */
 typedef struct {
 	const char* name;
-	NewGroupInstance newInstance;
-    StartGroup start;
-    StopGroup stop;
-    UpdateGroup update;
+    NewInstance newInstance;
+    StartInstance start;
+    StopInstance stop;
+    UpdateInstance update;
 } GroupInterface;
 
 typedef struct {
 	int (*getDeployUnit)(const char *);
 } DeployUnitRetriver;
+
+/* represent the context of a Kevoree Instance, observe that it is an opaque type */
+typedef struct _KevContext KevContext; 
+
+/** Get the context of an instance */
+KevContext* getContext(void* instance);
+
+/* functionn to deal with the context */
+const char* getInstanceName(KevContext* context);
+
 
 /*
  * The runime offers many functions to components, channels, groups and nodes
