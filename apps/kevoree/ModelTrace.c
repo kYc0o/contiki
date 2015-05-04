@@ -157,8 +157,11 @@ char *ModelSetTrace_ToString(void* const this)
 	}
 	
 	sprintf(traceBuf, "%s }\n", traceBuf);
+	char *r = malloc(strlen(traceBuf) + 1);
+	strcpy(r, traceBuf);
+	free(traceBuf);
 
-	return traceBuf;
+	return r;
 }  
 
 ModelTrace* newPoly_ModelAddTrace(char* _srcPath, char* _refName, char* _previousPath, char* _typeName)
