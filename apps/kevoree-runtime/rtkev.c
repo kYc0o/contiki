@@ -41,9 +41,9 @@ struct InstanceEntry {
 };
 
 static struct Runtime {
-    /* the current model */
+	/* the current model */
 	ContainerRoot *currentModel;
-    /* hash_map from type name to type definition */
+	/* hash_map from type name to type definition */
 	LIST_STRUCT(types);
 	/* instanaces */
 	LIST_STRUCT(instances);
@@ -75,7 +75,7 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 	int fd, r;
 	struct SimpleTrace* trace;
 	PROCESS_BEGIN();
-	
+
 	/* register new event types */
 	NEW_TRACE_MODEL = process_alloc_event();
 	DEPLOY_UNIT_DOWNLOADED = process_alloc_event();
@@ -89,7 +89,7 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 		PROCESS_WAIT_EVENT();
 		if (ev == NEW_TRACE_MODEL) {
 			/* data should point to a trace model */
-			
+
 			/* I will fake some traces */
 			fd = cfs_open("traces.traces", CFS_READ);
 			do {
@@ -103,8 +103,8 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 #ifdef DEBUG
 			/* iterate through list of traces */
 			for(trace = list_head(simpleTraces);
-			  trace != NULL;
-			  trace = list_item_next(trace)) {
+					trace != NULL;
+					trace = list_item_next(trace)) {
 				PRINTF("trace: %c %s %s\n", trace->type, trace->nodeName, trace->param0.deployUnit);
 			}
 #endif
@@ -147,55 +147,65 @@ static void
 processTrace(struct SimpleTrace* t) {
 	void* inst;
 	switch(t->type) {
-		case TRACE_INST_DEPLOY_UNIT:
-			runtime.deployUnitRetriever->getDeployUnit(t->param0.deployUnit);
+	case TRACE_INST_DEPLOY_UNIT:
+		runtime.deployUnitRetriever->getDeployUnit(t->param0.deployUnit);
 		break;
-		case TRACE_NEW_INSTANCE:
-			createInstance(t->param0.kevType, t->param1.instanceName, &inst);
-			process_post(&kev_model_installer, TRACE_EXECUTED, NULL);
+	case TRACE_NEW_INSTANCE:
+		createInstance(t->param0.kevType, t->param1.instanceName, &inst);
+		process_post(&kev_model_installer, TRACE_EXECUTED, NULL);
 		break;
-		case TRACE_START_INSTANCE:
-			startInstance(t->param0.instanceName);
-			process_post(&kev_model_installer, TRACE_EXECUTED, NULL);
+	case TRACE_START_INSTANCE:
+		startInstance(t->param0.instanceName);
+		process_post(&kev_model_installer, TRACE_EXECUTED, NULL);
 		break;
 	}
 }
 
 /* this process wait for new models in order to analysis them 
  * It builds a trace model
-*/
+ */
 PROCESS(kev_model_listener, "kev_model_listener");
 PROCESS_THREAD(kev_model_listener, ev, data)
 {
-    PROCESS_BEGIN();
+	PROCESS_BEGIN();
 	PRINTF("Ejecutando proceso kev_model_listener\n");
 
 	/* register new event type */
 	NEW_MODEL = process_alloc_event();
 	printf("INFO: NEW_MODEL event was allocated %d\n", NEW_MODEL);
 
-    while (1) {
-        /* it runs forever, waiting for some update to the model */
+	while (1) {
+		/* it runs forever, waiting for some update to the model */
 		PROCESS_WAIT_EVENT_UNTIL(ev == NEW_MODEL);
 		/* wow I have a new model, do te magic with the traces and so on */
 		PRINTF("Here a new model is coming\n");
-		/*if (data != NULL && runtime.currentModel != NULL) {
-			//TraceSequence *ts = ModelCompare((ContainerRoot*)data, runtime.currentModel);
+		if (data != NULL && runtime.currentModel != NULL) {
+			/*char *traces;*/
+			TraceSequence *ts = ModelCompare((ContainerRoot*)data, runtime.currentModel);
+			ModelTrace *mt;
+			while (list_length(ts->traces_list)) {
+				mt = list_pop(ts->traces_list);
+				char *trace;
+				trace = mt->ToString(mt->pDerivedObj);
+				printf("%s", trace);
+				free(trace);
+				mt->Delete(mt);
+			}
 		} else {
 			if (data == NULL) {
 				PRINTF("ERROR: New model is NULL!\n");
 			} else if (runtime.currentModel == NULL) {
 				PRINTF("ERROR: Current model is NULL!\n");
 			}
-		}*/
+		}
 
 		// TODO : this is temporarary, only to check mechanism to deal with the download of deploy units
-		if (data == NULL) {
+		/*if (data == NULL) {
 			return process_post(&kev_model_installer, NEW_TRACE_MODEL, NULL);
-		}
-    }
+		}*/
+	}
 
-    PROCESS_END();
+	PROCESS_END();
 }
 
 /* init runtime */
@@ -229,10 +239,10 @@ int registerComponent(int count, ... )
 {
 	va_list ap;
 	ComponentInterface* interface;
-	
+
 	/* this is here for debug, when you deploy an example which is a component 
 	 * you must start the runtime somehow	
-	*/	
+	 */
 	/*initKevRuntime();*/
 
 	/* get the arguments */
@@ -244,7 +254,7 @@ int registerComponent(int count, ... )
 		count--;
 
 		PRINTF("Registering Kevoree Type %s located at %p\n", interface->name, interface);
-		
+
 		/* it add a new entry to the list :-) */
 		struct TypeEntry* entry = (struct TypeEntry*)malloc(sizeof(struct TypeEntry));
 		entry->interface = interface;
@@ -278,17 +288,17 @@ int createInstance(char* typeName, char* instanceName, void** instance)
 	struct TypeEntry* entry;
 	/* iterate through list of ComponentInterface */
 	for(entry = list_head(runtime.types);
-      entry != NULL;
-      entry = list_item_next(entry)) {
+			entry != NULL;
+			entry = list_item_next(entry)) {
 		if (!strcmp(typeName, entry->interface->name)) {
 			PRINTF("\tType Found\n");
-			
+
 			/* create instance using supplied component interface */
 			*instance = entry->interface->newInstance(entry->interface->name);
 
 			if (!*instance)
 				return ERR_KEV_INSTANCE_CREATION_FAIL;
-			
+
 			struct InstanceEntry* entry2 = (struct InstanceEntry*)malloc(sizeof(struct InstanceEntry));
 			entry2->instance = *instance;
 			entry2->interface = entry->interface;
@@ -306,8 +316,8 @@ int startInstance(char* instanceName)
 	struct InstanceEntry* entry;
 	/* iterate through list of ComponentInterface */
 	for(entry = list_head(runtime.instances);
-      entry != NULL;
-      entry = list_item_next(entry)) {
+			entry != NULL;
+			entry = list_item_next(entry)) {
 		if (!strcmp(instanceName, entry->name)) {
 			PRINTF("Instance Found\n");
 			/* start instance using supplied component interface */
@@ -354,7 +364,7 @@ void loadElfFile(const char* filename)
 		}
 	}
 	else if (ELFLOADER_SYMBOL_NOT_FOUND == received) {
-	  printf("Symbol not found: '%s'\n", elfloader_unknown);
+		printf("Symbol not found: '%s'\n", elfloader_unknown);
 	}
 }
 
@@ -369,8 +379,8 @@ KevContext* getContext(void* instance)
 	struct InstanceEntry* entry;
 	/* iterate through list of ComponentInterface */
 	for(entry = list_head(runtime.instances);
-      entry != NULL;
-      entry = list_item_next(entry)) {
+			entry != NULL;
+			entry = list_item_next(entry)) {
 		if (instance == entry->instance) {
 			KevContext* ctx = (KevContext*)malloc(sizeof(KevContext));
 			ctx->entry = entry;
