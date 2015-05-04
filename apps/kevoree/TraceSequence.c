@@ -102,15 +102,15 @@ char *TraceSequence_toString(TraceSequence *const this)
 			mt = list_item_next(mt);
 			sequences = realloc(sequences, strlen(sequences) +
 					strlen(",") +
-					strlen(mt->ToString(mt->pDerivedObj)) + 1);
-			sprintf(sequences, "%s,%s", sequences, mt->ToString(mt->pDerivedObj));
+					strlen(mt->vt->ToString(mt)) + 1);
+			sprintf(sequences, "%s,%s", sequences, mt->vt->ToString(mt));
 		}
 		else
 		{
 			mt = list_head(this->traces_list);
 			sequences = realloc(sequences, strlen(sequences) +
-					strlen(mt->ToString(mt->pDerivedObj)) + 1);
-			sprintf(sequences, "%s%s", sequences, mt->ToString(mt->pDerivedObj));
+					strlen(mt->vt->ToString(mt)) + 1);
+			sprintf(sequences, "%s%s", sequences, mt->vt->ToString(mt));
 			isFirst = false;
 		}
 	}

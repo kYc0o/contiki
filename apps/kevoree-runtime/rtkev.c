@@ -186,10 +186,10 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 			while (list_length(ts->traces_list)) {
 				mt = list_pop(ts->traces_list);
 				char *trace;
-				trace = mt->ToString(mt->pDerivedObj);
+				trace = mt->vt->ToString(mt);
 				printf("%s", trace);
 				free(trace);
-				mt->Delete(mt);
+				mt->vt->Delete(mt);
 			}
 		} else {
 			if (data == NULL) {
