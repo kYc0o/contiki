@@ -60,9 +60,9 @@ TraceSequence *ModelCompare(ContainerRoot *_newModel, ContainerRoot *_currentMod
 	PRINTF("INFO: Traces created successfully\n");
 
 	ts->populate(ts, model_traces);
-	trace_sequence = ts->toString(ts);
+	/*trace_sequence = ts->toString(ts);
 	printf("%s\n", trace_sequence);
-	free(trace_sequence);
+	free(trace_sequence);*/
 
 	return ts;
 }
