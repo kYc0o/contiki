@@ -2,7 +2,8 @@
 
 # just add components here
 COMPONENTS = helloWorldComponent/helloWorldComponent.ce \
-				blinkComponent/blinkComponent.ce
+			blinkComponent/blinkComponent.ce \
+			sensingComponent/sensingComponent.ce
 
 ifndef REPOSITORY_FILE
 REPOSITORY_FILE = repository.repo
