@@ -101,3 +101,6 @@ contiki-cc2530dk.lib
 *.cproject
 *.project
 *.directory
+
+# contiki stuff
+*.ce
