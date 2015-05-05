@@ -55,7 +55,7 @@ KevContext* getContext(void* instance);
 
 /* functionn to deal with the context */
 const char* getInstanceName(KevContext* context);
-
+const char* getDictionaryAttributeValue(KevContext* context, const char* att);
 
 /*
  * The runime offers many functions to components, channels, groups and nodes

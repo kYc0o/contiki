@@ -30,14 +30,27 @@
 
 struct TypeEntry {
 	struct TypeEntry* next;
-	ComponentInterface* interface;
+	KevInterface* interface;
 };
 
 struct InstanceEntry {
+	// to put them on lists
 	struct InstanceEntry* next;
+	// pointer to structure with the methods to start, stop, update
 	KevInterface* interface;
+	// the real instance which hold the data
 	void* instance;
+	// name of the instance
 	char* name;
+	// the dictionary of this instance
+	LIST_STRUCT(dictionary);
+};
+
+/* this is used to hold the values of each dictionary attribute */
+struct DictionaryPair {
+	struct DictionaryPair* next;
+	char* key;
+	char* value;
 };
 
 static struct Runtime {
@@ -299,12 +312,16 @@ int createInstance(char* typeName, char* instanceName, void** instance)
 			if (!*instance)
 				return ERR_KEV_INSTANCE_CREATION_FAIL;
 
-			struct InstanceEntry* entry2 = (struct InstanceEntry*)malloc(sizeof(struct InstanceEntry));
-			entry2->instance = *instance;
-			entry2->interface = entry->interface;
-			entry2->name = (char*)strdup(instanceName);
+			// create metadata for the instance
+			struct InstanceEntry* instEntry = (struct InstanceEntry*)malloc(sizeof(struct InstanceEntry));
+			instEntry->instance = *instance;
+			instEntry->interface = entry->interface;
+			instEntry->name = (char*)strdup(instanceName);
+			LIST_STRUCT_INIT(instEntry, dictionary);
+			// fill the dictionary with objects of structure DictionaryPair
 
-			list_add(runtime.instances, entry2);
+			// save the instance
+			list_add(runtime.instances, instEntry);
 		}
 	}
 	return 0;
@@ -390,8 +407,24 @@ KevContext* getContext(void* instance)
 	return NULL;
 }
 
-/* functionn to deal with the context */
-const char* getInstanceName(KevContext* context)
+/* functions to deal with the context */
+const char*
+getInstanceName(KevContext* context)
 {
 	return context->entry->name;
+}
+
+const char*
+getDictionaryAttributeValue(KevContext* context, const char* att)
+{
+	struct InstanceEntry* entry = context->entry;
+	struct DictionaryPair* pair;
+	/* iterate through list of ComponentInterface */
+	for(pair = list_head(entry->dictionary);
+			pair != NULL;
+			pair = list_item_next(pair)) {
+		if (!strcmp(att, pair->key))
+			return pair->value; 
+	}
+	return NULL;
 }
