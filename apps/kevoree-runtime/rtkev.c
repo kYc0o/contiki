@@ -15,6 +15,9 @@
 #include "TypeDefinition.h"
 #include "NamedElement.h"
 #include "Instance.h"
+#include "hashmap.h"
+#include "Dictionary.h"
+#include "DictionaryValue.h"
 
 #include <stdarg.h>
 
@@ -149,11 +152,16 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 	PROCESS_END();
 }
 
+static struct InstanceEntry*
+findInstanceByname(const char* instanceName);
+
 static void
 processTrace(AdaptationPrimitive *ap) {
 	void* inst;
 	ComponentInstance *ci;
 	TypeDefinition *td;
+	struct InstanceEntry* e;
+	struct DictionaryPair* pair;
 	switch(ap->primitiveType) {
 	case AddDeployUnit:
 		PRINTF("INFO: Processing %s\n", ap->ref->internalGetKey(ap->ref));
@@ -167,6 +175,27 @@ processTrace(AdaptationPrimitive *ap) {
 		process_post(&kev_model_installer, ADAPTATION_EXECUTED, NULL);
 		break;
 	case UpdateDictionaryInstance:
+		ci = (ComponentInstance*)ap->ref;
+		Dictionary *d = ci->super->dictionary;
+		e = findInstanceByname(ci->super->super->name);
+		/* components */
+		hashmap_map* m = d->values;
+
+		/* compare components */
+		int i;
+		for(i = 0; i< m->table_size; i++)
+		{
+			if(m->data[i].in_use != 0)
+			{
+				any_t data = (any_t) (m->data[i].data);
+				DictionaryValue* n = data;
+				PRINTF("INFO: DictionaryValue %s -> %s\n", n->name, n->value);
+				pair = (struct DictionaryPair*)malloc(sizeof(struct DictionaryPair));
+				pair->key = strdup(n->name);
+				pair->value = strdup(n->value);
+				list_add(e->dictionary, pair);
+			}
+		}
 		process_post(&kev_model_installer, ADAPTATION_EXECUTED, NULL);
 		break;
 	case StartInstance:
