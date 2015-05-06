@@ -28,7 +28,7 @@ void* newSieveofEratosthenes(const char* componentTypeName)
 {
     SieveofEratosthenesComponent* i = (SieveofEratosthenesComponent*)malloc(sizeof(SieveofEratosthenesComponent));
     // probably it is good idea to zeroed the memory
-	i->interval = 1000; // one second as interval
+	i->interval = 5000; // one second as interval
 	return i;
 }
 
@@ -42,7 +42,7 @@ int startSieveofEratosthenes(void* instance)
 	KevContext* ctx = getContext(i);
 	printf("Hey instance %s\n", getInstanceName(ctx));
 	free(ctx);
-	process_start(&sieve_kev, NULL);
+	process_start(&sieve_kev, (const char*)i);
     return 0;
 }
 
@@ -61,8 +61,6 @@ int updateSieveofEratosthenes(void* instance)
     SieveofEratosthenesComponent* i = (SieveofEratosthenesComponent*)instance;
     return 0;
 }
-
-#define LIMIT 1000 /*size of integers array*/
 
 void sieve(int n){
     uint32_t i,j;
@@ -90,8 +88,9 @@ PROCESS_THREAD(sieve_kev, ev, data)
 {
   PROCESS_BEGIN();
   static struct etimer timer;
+  SieveofEratosthenesComponent* i = (SieveofEratosthenesComponent*)data;
 
-  etimer_set(&timer, CLOCK_SECOND);
+  etimer_set(&timer, CLOCK_SECOND * (i->interval/1000));
 
   while(1) {
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);

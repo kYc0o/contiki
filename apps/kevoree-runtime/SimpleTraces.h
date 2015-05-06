@@ -18,7 +18,7 @@ struct SimpleTrace {
 	char nodeName[MAX_NODE_NAME];
 	union {
 		char deployUnit[30]; // this is valid for TRACE_INST_DEPLOY_UNIT and TRACE_REM_DEPLOY_UNIT
-		char kevType[30]; // this is valid for TRACE_NEW_INSTANCE
+		char kevType[50]; // this is valid for TRACE_NEW_INSTANCE
 		char instanceName[30]; // this is valid for TRACE_DEL_INSTANCE, TRACE_START_INSTANCE and TRACE_STOP_INSTANCE
 	} param0;
 	union {
