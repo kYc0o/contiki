@@ -28,7 +28,7 @@ void* newSieveofEratosthenes(const char* componentTypeName)
 {
     SieveofEratosthenesComponent* i = (SieveofEratosthenesComponent*)malloc(sizeof(SieveofEratosthenesComponent));
     // probably it is good idea to zeroed the memory
-	i->interval = 5000; // one second as interval
+	i->interval = 18000; // one second as interval
 	return i;
 }
 
@@ -79,7 +79,7 @@ void sieve(int n){
 	j = 1;
     for (i=2;i<n;i++)
         if (primes[i])
-            printf("%ldth prime = %ldn",j++,i);
+            printf("%ldth prime = %ldn\n",j++,i);
 
 	free(primes);
 }

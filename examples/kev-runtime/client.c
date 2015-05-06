@@ -47,6 +47,10 @@ Command commands[] = {
     .exec = &oneArgumentCommand
   },
   {
+    .name = "stopInstance",
+    .exec = &oneArgumentCommand
+  },
+  {
     .name = "cat",
     .exec = &oneArgumentCommand
   },

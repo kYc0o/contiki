@@ -192,8 +192,8 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 		PROCESS_WAIT_EVENT_UNTIL(ev == NEW_MODEL);
 		/* wow I have a new model, do te magic with the traces and so on */
 		PRINTF("Here a new model is coming\n");
-		if (data != NULL && runtime.currentModel != NULL) {
-			/*char *traces;*/
+		/*if (data != NULL && runtime.currentModel != NULL) {
+			// char *traces;
 			TraceSequence *ts = ModelCompare((ContainerRoot*)data, runtime.currentModel);
 			ModelTrace *mt;
 			while (list_length(ts->traces_list)) {
@@ -211,11 +211,12 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 				PRINTF("ERROR: Current model is NULL!\n");
 			}
 		}
+		*/
 
 		// TODO : this is temporarary, only to check mechanism to deal with the download of deploy units
-		/*if (data == NULL) {
+		if (data == NULL) {
 			return process_post(&kev_model_installer, NEW_TRACE_MODEL, NULL);
-		}*/
+		}
 	}
 
 	PROCESS_END();
@@ -228,8 +229,6 @@ int initKevRuntime(DeployUnitRetriver* retriever)
 	LIST_STRUCT_INIT(&runtime, instances);
 
 	runtime.deployUnitRetriever = retriever;
-
-	PRINTF("%p %p JEJEJJEJ\n", retriever, retriever->getDeployUnit);
 
 	/* let's assign the empty model as the current model */
 	struct jsonparse_state jsonState;
@@ -348,6 +347,26 @@ int startInstance(char* instanceName)
 	return 0;
 }
 
+/* stop an instance */
+int
+stopInstance(char* instanceName)
+{
+	struct InstanceEntry* entry;
+	/* iterate through list of ComponentInterface */
+	for(entry = list_head(runtime.instances);
+			entry != NULL;
+			entry = list_item_next(entry)) {
+		if (!strcmp(instanceName, entry->name)) {
+			/* stop instance using supplied component interface */
+			if (!entry->interface->stop(entry->instance))
+				PRINTF("INFO: Stopping instance OK\n");
+			else
+				PRINTF("ERROR: instance cannot be started!\n");
+		}
+	}
+	return 0;
+}
+
 /* dealing with deploy units */
 void notifyDeployUnitDownloaded(const char* fileName)
 {
@@ -370,12 +389,14 @@ void loadElfFile(const char* filename)
 	PRINTF("INFO: Result of loading %lu\n", received);
 
 	// As the file has been modified and can't be reloaded, remove it
-	PRINTF("WARNING: Remove dirty firmware '%s'\n", filename);
+	PRINTF("WARNING: Removing dirty firmware '%s'\n", filename);
 	cfs_remove(filename);
 
 	// execute the program
 	if (ELFLOADER_OK == received) {
+		PRINTF("tRYING TO EXECUTE AUTOSTART PROCESSES\n");
 		if (elfloader_autostart_processes) {
+			PRINTF("EXECUTING AUTOSTART PROCESSES\n");
 			//PRINT_PROCESSES(elfloader_autostart_processes);
 			autostart_start(elfloader_autostart_processes);
 		}

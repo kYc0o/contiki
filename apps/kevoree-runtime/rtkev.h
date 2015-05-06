@@ -83,6 +83,7 @@ int notifyNewModel(ContainerRoot *model);
 /* create an instance of some type */
 int createInstance(char* typeName, char* instanceName, void** instance);
 int startInstance(char* instanceName);
+int stopInstance(char* instanceName);
 
 /* dealing with deploy units */
 void notifyDeployUnitDownloaded(const char*);

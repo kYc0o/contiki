@@ -61,8 +61,8 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				}
 			}
 			else if (!strcmp(data, "pushModel")) {
-				/*notifyNewModel(NULL);*/
-				process_post(&shellGroupP, NEW_MODEL_IN_JSON, NULL);
+				notifyNewModel(NULL);
+				//process_post(&shellGroupP, NEW_MODEL_IN_JSON, NULL);
 			}
 			else if (strstr(data, "createInstance") == data) {
 				printf("Executing createInstance\n");
@@ -110,6 +110,11 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				filename = strstr(data, " ");
 				filename++;
 				startInstance(filename);
+			}
+			else if (strstr(data, "stopInstance") == data) {
+				filename = strstr(data, " ");
+				filename++;
+				stopInstance(filename);
 			}
 			else if (strstr(data, "loadelf") == data) {
 				filename = strstr(data, " ");
