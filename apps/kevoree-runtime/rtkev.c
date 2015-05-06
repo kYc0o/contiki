@@ -10,6 +10,11 @@
 #include "ModelCompare.h"
 #include "TraceSequence.h"
 #include "AdaptationPrimitive.h"
+#include "Planner.h"
+#include "ComponentInstance.h"
+#include "TypeDefinition.h"
+#include "NamedElement.h"
+#include "Instance.h"
 
 #include <stdarg.h>
 
@@ -20,7 +25,7 @@
 #define PRINTF(S, ...)
 #endif
 
-/**
+/**as
  * The Kevoree runtime for contiki includes a set of processes
  * that perform different tasks.
  *
@@ -71,15 +76,16 @@ static const char *DEFAULTMODEL = "{\"eClass\" : \"org.kevoree.ContainerRoot\",\
 static process_event_t NEW_KEV_TYPE;
 static process_event_t NEW_MODEL;
 
-static process_event_t NEW_TRACE_MODEL;
+static process_event_t NEW_ADAPTATION_MODEL;
 static process_event_t DEPLOY_UNIT_DOWNLOADED;
-static process_event_t TRACE_EXECUTED;
+static process_event_t ADAPTATION_EXECUTED;
 
-LIST(simpleTraces);
+/*LIST(simpleTraces);*/
+LIST(plannedAdaptations);
 
 /* forward declaration */
 static void
-processTrace(struct SimpleTrace* t);
+processTrace(AdaptationPrimitive *ap);
 
 /* this process downloads, installs and removes the necessesary deploy units */
 PROCESS(kev_model_installer, "kev_model_installer");
@@ -87,24 +93,26 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 {
 	static char* filename;
 	int fd, r;
-	struct SimpleTrace* trace;
+	/*struct SimpleTrace* trace;*/
+	AdaptationPrimitive *ap;
 	PROCESS_BEGIN();
 
 	/* register new event types */
-	NEW_TRACE_MODEL = process_alloc_event();
+	NEW_ADAPTATION_MODEL = process_alloc_event();
 	DEPLOY_UNIT_DOWNLOADED = process_alloc_event();
-	TRACE_EXECUTED = process_alloc_event();
+	ADAPTATION_EXECUTED = process_alloc_event();
 
-	/* initialize list of traces */
-	list_init(simpleTraces);
+	/* initialize list of traces
+	list_init(simpleTraces);*/
 
 	while (1) {
 		/* it runs forever, waiting for a new trace model */
 		PROCESS_WAIT_EVENT();
-		if (ev == NEW_TRACE_MODEL) {
+		if (ev == NEW_ADAPTATION_MODEL) {
+			PRINTF("INFO: Starting adaptations\n");
 			/* data should point to a trace model */
 
-			/* I will fake some traces */
+			/* I will fake some traces
 			fd = cfs_open("traces.traces", CFS_READ);
 			do {
 				trace = (struct SimpleTrace*)malloc(sizeof(struct SimpleTrace));
@@ -113,20 +121,27 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 				else list_add(simpleTraces, trace);
 			} while (r==0);
 			cfs_close(fd);
-			PRINTF("The number of traces is %d\n", list_length(simpleTraces));			
-#ifdef DEBUG
-			/* iterate through list of traces */
+			PRINTF("The number of traces is %d\n", list_length(simpleTraces));
+#ifdef DEBUG*/
+			/* iterate through list of traces
 			for(trace = list_head(simpleTraces);
 					trace != NULL;
 					trace = list_item_next(trace)) {
 				PRINTF("trace: %c %s %s\n", trace->type, trace->nodeName, trace->param0.deployUnit);
 			}
-#endif
-			/* execute next trace */
+#endif*/
+			/* execute next trace
 			if (list_length(simpleTraces) > 0) {
 				trace = list_pop(simpleTraces);
 				processTrace(trace);
 				free(trace);			
+			}*/
+			PRINTF("INFO: Adaptations %d\n", list_length(plannedAdaptations));
+			if (list_length(plannedAdaptations) > 0) {
+				ap = list_pop(plannedAdaptations);
+				processTrace(ap);
+				/*free(trace);*/
+				ap->delete(ap);
 			}
 		}
 		else if (ev == DEPLOY_UNIT_DOWNLOADED) {
@@ -137,19 +152,31 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			loadElfFile(filename);
 			/* here I must free the memory */			
 			free(filename);
-			/* execute next trace */
+			/* execute next trace
 			if (list_length(simpleTraces) > 0) {
 				trace = list_pop(simpleTraces);
 				processTrace(trace);
 				free(trace);			
+			}*/
+			if (list_length(plannedAdaptations) > 0) {
+				ap = list_pop(plannedAdaptations);
+				processTrace(ap);
+				/*free(trace);*/
+				ap->delete(ap);
 			}
 		}
-		else if (ev == TRACE_EXECUTED) {
-			/* execute next trace */
+		else if (ev == ADAPTATION_EXECUTED) {
+			/* execute next trace
 			if (list_length(simpleTraces) > 0) {
 				trace = list_pop(simpleTraces);
 				processTrace(trace);
 				free(trace);			
+			}*/
+			if (list_length(plannedAdaptations) > 0) {
+				ap = list_pop(plannedAdaptations);
+				processTrace(ap);
+				/*free(trace);*/
+				ap->delete(ap);
 			}
 		}
 	}
@@ -158,19 +185,26 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 }
 
 static void
-processTrace(struct SimpleTrace* t) {
+processTrace(AdaptationPrimitive *ap) {
 	void* inst;
-	switch(t->type) {
-	case TRACE_INST_DEPLOY_UNIT:
-		runtime.deployUnitRetriever->getDeployUnit(t->param0.deployUnit);
+	ComponentInstance *ci;
+	TypeDefinition *td;
+	switch(ap->primitiveType) {
+	case AddDeployUnit:
+		PRINTF("INFO: Processing %s\n", ap->ref->internalGetKey(ap->ref));
+		runtime.deployUnitRetriever->getDeployUnit(ap->ref->internalGetKey(ap->ref));
 		break;
-	case TRACE_NEW_INSTANCE:
-		createInstance(t->param0.kevType, t->param1.instanceName, &inst);
-		process_post(&kev_model_installer, TRACE_EXECUTED, NULL);
+	case AddInstance:
+		ci = (ComponentInstance*)ap->ref;
+		td = ci->super->typeDefinition;
+		PRINTF("INFO: Processing %s\n", td->internalGetKey(td));
+		createInstance(td->internalGetKey(td), ci->super->super->name, &inst);
+		process_post(&kev_model_installer, ADAPTATION_EXECUTED, NULL);
 		break;
-	case TRACE_START_INSTANCE:
-		startInstance(t->param0.instanceName);
-		process_post(&kev_model_installer, TRACE_EXECUTED, NULL);
+	case StartInstance:
+		ci = (ComponentInstance*)ap->ref;
+		startInstance(ci->super->super->name);
+		process_post(&kev_model_installer, ADAPTATION_EXECUTED, NULL);
 		break;
 	}
 }
@@ -197,7 +231,6 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 			// char *traces;
 			TraceSequence *ts = ModelCompare((ContainerRoot*)data, runtime.currentModel);
 
-			LIST(plannedAdaptations);
 			list_init(plannedAdaptations);
 
 			Planner_compareModels(runtime.currentModel, (ContainerRoot*)data, "node0", ts);
@@ -206,8 +239,8 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 			if (plannedAdaptations != NULL) {
 				int adaptListLength = list_length(plannedAdaptations);
 				PRINTF("INFO: Number of adaptations: %d\n", adaptListLength);
-				while (list_length(plannedAdaptations) > 0) {
-					AdaptationPrimitive *c = (AdaptationPrimitive*)list_pop(plannedAdaptations);
+				AdaptationPrimitive *c;
+				for (c = list_head(plannedAdaptations); c != NULL; c = list_item_next(c)) {
 					printf("%s: Priority: %d Type: %d\n", c->ref->path, c->priority, c->primitiveType);
 				}
 			} else {
@@ -225,6 +258,7 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 #endif
 				mt->vt->Delete(mt);
 			}
+			process_post(&kev_model_installer, NEW_ADAPTATION_MODEL, NULL);
 
 		} else {
 			if (data == NULL) {
@@ -233,7 +267,7 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 				PRINTF("ERROR: Current model is NULL!\n");
 			}
 		}
-		
+
 
 		// TODO : this is temporarary, only to check mechanism to deal with the download of deploy units
 		//if (data == NULL) {

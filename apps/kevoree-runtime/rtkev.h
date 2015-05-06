@@ -6,18 +6,18 @@
 typedef struct _ContainerRoot ContainerRoot;
 
 /* protos to handle kevoree instances */
-typedef void* (*NewInstance)(const char* kevType);
-typedef int (*StartInstance)(void*);
-typedef int (*StopInstance)(void*);
-typedef int (*UpdateInstance)(void*);
+typedef void* (*NewInstanceCallBack)(const char* kevType);
+typedef int (*StartInstanceCallBack)(void*);
+typedef int (*StopInstanceCallBack)(void*);
+typedef int (*UpdateInstanceCallBack)(void*);
 
 /* generic definition if kevoree types (components, channels, groups ans so on) */
 typedef struct {
 	const char* name;
-    NewInstance newInstance;
-    StartInstance start;
-    StopInstance stop;
-    UpdateInstance update;
+    NewInstanceCallBack newInstance;
+    StartInstanceCallBack start;
+    StopInstanceCallBack stop;
+    UpdateInstanceCallBack update;
 } KevInterface;
 
 /* 
@@ -26,10 +26,10 @@ typedef struct {
  * */
 typedef struct {
 	const char* name;
-    NewInstance newInstance;
-    StartInstance start;
-    StopInstance stop;
-    UpdateInstance update;
+    NewInstanceCallBack newInstance;
+    StartInstanceCallBack start;
+    StopInstanceCallBack stop;
+    UpdateInstanceCallBack update;
 } ComponentInterface;
 
 /*
@@ -37,10 +37,10 @@ typedef struct {
  */
 typedef struct {
 	const char* name;
-    NewInstance newInstance;
-    StartInstance start;
-    StopInstance stop;
-    UpdateInstance update;
+    NewInstanceCallBack newInstance;
+    StartInstanceCallBack start;
+    StopInstanceCallBack stop;
+    UpdateInstanceCallBack update;
 } GroupInterface;
 
 typedef struct {
