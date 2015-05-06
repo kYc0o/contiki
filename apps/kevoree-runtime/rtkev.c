@@ -192,7 +192,7 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 		PROCESS_WAIT_EVENT_UNTIL(ev == NEW_MODEL);
 		/* wow I have a new model, do te magic with the traces and so on */
 		PRINTF("Here a new model is coming\n");
-		/*if (data != NULL && runtime.currentModel != NULL) {
+		if (data != NULL && runtime.currentModel != NULL) {
 			// char *traces;
 			TraceSequence *ts = ModelCompare((ContainerRoot*)data, runtime.currentModel);
 			ModelTrace *mt;
@@ -211,12 +211,12 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 				PRINTF("ERROR: Current model is NULL!\n");
 			}
 		}
-		*/
+		
 
 		// TODO : this is temporarary, only to check mechanism to deal with the download of deploy units
-		if (data == NULL) {
-			return process_post(&kev_model_installer, NEW_TRACE_MODEL, NULL);
-		}
+		//if (data == NULL) {
+		//	return process_post(&kev_model_installer, NEW_TRACE_MODEL, NULL);
+		//}
 	}
 
 	PROCESS_END();
@@ -290,7 +290,6 @@ int notifyNewModel(ContainerRoot *model)
 	// it essentially sends a message to the process kev_model_listener
 	// well, I am guessing everything is Ok, :-)
 	process_post(&kev_model_listener, NEW_MODEL, model);
-	//TraceSequence *ts = ModelCompare(model, runtime.currentModel);
 	return 0;
 }
 

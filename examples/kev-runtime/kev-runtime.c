@@ -61,8 +61,8 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				}
 			}
 			else if (!strcmp(data, "pushModel")) {
-				notifyNewModel(NULL);
-				//process_post(&shellGroupP, NEW_MODEL_IN_JSON, NULL);
+				//notifyNewModel(NULL);
+				process_post(&shellGroupP, NEW_MODEL_IN_JSON, NULL);
 			}
 			else if (strstr(data, "createInstance") == data) {
 				printf("Executing createInstance\n");
