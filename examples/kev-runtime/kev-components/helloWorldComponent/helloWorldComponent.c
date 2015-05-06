@@ -10,7 +10,7 @@ static int updateHelloWorld(void* instance);
 
 static
 const ComponentInterface helloWorldInterface = {
-	.name = "HelloWorldType", 
+	.name = "hello_world/0.0.1", 
     .newInstance = newHelloWorld,
     .start = startHelloWorld,
     .stop = stopHelloWorld,

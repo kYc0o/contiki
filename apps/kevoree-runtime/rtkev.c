@@ -111,37 +111,12 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 		if (ev == NEW_ADAPTATION_MODEL) {
 			PRINTF("INFO: Starting adaptations\n");
 			/* data should point to a trace model */
-
-			/* I will fake some traces
-			fd = cfs_open("traces.traces", CFS_READ);
-			do {
-				trace = (struct SimpleTrace*)malloc(sizeof(struct SimpleTrace));
-				r = nextTrace(fd, trace);
-				if (r < 0)	free(trace);
-				else list_add(simpleTraces, trace);
-			} while (r==0);
-			cfs_close(fd);
-			PRINTF("The number of traces is %d\n", list_length(simpleTraces));
-#ifdef DEBUG*/
-			/* iterate through list of traces
-			for(trace = list_head(simpleTraces);
-					trace != NULL;
-					trace = list_item_next(trace)) {
-				PRINTF("trace: %c %s %s\n", trace->type, trace->nodeName, trace->param0.deployUnit);
-			}
-#endif*/
-			/* execute next trace
-			if (list_length(simpleTraces) > 0) {
-				trace = list_pop(simpleTraces);
-				processTrace(trace);
-				free(trace);			
-			}*/
 			PRINTF("INFO: Adaptations %d\n", list_length(plannedAdaptations));
 			if (list_length(plannedAdaptations) > 0) {
 				ap = list_pop(plannedAdaptations);
 				processTrace(ap);
 				/*free(trace);*/
-				ap->delete(ap);
+				//ap->delete(ap);
 			}
 		}
 		else if (ev == DEPLOY_UNIT_DOWNLOADED) {
@@ -152,31 +127,21 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			loadElfFile(filename);
 			/* here I must free the memory */			
 			free(filename);
-			/* execute next trace
-			if (list_length(simpleTraces) > 0) {
-				trace = list_pop(simpleTraces);
-				processTrace(trace);
-				free(trace);			
-			}*/
+			/* execute next adaptation */
 			if (list_length(plannedAdaptations) > 0) {
 				ap = list_pop(plannedAdaptations);
 				processTrace(ap);
 				/*free(trace);*/
-				ap->delete(ap);
+				//ap->delete(ap);
 			}
 		}
 		else if (ev == ADAPTATION_EXECUTED) {
-			/* execute next trace
-			if (list_length(simpleTraces) > 0) {
-				trace = list_pop(simpleTraces);
-				processTrace(trace);
-				free(trace);			
-			}*/
+			/* execute next adaptation */
 			if (list_length(plannedAdaptations) > 0) {
 				ap = list_pop(plannedAdaptations);
 				processTrace(ap);
 				/*free(trace);*/
-				ap->delete(ap);
+				//ap->delete(ap);
 			}
 		}
 	}
@@ -201,8 +166,12 @@ processTrace(AdaptationPrimitive *ap) {
 		createInstance(td->internalGetKey(td), ci->super->super->name, &inst);
 		process_post(&kev_model_installer, ADAPTATION_EXECUTED, NULL);
 		break;
+	case UpdateDictionaryInstance:
+		process_post(&kev_model_installer, ADAPTATION_EXECUTED, NULL);
+		break;
 	case StartInstance:
 		ci = (ComponentInstance*)ap->ref;
+		PRINTF("INFO: Processing StartInstance %s\n", ci->super->super->name);
 		startInstance(ci->super->super->name);
 		process_post(&kev_model_installer, ADAPTATION_EXECUTED, NULL);
 		break;
@@ -362,6 +331,8 @@ int createInstance(char* typeName, char* instanceName, void** instance)
 
 			/* create instance using supplied component interface */
 			*instance = entry->interface->newInstance(entry->interface->name);
+
+			PRINTF("\tInstance create at %p\n", *instance);
 
 			if (!*instance)
 				return ERR_KEV_INSTANCE_CREATION_FAIL;

@@ -150,6 +150,7 @@ int uploadUnit (char* params[])
 	fprintf(stderr, "CLIENT-ERR: couldn't find local deploy unit %s\n", params[1]);
 	return 0;
   }
+  else printf("Found in %s\n", deployUnitLocalPath);
 
   sprintf(b, "kev-components/%s", deployUnitLocalPath);
   int fd = open(b, O_RDONLY);
@@ -157,7 +158,7 @@ int uploadUnit (char* params[])
   	fprintf(stderr, "CLIENT-ERR: couldn't open file %s which contains the deploy unit\n", b);
 	return 0;
   }
-  sprintf(buf, "uploadUnit %s\n", params[1]);
+  sprintf(buf, "uploadUnit %s\n", "pepe");
   send_data(buf);
   while ((n = read(fd, buf, 4096)) > 0) {
     int r = encode(buf, n, out);
@@ -166,6 +167,7 @@ int uploadUnit (char* params[])
     send_data("\n");
   }
   close(fd);
+  printf("Ok, everything was sent\n");
   send_data("enduploadUnit\n");
   return 1;
 }
