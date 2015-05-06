@@ -84,8 +84,8 @@ PROCESS_THREAD(shellGroupP, ev, data)
 					printf("Models are different\n");
 					printf("Length model jsonModel: %d\n", strlen(jsonModel));
 					printf("Length model NEWMODEL: %d\n", strlen(NEWMODEL));
-					/*printf("%s\n", jsonModel);
-					printf("%s\n", NEWMODEL);*/
+					printf("%s\n", jsonModel);
+					printf("%s\n", NEWMODEL);
 				}
 
 				struct jsonparse_state jsonState;
