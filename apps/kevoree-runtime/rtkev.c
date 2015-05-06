@@ -326,45 +326,75 @@ int createInstance(char* typeName, char* instanceName, void** instance)
 	return 0;
 }
 
-/* start an instance */
-int startInstance(char* instanceName)
+
+static struct InstanceEntry*
+findInstanceByname(const char* instanceName)
 {
 	struct InstanceEntry* entry;
 	/* iterate through list of ComponentInterface */
 	for(entry = list_head(runtime.instances);
 			entry != NULL;
 			entry = list_item_next(entry)) {
-		if (!strcmp(instanceName, entry->name)) {
-			PRINTF("Instance Found\n");
-			/* start instance using supplied component interface */
-			if (!entry->interface->start(entry->instance)) {
-				PRINTF("INFO: starting instance OK\n");
-			} else {
-				PRINTF("ERROR: instance cannot be started!\n");
-			}
-		}
+		if (!strcmp(instanceName, entry->name)) return entry;
 	}
-	return 0;
+	return NULL;
+}
+
+/* free an instance */
+int
+removeInstance(const char* instanceName)
+{
+	struct InstanceEntry* found = findInstanceByname(instanceName);
+	if (found) {
+		list_remove(runtime.instances, found);
+		free(found->name);
+		free(found->instance);
+		// free the dictionary
+		struct DictionaryPair* dp;
+		for (dp = list_head(found->dictionary); dp != NULL; 
+				dp = list_item_next(dp)) {
+			free(dp->key);
+			free(dp->value);
+			free(dp);
+		}
+		return 0;
+	}
+	return -1;
+}
+
+/* start an instance */
+int startInstance(const char* instanceName)
+{
+	struct InstanceEntry* entry = findInstanceByname(instanceName);
+	if (entry) {
+		/* start instance using supplied component interface */
+		if (!entry->interface->start(entry->instance))
+			PRINTF("INFO: starting instance OK\n");
+		else {
+			PRINTF("ERROR: instance cannot be started!\n");
+			return -1;
+		}
+		return 0;
+	}
+	return -1;
 }
 
 /* stop an instance */
 int
-stopInstance(char* instanceName)
+stopInstance(const char* instanceName)
 {
-	struct InstanceEntry* entry;
-	/* iterate through list of ComponentInterface */
-	for(entry = list_head(runtime.instances);
-			entry != NULL;
-			entry = list_item_next(entry)) {
-		if (!strcmp(instanceName, entry->name)) {
-			/* stop instance using supplied component interface */
-			if (!entry->interface->stop(entry->instance))
-				PRINTF("INFO: Stopping instance OK\n");
-			else
-				PRINTF("ERROR: instance cannot be started!\n");
+	struct InstanceEntry* entry = findInstanceByname(instanceName);
+	if (entry) {
+		/* start instance using supplied component interface */
+		if (!entry->interface->stop(entry->instance))
+			PRINTF("INFO: starting instance OK\n");
+		else {
+			PRINTF("ERROR: instance cannot be started!\n");
+			return -1;
 		}
+		return 0;
 	}
-	return 0;
+	return -1;
 }
 
 /* dealing with deploy units */

@@ -116,6 +116,11 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				filename++;
 				stopInstance(filename);
 			}
+			else if (strstr(data, "removeInstance") == data) {
+				filename = strstr(data, " ");
+				filename++;
+				removeInstance(filename);
+			}
 			else if (strstr(data, "loadelf") == data) {
 				filename = strstr(data, " ");
 				filename++;
