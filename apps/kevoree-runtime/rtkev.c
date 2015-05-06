@@ -9,6 +9,7 @@
 #include "JSONModelLoader.h"
 #include "ModelCompare.h"
 #include "TraceSequence.h"
+#include "AdaptationPrimitive.h"
 
 #include <stdarg.h>
 
@@ -195,15 +196,36 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 		if (data != NULL && runtime.currentModel != NULL) {
 			// char *traces;
 			TraceSequence *ts = ModelCompare((ContainerRoot*)data, runtime.currentModel);
+
+			LIST(plannedAdaptations);
+			list_init(plannedAdaptations);
+
+			Planner_compareModels(runtime.currentModel, (ContainerRoot*)data, "node0", ts);
+			plannedAdaptations = Planner_schedule();
+
+			if (plannedAdaptations != NULL) {
+				int adaptListLength = list_length(plannedAdaptations);
+				PRINTF("INFO: Number of adaptations: %d\n", adaptListLength);
+				while (list_length(plannedAdaptations) > 0) {
+					AdaptationPrimitive *c = (AdaptationPrimitive*)list_pop(plannedAdaptations);
+					printf("%s: Priority: %d Type: %d\n", c->ref->path, c->priority, c->primitiveType);
+				}
+			} else {
+				PRINTF("ERROR: cannot create Adaptation primitives\n");
+			}
+
 			ModelTrace *mt;
 			while (list_length(ts->traces_list)) {
 				mt = list_pop(ts->traces_list);
+#ifdef DEBUG
 				char *trace;
 				trace = mt->vt->ToString(mt);
-				printf("%s", trace);
+				PRINTF("%s", trace);
 				free(trace);
+#endif
 				mt->vt->Delete(mt);
 			}
+
 		} else {
 			if (data == NULL) {
 				PRINTF("ERROR: New model is NULL!\n");
