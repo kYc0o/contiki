@@ -53,6 +53,7 @@ static
 int stopBlink(void* instance)
 {
     SensingComponent* i = (SensingComponent*)instance;
+	process_exit(&sensor_collection);
 	printf("And now the sensors are gone :-)\n");
     return 0;
 }

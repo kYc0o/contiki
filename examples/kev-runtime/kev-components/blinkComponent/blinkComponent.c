@@ -51,6 +51,7 @@ static
 int stopBlink(void* instance)
 {
     BlinkComponent* i = (BlinkComponent*)instance;
+	process_exit(&blinking_led_kev);
 	printf("And now the blink is gone :-)\n");
     return 0;
 }
