@@ -36,6 +36,7 @@ int startHelloWorld(void* instance)
     HelloWorld* inst = (HelloWorld*) instance;
 	KevContext* ctx = getContext(inst);
 	printf("Hey %s, this is the often abused Hello World application running in component %s\n", inst->name, getInstanceName(ctx));
+	printf("the value for time is %s\n", getDictionaryAttributeValue(ctx, "time"));
 	free(ctx);
     return 0;
 }
