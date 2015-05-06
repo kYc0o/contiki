@@ -45,7 +45,7 @@ TraceSequence *ModelCompare(ContainerRoot *_newModel, ContainerRoot *_currentMod
 		return NULL;
 	}
 
-	printf("INFO: new_model detected, comparing with curent_model\n\n");
+	printf("INFO: new_model detected, comparing with curent_model\n");
 	visitor->action = actionUpdate;
 	visitor->secondAction = actionRemove;
 	current_model->VisitPaths(current_model, visitor);
@@ -60,9 +60,6 @@ TraceSequence *ModelCompare(ContainerRoot *_newModel, ContainerRoot *_currentMod
 	PRINTF("INFO: Traces created successfully\n");
 
 	ts->populate(ts, model_traces);
-	/*trace_sequence = ts->toString(ts);
-	printf("%s\n", trace_sequence);
-	free(trace_sequence);*/
 
 	return ts;
 }
