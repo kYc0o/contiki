@@ -16,6 +16,7 @@ static void* newShellGroup(const char* name);
 static int startShellGroup(void* instance);
 static int stopShellGroup(void* instance);
 static int updateShellGroup(void* instance);
+static int sendShellGroup(void* instance, ContainerRoot* model);
 
 ContainerRoot *intiModel = NULL;
 
@@ -30,7 +31,8 @@ const GroupInterface ShellGroupInterface = {
 		.newInstance = newShellGroup,
 		.start = startShellGroup,
 		.stop = stopShellGroup,
-		.update = updateShellGroup
+		.update = updateShellGroup,
+		.send = sendShellGroup
 };
 
 typedef struct  {
@@ -60,8 +62,6 @@ PROCESS_THREAD(shellGroupP, ev, data)
 		if (ev == NEW_MODEL_IN_JSON) {
 			/* wow I have a new model, do te magic with the traces and so on */
 			printf("New model %s received in group with instance %p\n", instance->fileNameWithModel, instance);
-			/* TODO Paco, you should load the model into a ContainerRoot from the json file with name in variable instance->fileNameWithModel*/
-
 
 			if((fd_read = cfs_open(instance->fileNameWithModel, CFS_READ)) != -1) {
 				length = cfs_seek(fd_read, 0 , CFS_SEEK_END);
@@ -159,5 +159,13 @@ static
 int updateShellGroup(void* instance)
 {
 	ShellGroup* inst = (ShellGroup*) instance;
+	return 0;
+}
+
+static int
+sendShellGroup(void* instance, ContainerRoot* model)
+{
+	// empty, so far it makes no sense to send a model back to the local computer.
+	// anyway, if someday we want to use this group as a real one, this function is trivial to implement
 	return 0;
 }

@@ -11,13 +11,16 @@ typedef int (*StartInstanceCallBack)(void*);
 typedef int (*StopInstanceCallBack)(void*);
 typedef int (*UpdateInstanceCallBack)(void*);
 
+#define KEV_INSTANCE_FIELDS \
+	const char* name; \
+    NewInstanceCallBack newInstance; \
+    StartInstanceCallBack start; \
+    StopInstanceCallBack stop; \
+    UpdateInstanceCallBack update;
+
 /* generic definition if kevoree types (components, channels, groups ans so on) */
 typedef struct {
-	const char* name;
-    NewInstanceCallBack newInstance;
-    StartInstanceCallBack start;
-    StopInstanceCallBack stop;
-    UpdateInstanceCallBack update;
+	KEV_INSTANCE_FIELDS
 } KevInterface;
 
 /* 
@@ -25,22 +28,18 @@ typedef struct {
  * It describes how the Kevoree Runtime interacts with this component type.
  * */
 typedef struct {
-	const char* name;
-    NewInstanceCallBack newInstance;
-    StartInstanceCallBack start;
-    StopInstanceCallBack stop;
-    UpdateInstanceCallBack update;
+	KEV_INSTANCE_FIELDS
 } ComponentInterface;
+
+/* protos to handle Group instances */
+typedef int (*SendModelCallBack)(void*, ContainerRoot*);
 
 /*
  * Each group type must define a variable of this type
  */
 typedef struct {
-	const char* name;
-    NewInstanceCallBack newInstance;
-    StartInstanceCallBack start;
-    StopInstanceCallBack stop;
-    UpdateInstanceCallBack update;
+	KEV_INSTANCE_FIELDS
+	SendModelCallBack sendModel;
 } GroupInterface;
 
 typedef struct {
