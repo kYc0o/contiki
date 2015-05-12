@@ -10,6 +10,8 @@
 
 #include "rtkev.h"
 
+#include "net/rime/announcement.h"
+
 /* forward declaration */
 static void* newDelugeGroup(const char* name);
 static int startDelugeGroup(void* instance);
@@ -44,8 +46,8 @@ typedef struct  {
 #define GET_PAGES_FROM_ANNOUN(X) ((X)>>8)
 #define GET_VERSION_FROM_ANNOUN(X) ((X)|0x00FF)
 
-/* event used to notify about the new model */
-process_event_t NEW_MODEL_IN_JSON;
+
+static uint16_t currenValue;
 
 static void
 received_announcement(struct announcement *a, const rimeaddr_t *from,
@@ -53,19 +55,17 @@ received_announcement(struct announcement *a, const rimeaddr_t *from,
 {
 	if (id != DELUGE_GROUP_ANNOUNCEMENT) return;
 
-	uint16_t currenValue;
-	uint8_t proposedVersion = GET_VERSION_FROM_ANNOUN(value);
 	
-	announcement_get_value(a, &currenValue);
-
+	uint8_t proposedVersion = GET_VERSION_FROM_ANNOUN(value);
 	uint8_t currentVersion = GET_VERSION_FROM_ANNOUN(currenValue);
 
-	if (currentVersion < version) {
+	if (currentVersion < proposedVersion) {
 		/* We have a new version, save it */
 		announcement_set_value(a, value);
 
 		/* create file with as many pages as specified in the new announced value */
 		uint8_t nr_pages = GET_PAGES_FROM_ANNOUN(value);
+
 		// TODO : create the file
 
 		// retransmite
@@ -75,8 +75,11 @@ received_announcement(struct announcement *a, const rimeaddr_t *from,
 		printf("Got announcement from %d.%d, id %d, value %d, our new value is %d\n",
  					from->u8[0], from->u8[1], id, value, value + 1);
 
-		// TODO: deluge stuff
-		
+		// TODO: deluge stuff	
+	}
+	else {
+		/* keep the all previous value because it is newer */
+		announcement_set_value(a, currenValue);
 	}
 }
 
@@ -158,8 +161,17 @@ int updateDelugeGroup(void* instance)
 static int
 sendDelugeGroup(void* instance, ContainerRoot* model)
 {
+	// so, we receive a new model to distribute
 	DelugeGroup* inst = (DelugeGroup*) instance;
-	// empty, so far it makes no sense to send a model back to the local computer.
-	// anyway, if someday we want to use this group as a real one, this function is trivial to implement
+	
+	// TODO serialize model to a file
+
+	// TODO calculate number of pages of the file
+
+	// TODO set my local announcement to the new version
+
+	// distribute announcement with announcement_bump()
+	announcement_bump(&inst->announ);
+	
 	return 0;
 }
