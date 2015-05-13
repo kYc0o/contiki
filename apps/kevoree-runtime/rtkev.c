@@ -303,8 +303,14 @@ int initKevRuntime(const DeployUnitRetriver* retriever)
 	/* let's assign the empty model as the current model */
 	struct jsonparse_state jsonState;
 
-	jsonparse_setup(&jsonState, DEFAULTMODEL, strlen(DEFAULTMODEL) + 1);
+	int fd = cfs_open("file.txt", CFS_WRITE);
+	cfs_write(fd, DEFAULTMODEL, strlen(DEFAULTMODEL));
+	cfs_close(fd);
+
+	jsonparse_setup(&jsonState, "file.txt");
 	runtime.currentModel = JSONKevDeserializer(&jsonState, jsonparse_next(&jsonState));
+	cfs_close(jsonState.fd);
+	cfs_remove("file.txt");
 
 	if (runtime.currentModel == NULL)
 		return ERR_KEV_INIT_FAILURE;
