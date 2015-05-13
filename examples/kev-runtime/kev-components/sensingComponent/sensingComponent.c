@@ -14,6 +14,7 @@ static int updateBlink(void* instance);
 
 static
 const ComponentInterface SensingComponentInterface = {
+	.interfaceType = ComponentInstanceInterface,
 	.name = "SensingComponentType", 
     .newInstance = newBlink,
     .start = startBlink,

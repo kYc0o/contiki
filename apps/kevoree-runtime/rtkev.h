@@ -5,6 +5,11 @@
 
 typedef struct _ContainerRoot ContainerRoot;
 
+enum InterfaceType {
+	ComponentInstanceInterface,
+	GroupInstanceInterface
+};
+
 /* protos to handle kevoree instances */
 typedef void* (*NewInstanceCallBack)(const char* kevType);
 typedef int (*StartInstanceCallBack)(void*);
@@ -12,6 +17,7 @@ typedef int (*StopInstanceCallBack)(void*);
 typedef int (*UpdateInstanceCallBack)(void*);
 
 #define KEV_INSTANCE_FIELDS \
+	enum InterfaceType interfaceType; \
 	const char* name; \
     NewInstanceCallBack newInstance; \
     StartInstanceCallBack start; \

@@ -27,6 +27,7 @@ uint32_t length;
 char *jsonModel;
 
 const GroupInterface ShellGroupInterface = {
+		.interfaceType = GroupInstanceInterface,
 		.name = "ShellGroupType",
 		.newInstance = newShellGroup,
 		.start = startShellGroup,

@@ -89,6 +89,9 @@ LIST(plannedAdaptations);
 static void
 processTrace(AdaptationPrimitive *ap);
 
+static void
+disseminateTheModel(ContainerRoot* model);
+
 /* this process downloads, installs and removes the necessesary deploy units */
 PROCESS(kev_model_installer, "kev_model_installer");
 PROCESS_THREAD(kev_model_installer, ev, data)
@@ -120,6 +123,11 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 				/*free(trace);*/
 				//ap->delete(ap);
 			}
+			else {
+				// remove all model
+				// notify we have a new model
+				disseminateTheModel(NULL);
+			}
 		}
 		else if (ev == DEPLOY_UNIT_DOWNLOADED) {
 			filename = (char*)data;
@@ -133,8 +141,12 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			if (list_length(plannedAdaptations) > 0) {
 				ap = list_pop(plannedAdaptations);
 				processTrace(ap);
-				/*free(trace);*/
 				//ap->delete(ap);
+			}
+			else {
+				// remove all model
+				// notify we have a new model
+				disseminateTheModel(NULL);
 			}
 		}
 		else if (ev == ADAPTATION_EXECUTED) {
@@ -144,6 +156,11 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 				processTrace(ap);
 				/*free(trace);*/
 				//ap->delete(ap);
+			}
+			else {
+				// remove all model
+				// notify we have a new model
+				disseminateTheModel(NULL);
 			}
 		}
 	}
@@ -488,6 +505,22 @@ void loadElfFile(const char* filename)
 	else if (ELFLOADER_SYMBOL_NOT_FOUND == received) {
 		printf("Symbol not found: '%s'\n", elfloader_unknown);
 	}
+}
+
+static void
+disseminateTheModel(ContainerRoot* model)
+{
+	struct InstanceEntry* entry;
+	/* iterate through list of ComponentInterface */
+	for(entry = list_head(runtime.instances);
+			entry != NULL;
+			entry = list_item_next(entry)) {
+		if (entry->interface->interfaceType == GroupInstanceInterface) {
+			GroupInterface* gInt = (GroupInterface*)entry->interface;
+			gInt->send(entry->instance, model);
+		}
+	}
+	return NULL;
 }
 
 /* these functions deal with the context of each instance */

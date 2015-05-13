@@ -20,6 +20,7 @@ static int updateDelugeGroup(void* instance);
 static int sendDelugeGroup(void* instance, ContainerRoot* model);
 
 const GroupInterface DelugeRimeGroupInterface = {
+		.interfaceType = GroupInstanceInterface,
 		.name = "DelugeRimeGroupType",
 		.newInstance = newDelugeGroup,
 		.start = startDelugeGroup,
@@ -40,7 +41,7 @@ typedef struct  {
 #define GET_VERSION_FROM_ANNOUN(X) ((X)|0x00FF)
 
 
-static uint16_t currenValue;
+static uint16_t currentValue;
 
 static void
 received_announcement(struct announcement *a, const rimeaddr_t *from,
@@ -50,7 +51,7 @@ received_announcement(struct announcement *a, const rimeaddr_t *from,
 
 	
 	uint8_t proposedVersion = GET_VERSION_FROM_ANNOUN(value);
-	uint8_t currentVersion = GET_VERSION_FROM_ANNOUN(currenValue);
+	uint8_t currentVersion = GET_VERSION_FROM_ANNOUN(currentValue	);
 
 	if (currentVersion < proposedVersion) {
 		/* We have a new version, save it */
@@ -72,7 +73,7 @@ received_announcement(struct announcement *a, const rimeaddr_t *from,
 	}
 	else {
 		/* keep the all previous value because it is newer */
-		announcement_set_value(a, currenValue);
+		announcement_set_value(a, currentValue);
 	}
 }
 
@@ -152,12 +153,16 @@ sendDelugeGroup(void* instance, ContainerRoot* model)
 {
 	// so, we receive a new model to distribute
 	DelugeGroup* inst = (DelugeGroup*) instance;
+
+	printf("Sending the model through deluge\n");
 	
 	// TODO serialize model to a file
 
 	// TODO calculate number of pages of the file
 
 	// TODO set my local announcement to the new version
+	uint8_t v = GET_VERSION_FROM_ANNOUN(currentValue);
+	announcement_set_value(&inst->announ, MAKE_ANNOUN(1, v));
 
 	// distribute announcement with announcement_bump()
 	announcement_bump(&inst->announ);

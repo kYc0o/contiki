@@ -53,7 +53,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 
 	printf("Kevoree server started !\n");
 
-	/* create ShellGroup*/
+	/* create built-in types */
 	for (i = 0 ; i < 2; i++) {
 		do {
 			static struct etimer et;

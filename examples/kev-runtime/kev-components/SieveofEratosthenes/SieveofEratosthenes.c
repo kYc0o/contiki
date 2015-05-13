@@ -11,6 +11,7 @@ static int updateSieveofEratosthenes(void* instance);
 
 static
 const ComponentInterface SieveofEratosthenesInterface = {
+	.interfaceType = ComponentInstanceInterface,
 	.name = "SieveofEratosthenesComponentType", 
     .newInstance = newSieveofEratosthenes,
     .start = startSieveofEratosthenes,
@@ -20,7 +21,7 @@ const ComponentInterface SieveofEratosthenesInterface = {
 
 typedef struct {
 	uint32_t interval; 
-	
+	int count;
 } SieveofEratosthenesComponent;
 
 static
@@ -29,6 +30,7 @@ void* newSieveofEratosthenes(const char* componentTypeName)
     SieveofEratosthenesComponent* i = (SieveofEratosthenesComponent*)malloc(sizeof(SieveofEratosthenesComponent));
     // probably it is good idea to zeroed the memory
 	i->interval = 18000; // one second as interval
+	i->count = 100; //
 	return i;
 }
 
@@ -62,7 +64,8 @@ int updateSieveofEratosthenes(void* instance)
     return 0;
 }
 
-void sieve(int n){
+static void
+sieve(int n){
     uint32_t i,j;
     uint32_t *primes;
 
@@ -86,15 +89,18 @@ void sieve(int n){
 
 PROCESS_THREAD(sieve_kev, ev, data)
 {
-  PROCESS_BEGIN();
+  static SieveofEratosthenesComponent* i;
   static struct etimer timer;
-  SieveofEratosthenesComponent* i = (SieveofEratosthenesComponent*)data;
+
+  PROCESS_BEGIN();
+  
+  i = (SieveofEratosthenesComponent*)data;
 
   etimer_set(&timer, CLOCK_SECOND * (i->interval/1000));
 
   while(1) {
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
-	sieve(500);
+	sieve(i->count);
     etimer_restart(&timer);
   }
   PROCESS_END();
