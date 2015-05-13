@@ -64,7 +64,7 @@ struct jsonparse_state {
  *             This function initializes a JSON parser state for
  *             parsing a string as JSON.
  */
-void jsonparse_setup(struct jsonparse_state *state);
+void jsonparse_setup(struct jsonparse_state *state, const char *fileName);
 
 /* move to next JSON element */
 int jsonparse_next(struct jsonparse_state *state);
