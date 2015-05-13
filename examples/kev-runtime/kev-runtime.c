@@ -6,6 +6,7 @@
 
 #include "rtkev.h"
 #include "shell_group.h"
+#include "deluge_rime_group.h"
 #include "ShellBasedDeployUnitRetriever.h"
 
 #include "ContainerRoot.h"
@@ -17,9 +18,12 @@
 
 /* built-in kevoree types */
 extern const GroupInterface ShellGroupInterface;
-DECLARE_KEV_TYPES(1, &ShellGroupInterface)
+DECLARE_KEV_TYPES(2, &ShellGroupInterface, &DelugeRimeGroupInterface)
 
 extern struct process shellGroupP;
+
+const static char* typeOfInstances[] = {"ShellGroupType", "DelugeRimeGroupType"};
+const static char* builtinInstances[] = {"shellGroup0", "delugeGroup0"};
 
 PROCESS(kevRuntime, "KevRuntime");
 AUTOSTART_PROCESSES(&kevRuntime);
@@ -32,6 +36,9 @@ PROCESS_THREAD(kevRuntime, ev, data)
 	static struct cfs_dir dir;
 	static uint32_t fdFile;
 	static char *filename;
+	static int i;
+	
+	void* instTmp;
 
 	PROCESS_BEGIN();
 
@@ -46,6 +53,19 @@ PROCESS_THREAD(kevRuntime, ev, data)
 
 	printf("Kevoree server started !\n");
 
+	/* create ShellGroup*/
+	for (i = 0 ; i < 2; i++) {
+		do {
+			static struct etimer et;
+			/* Listen for announcements every one second. */
+			etimer_set(&et, CLOCK_SECOND * 1);
+			PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+			instTmp = NULL;
+			createInstance(typeOfInstances[i], builtinInstances[i], &instTmp);
+		} while (instTmp == NULL);
+		printf("The instance %s is located at %p\n", builtinInstances[i], instTmp);
+		startInstance(builtinInstances[i]);
+	}
 
 	while(1) {
 

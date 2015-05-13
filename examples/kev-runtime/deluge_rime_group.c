@@ -19,14 +19,7 @@ static int stopDelugeGroup(void* instance);
 static int updateDelugeGroup(void* instance);
 static int sendDelugeGroup(void* instance, ContainerRoot* model);
 
-ContainerRoot *intiModel = NULL;
-
-
-int fd_read;
-uint32_t length;
-char *jsonModel;
-
-const GroupInterface ShellGroupInterface = {
+const GroupInterface DelugeRimeGroupInterface = {
 		.name = "DelugeRimeGroupType",
 		.newInstance = newDelugeGroup,
 		.start = startDelugeGroup,
@@ -72,8 +65,8 @@ received_announcement(struct announcement *a, const rimeaddr_t *from,
 		announcement_bump(a);
 
 		// some nasty debug message
-		printf("Got announcement from %d.%d, id %d, value %d, our new value is %d\n",
- 					from->u8[0], from->u8[1], id, value, value + 1);
+		printf("Got announcement from %d.%d, id %d, value %d\n",
+ 					from->u8[0], from->u8[1], id, value);
 
 		// TODO: deluge stuff	
 	}
@@ -101,8 +94,6 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 
 	printf("Ok, here I have my instance %p\n", (struct DelugeGroup*)data);
 
-	/* define new event */
-	NEW_MODEL_IN_JSON = process_alloc_event();
 	while (1) {
 		static struct etimer et;
 		/* it runs forever, waiting for some update to the model */
@@ -132,12 +123,10 @@ int startDelugeGroup(void* instance)
 
 	inst->fileNameWithModel = "new_model-compact.json";
 
-	printf("INFO: Sending instance %s, at %p\n", inst->fileNameWithModel, inst);
+	
+	process_start(&delugeGroupP, (char*)inst);
 
-	process_start(&delugeGroupP, inst);
-
-	printf("INFO: Sent instance %s, at %p\n", inst->fileNameWithModel, inst);
-
+	
 	return 0;
 }
 

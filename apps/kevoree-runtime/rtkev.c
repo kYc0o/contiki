@@ -2,7 +2,6 @@
 #include "loader/elfloader.h"
 
 #include "rtkev.h"
-#include "SimpleTraces.h"
 #include "lib/list.h"
 
 #include "ContainerRoot.h"
@@ -277,12 +276,12 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 }
 
 /* init runtime */
-int initKevRuntime(DeployUnitRetriver* retriever)
+int initKevRuntime(const DeployUnitRetriver* retriever)
 {
 	LIST_STRUCT_INIT(&runtime, types);
 	LIST_STRUCT_INIT(&runtime, instances);
 
-	runtime.deployUnitRetriever = retriever;
+	runtime.deployUnitRetriever = (DeployUnitRetriver*)retriever;
 
 	/* let's assign the empty model as the current model */
 	struct jsonparse_state jsonState;

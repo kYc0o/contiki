@@ -39,7 +39,7 @@ typedef int (*SendModelCallBack)(void*, ContainerRoot*);
  */
 typedef struct {
 	KEV_INSTANCE_FIELDS
-	SendModelCallBack sendModel;
+	SendModelCallBack send;
 } GroupInterface;
 
 typedef struct {
@@ -67,7 +67,7 @@ const char* getDictionaryAttributeValue(KevContext* context, const char* att);
 #define ERR_KEV_INSTANCE_CREATION_FAIL ((int) -4)
 
 /* init runtime */
-int initKevRuntime(DeployUnitRetriver* retriever);
+int initKevRuntime(const DeployUnitRetriver* retriever);
 
 /* register component type */
 int registerComponent(int count, ... );
