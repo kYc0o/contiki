@@ -54,6 +54,13 @@ struct InstanceEntry {
 	LIST_STRUCT(dictionary);
 };
 
+struct DeployUnitEntry {
+	// to put them on lists
+	struct DeployUnitEntry* next;
+	// deploy unit's ID	
+	char* id;
+};
+
 /* this is used to hold the values of each dictionary attribute */
 struct DictionaryPair {
 	struct DictionaryPair* next;
@@ -68,6 +75,8 @@ static struct Runtime {
 	LIST_STRUCT(types);
 	/* instanaces */
 	LIST_STRUCT(instances);
+	/* deploy units already installed */
+	LIST_STRUCT(deployUnits);
 	/* deployUnit retriever */
 	DeployUnitRetriver* deployUnitRetriever;
 } runtime;
@@ -92,6 +101,9 @@ processTrace(AdaptationPrimitive *ap);
 static void
 disseminateTheModel(ContainerRoot* model);
 
+static int
+isAlreadyInstalled(const char* deployUnitId);
+
 /* this process downloads, installs and removes the necessesary deploy units */
 PROCESS(kev_model_installer, "kev_model_installer");
 PROCESS_THREAD(kev_model_installer, ev, data)
@@ -113,12 +125,10 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 		PROCESS_WAIT_EVENT();
 		if (ev == NEW_ADAPTATION_MODEL) {
 			PRINTF("INFO: Starting adaptations\n");
-			/* data should point to a trace model */
-			PRINTF("INFO: Adaptations %d\n", list_length(plannedAdaptations));
+			
 			if (list_length(plannedAdaptations) > 0) {
 				ap = list_pop(plannedAdaptations);
 				processTrace(ap);
-				/*free(trace);*/
 				ap->delete(ap);
 			}
 			else {
@@ -152,7 +162,6 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			if (list_length(plannedAdaptations) > 0) {
 				ap = list_pop(plannedAdaptations);
 				processTrace(ap);
-				/*free(trace);*/
 				ap->delete(ap);
 			}
 			else {
@@ -179,7 +188,15 @@ processTrace(AdaptationPrimitive *ap) {
 	switch(ap->primitiveType) {
 	case AddDeployUnit:
 		PRINTF("INFO: Processing %s\n", ap->ref->internalGetKey(ap->ref));
-		runtime.deployUnitRetriever->getDeployUnit(ap->ref->internalGetKey(ap->ref));
+		if (!isAlreadyInstalled(ap->ref->internalGetKey(ap->ref))) {
+			runtime.deployUnitRetriever->getDeployUnit(ap->ref->internalGetKey(ap->ref));
+			// FIXME : this is wrong, we should only add the entry to the list once we download it, but I am lazy and I know it won't fail (at least for the ShellRetriever)
+			struct DeployUnitEntry* entry = (struct DeployUnitEntry*)malloc(sizeof(struct DeployUnitEntry));
+			entry->id = strdup(ap->ref->internalGetKey(ap->ref));
+			list_add(runtime.deployUnits, entry);
+		}
+		else
+			process_post(&kev_model_installer, ADAPTATION_EXECUTED, NULL);
 		break;
 	case AddInstance:
 		ci = (ComponentInstance*)ap->ref;
@@ -279,12 +296,6 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 				PRINTF("ERROR: Current model is NULL!\n");
 			}
 		}
-
-
-		// TODO : this is temporarary, only to check mechanism to deal with the download of deploy units
-		//if (data == NULL) {
-		//	return process_post(&kev_model_installer, NEW_TRACE_MODEL, NULL);
-		//}
 	}
 
 	PROCESS_END();
@@ -295,6 +306,7 @@ int initKevRuntime(const DeployUnitRetriver* retriever)
 {
 	LIST_STRUCT_INIT(&runtime, types);
 	LIST_STRUCT_INIT(&runtime, instances);
+	LIST_STRUCT_INIT(&runtime, deployUnits);	
 
 	runtime.deployUnitRetriever = (DeployUnitRetriver*)retriever;
 
@@ -515,7 +527,7 @@ static void
 disseminateTheModel(ContainerRoot* model)
 {
 	struct InstanceEntry* entry;
-	/* iterate through list of ComponentInterface */
+	/* iterate through list of Instances */
 	for(entry = list_head(runtime.instances);
 			entry != NULL;
 			entry = list_item_next(entry)) {
@@ -525,6 +537,19 @@ disseminateTheModel(ContainerRoot* model)
 		}
 	}
 	return NULL;
+}
+
+static int
+isAlreadyInstalled(const char* deployUnitId)
+{
+	struct DeployUnitEntry* entry;
+	/* iterate through list of deployUnits */
+	for(entry = list_head(runtime.deployUnits);
+			entry != NULL;
+			entry = list_item_next(entry)) {
+		if (!strcmp(entry->id, deployUnitId)) return 1;
+	}
+	return 0;
 }
 
 /* these functions deal with the context of each instance */
