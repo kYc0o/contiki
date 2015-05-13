@@ -79,6 +79,9 @@ static struct Runtime {
 	LIST_STRUCT(deployUnits);
 	/* deployUnit retriever */
 	DeployUnitRetriver* deployUnitRetriever;
+
+	// these are temporary stuff
+	ContainerRoot *tmp_newModel;
 } runtime;
 
 static const char *DEFAULTMODEL = "{\"eClass\" : \"org.kevoree.ContainerRoot\",\"generated_KMF_ID\" : \"BXX5q3eV\",\"nodes\" : [{\"eClass\" : \"org.kevoree.ContainerNode\",\"name\" : \"node0\",\"metaData\" : \"\",\"started\" : \"1\",\"components\" : [],\"hosts\" : [],\"host\" : [],\"groups\" : [\"groups[group0]\"],\"networkInformation\" : [{\"eClass\" : \"org.kevoree.NetworkInfo\",\"name\" : \"ip\",\"values\" : [{\"eClass\" : \"org.kevoree.NetworkProperty\",\"name\" : \"front\",\"value\" : \"m3-XX.lille.iotlab.info\"},{\"eClass\" : \"org.kevoree.NetworkProperty\",\"name\" : \"local\",\"value\" : \"fe80:0000:0000:0000:0323:4501:4471:0343\"}]}],\"typeDefinition\" : [\"typeDefinitions[ContikiNode/0.0.1]\"],\"dictionary\" : [],\"fragmentDictionary\" : []}],\"typeDefinitions\" : [{\"eClass\" : \"org.kevoree.NodeType\",\"name\" : \"ContikiNode\",\"version\" : \"0.0.1\",\"factoryBean\" : \"\",\"bean\" : \"\",\"abstract\" : \"0\",\"deployUnit\" : [\"deployUnits[org.kevoree.library.c//kevoree-contiki-node/0.0.1]\"],\"dictionaryType\" : [{\"eClass\" : \"org.kevoree.DictionaryType\",\"generated_KMF_ID\" : \"o8AVQY3e\",\"attributes\" : []}],\"superTypes\" : []},{\"eClass\" : \"org.kevoree.GroupType\",\"name\" : \"CoAPGroup\",\"version\" : \"0.0.1\",\"factoryBean\" : \"\",\"bean\" : \"\",\"abstract\" : \"0\",\"deployUnit\" : [\"deployUnits[//kevoree-group-coap/0.0.1]\"],\"dictionaryType\" : [{\"eClass\" : \"org.kevoree.DictionaryType\",\"generated_KMF_ID\" : \"3dddTFpd\",\"attributes\" : [{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"proxy_port\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"int\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"20000\"},{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"port\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"number\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"\"},{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"path\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"string\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"\"}]}],\"superTypes\" : []}],\"repositories\" : [],\"dataTypes\" : [],\"libraries\" : [{\"eClass\" : \"org.kevoree.TypeLibrary\",\"name\" : \"ContikiLib\",\"subTypes\" : [\"typeDefinitions[ContikiNode/0.0.1]\",\"typeDefinitions[CoAPGroup/0.0.1]\"]},{\"eClass\" : \"org.kevoree.TypeLibrary\",\"name\" : \"Default\",\"subTypes\" : []}],\"hubs\" : [],\"mBindings\" : [],\"deployUnits\" : [{\"eClass\" : \"org.kevoree.DeployUnit\",\"name\" : \"kevoree-group-coap\",\"groupName\" : \"\",\"version\" : \"0.0.1\",\"url\" : \"\",\"hashcode\" : \"\",\"type\" : \"ce\"},{\"eClass\" : \"org.kevoree.DeployUnit\",\"name\" : \"kevoree-contiki-node\",\"groupName\" : \"org.kevoree.library.c\",\"version\" : \"0.0.1\",\"url\" : \"\",\"hashcode\" : \"\",\"type\" : \"ce\"}],\"nodeNetworks\" : [],\"groups\" : [{\"eClass\" : \"org.kevoree.Group\",\"name\" : \"group0\",\"metaData\" : \"\",\"started\" : \"1\",\"subNodes\" : [\"nodes[node0]\"],\"typeDefinition\" : [\"typeDefinitions[CoAPGroup/0.0.1]\"],\"dictionary\" : [],\"fragmentDictionary\" : [{\"eClass\" : \"org.kevoree.FragmentDictionary\",\"generated_KMF_ID\" : \"VEj2RlNr\",\"name\" : \"contiki-node\",\"values\" : []}]}]}";
@@ -103,6 +106,9 @@ disseminateTheModel(ContainerRoot* model);
 
 static int
 isAlreadyInstalled(const char* deployUnitId);
+
+static struct InstanceEntry*
+findInstanceByname(const char* instanceName);
 
 /* this process downloads, installs and removes the necessesary deploy units */
 PROCESS(kev_model_installer, "kev_model_installer");
@@ -132,7 +138,10 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 				ap->delete(ap);
 			}
 			else {
-				// remove old model
+				// TODO remove old model
+				// update current model
+				runtime.currentModel = runtime.tmp_newModel;
+				runtime.tmp_newModel = NULL;
 				// notify we have a new model
 				disseminateTheModel(NULL);
 			}
@@ -152,7 +161,10 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 				ap->delete(ap);
 			}
 			else {
-				// remove old model
+				// TODO remove old model
+				// update current model
+				runtime.currentModel = runtime.tmp_newModel;
+				runtime.tmp_newModel = NULL;
 				// notify we have a new model
 				disseminateTheModel(NULL);
 			}
@@ -165,7 +177,10 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 				ap->delete(ap);
 			}
 			else {
-				// remove old model
+				// TODO remove old model
+				// update current model
+				runtime.currentModel = runtime.tmp_newModel;
+				runtime.tmp_newModel = NULL;
 				// notify we have a new model
 				disseminateTheModel(NULL);
 			}
@@ -174,9 +189,6 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 
 	PROCESS_END();
 }
-
-static struct InstanceEntry*
-findInstanceByname(const char* instanceName);
 
 static void
 processTrace(AdaptationPrimitive *ap) {
@@ -252,17 +264,21 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 	printf("INFO: NEW_MODEL event was allocated %d\n", NEW_MODEL);
 
 	while (1) {
+		ContainerRoot *newModel = NULL;
 		/* it runs forever, waiting for some update to the model */
 		PROCESS_WAIT_EVENT_UNTIL(ev == NEW_MODEL);
-		/* wow I have a new model, do te magic with the traces and so on */
+
+		newModel = (ContainerRoot*)data;
+
+		/* wow I have a new model, do the magic with the traces and so on */
 		PRINTF("Here a new model is coming\n");
-		if (data != NULL && runtime.currentModel != NULL) {
+		if (newModel != NULL && runtime.currentModel != NULL) {
 			// char *traces;
-			TraceSequence *ts = ModelCompare((ContainerRoot*)data, runtime.currentModel);
+			TraceSequence *ts = ModelCompare(newModel, runtime.currentModel);
 
 			list_init(plannedAdaptations);
 
-			Planner_compareModels(runtime.currentModel, (ContainerRoot*)data, "node0", ts);
+			Planner_compareModels(runtime.currentModel, newModel, "node0", ts);
 			plannedAdaptations = Planner_schedule();
 
 			if (plannedAdaptations != NULL) {
@@ -274,6 +290,7 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 				}
 			} else {
 				PRINTF("ERROR: cannot create Adaptation primitives\n");
+				continue;
 			}
 
 			ModelTrace *mt;
@@ -287,6 +304,9 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 #endif
 				mt->vt->Delete(mt);
 			}
+			// save the model for latter usage
+			runtime.tmp_newModel = newModel;
+			// adapt the system
 			process_post(&kev_model_installer, NEW_ADAPTATION_MODEL, NULL);
 
 		} else {
@@ -309,6 +329,7 @@ int initKevRuntime(const DeployUnitRetriver* retriever)
 	LIST_STRUCT_INIT(&runtime, deployUnits);	
 
 	runtime.deployUnitRetriever = (DeployUnitRetriver*)retriever;
+	runtime.tmp_newModel = NULL;
 
 	/* let's assign the empty model as the current model */
 	struct jsonparse_state jsonState;
