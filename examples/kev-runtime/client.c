@@ -394,6 +394,11 @@ int main(int argc, char* argv[])
 
   sockfd = connect_server(hostname, port);
 
+  if (sockfd < 0) {
+	fprintf(stderr, "Error connecting to %s:%s\n", hostname, port);
+	exit(1);
+  }
+
 
   printf(KNRM "> ");
   fflush(stdout);
