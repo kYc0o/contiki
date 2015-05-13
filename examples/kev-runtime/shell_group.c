@@ -65,36 +65,16 @@ PROCESS_THREAD(shellGroupP, ev, data)
 			printf("New model %s received in group with instance %p\n", instance->fileNameWithModel, instance);
 
 			if((fd_read = cfs_open(instance->fileNameWithModel, CFS_READ)) != -1) {
-				length = cfs_seek(fd_read, 0 , CFS_SEEK_END);
-				cfs_seek(fd_read, 0, CFS_SEEK_SET);
-
-				jsonModel = malloc(length + 1);
-
-				if((cfs_read(fd_read, jsonModel, length)) != -1) {
-					printf("INFO: new_model JSON loaded in RAM\n");
-				} else {
-					printf("ERROR: Empty model!\n");
-				}
-				jsonModel[length] = 0;
 
 				cfs_close(fd_read);
 
-				if ((strcmp(jsonModel, NEWMODEL)) == 0) {
-					printf("Models are the same\n");
-				} else {
-					printf("Models are different\n");
-					printf("Length model jsonModel: %d\n", strlen(jsonModel));
-					printf("Length model NEWMODEL: %d\n", strlen(NEWMODEL));
-					printf("%s\n", jsonModel);
-					printf("%s\n", NEWMODEL);
-				}
-
 				struct jsonparse_state jsonState;
 
-				jsonparse_setup(&jsonState, jsonModel, strlen(jsonModel) + 1);
+				jsonparse_setup(&jsonState, instance->fileNameWithModel);
 				intiModel = JSONKevDeserializer(&jsonState, jsonparse_next(&jsonState));
+				cfs_close(jsonState.fd);
 				printf("INFO: Deserialized finished\n");
-				free(jsonModel);
+				//free(jsonModel);
 				/*Visitor *visitor = malloc(sizeof(Visitor));
 				visitor->action = actionprintf;
 				visitor->secondAction = NULL;
