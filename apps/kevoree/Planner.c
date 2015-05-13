@@ -127,7 +127,7 @@ list_t Planner_schedule()
 		adaptLength = list_length(adaptations);
 		for (i = 0; i < adaptLength; ++i) {
 			ap = list_pop(adaptations);
-			if (ap->priority == j) {
+			if (Priority_Primitives(ap->primitiveType) == j) {
 				list_add(sortedAdapt, ap);
 			} else {
 				list_add(adaptations, ap);
@@ -148,7 +148,6 @@ AdaptationPrimitive *Planner_adapt(Primitives p, KMFContainer *elem)
 	}
 
 	ccmd->primitiveType = p;
-	ccmd->priority = Priority_Primitives(p);
 	ccmd->ref = elem;
 	return ccmd;
 }

@@ -96,10 +96,8 @@ disseminateTheModel(ContainerRoot* model);
 PROCESS(kev_model_installer, "kev_model_installer");
 PROCESS_THREAD(kev_model_installer, ev, data)
 {
-	static char* filename;
-	int fd, r;
-	/*struct SimpleTrace* trace;*/
-	AdaptationPrimitive *ap;
+	static char* filename;	
+	static AdaptationPrimitive *ap;
 	PROCESS_BEGIN();
 
 	/* register new event types */
@@ -121,10 +119,10 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 				ap = list_pop(plannedAdaptations);
 				processTrace(ap);
 				/*free(trace);*/
-				//ap->delete(ap);
+				ap->delete(ap);
 			}
 			else {
-				// remove all model
+				// remove old model
 				// notify we have a new model
 				disseminateTheModel(NULL);
 			}
@@ -141,10 +139,10 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			if (list_length(plannedAdaptations) > 0) {
 				ap = list_pop(plannedAdaptations);
 				processTrace(ap);
-				//ap->delete(ap);
+				ap->delete(ap);
 			}
 			else {
-				// remove all model
+				// remove old model
 				// notify we have a new model
 				disseminateTheModel(NULL);
 			}
@@ -155,10 +153,10 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 				ap = list_pop(plannedAdaptations);
 				processTrace(ap);
 				/*free(trace);*/
-				//ap->delete(ap);
+				ap->delete(ap);
 			}
 			else {
-				// remove all model
+				// remove old model
 				// notify we have a new model
 				disseminateTheModel(NULL);
 			}
@@ -255,7 +253,7 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 				PRINTF("INFO: Number of adaptations: %d\n", adaptListLength);
 				AdaptationPrimitive *c;
 				for (c = list_head(plannedAdaptations); c != NULL; c = list_item_next(c)) {
-					printf("%s: Priority: %d Type: %d\n", c->ref->path, c->priority, c->primitiveType);
+					PRINTF("%s: Priority: %d Type: %d\n", c->ref->path, Priority_Primitives(c->primitiveType), c->primitiveType);
 				}
 			} else {
 				PRINTF("ERROR: cannot create Adaptation primitives\n");
