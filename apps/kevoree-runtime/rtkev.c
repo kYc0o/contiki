@@ -1,3 +1,23 @@
+/*
+ * rtkev.c
+ * This file is part of Kevoree-Contiki
+ *
+ * Copyright (C) 2015 - Inti Gonzalez-Herrera
+ *
+ * Kevoree-Contiki is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Kevoree-Contiki is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Kevoree-Contiki. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "cfs/cfs.h"
 #include "loader/elfloader.h"
 
@@ -26,6 +46,8 @@
 #else
 #define PRINTF(S, ...)
 #endif
+
+
 
 /**as
  * The Kevoree runtime for contiki includes a set of processes
@@ -108,7 +130,7 @@ static int
 isAlreadyInstalled(const char* deployUnitId);
 
 static struct InstanceEntry*
-findInstanceByname(const char* instanceName);
+findInstanceByName(const char* instanceName);
 
 /* this process downloads, installs and removes the necessesary deploy units */
 PROCESS(kev_model_installer, "kev_model_installer");
@@ -143,7 +165,7 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 				runtime.currentModel = runtime.tmp_newModel;
 				runtime.tmp_newModel = NULL;
 				// notify we have a new model
-				disseminateTheModel(NULL);
+				disseminateTheModel(runtime.currentModel);
 			}
 		}
 		else if (ev == DEPLOY_UNIT_DOWNLOADED) {
@@ -166,7 +188,7 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 				runtime.currentModel = runtime.tmp_newModel;
 				runtime.tmp_newModel = NULL;
 				// notify we have a new model
-				disseminateTheModel(NULL);
+				disseminateTheModel(runtime.currentModel);
 			}
 		}
 		else if (ev == ADAPTATION_EXECUTED) {
@@ -182,7 +204,7 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 				runtime.currentModel = runtime.tmp_newModel;
 				runtime.tmp_newModel = NULL;
 				// notify we have a new model
-				disseminateTheModel(NULL);
+				disseminateTheModel(runtime.currentModel);
 			}
 		}
 	}
@@ -220,7 +242,7 @@ processTrace(AdaptationPrimitive *ap) {
 	case UpdateDictionaryInstance:
 		ci = (ComponentInstance*)ap->ref;
 		Dictionary *d = ci->super->dictionary;
-		e = findInstanceByname(ci->super->super->name);
+		e = findInstanceByName(ci->super->super->name);
 		/* components */
 		hashmap_map* m = d->values;
 
@@ -436,7 +458,7 @@ int createInstance(char* typeName, char* instanceName, void** instance)
 
 
 static struct InstanceEntry*
-findInstanceByname(const char* instanceName)
+findInstanceByName(const char* instanceName)
 {
 	struct InstanceEntry* entry;
 	/* iterate through list of ComponentInterface */
@@ -452,7 +474,7 @@ findInstanceByname(const char* instanceName)
 int
 removeInstance(const char* instanceName)
 {
-	struct InstanceEntry* found = findInstanceByname(instanceName);
+	struct InstanceEntry* found = findInstanceByName(instanceName);
 	if (found) {
 		list_remove(runtime.instances, found);
 		free(found->name);
@@ -473,7 +495,7 @@ removeInstance(const char* instanceName)
 /* start an instance */
 int startInstance(const char* instanceName)
 {
-	struct InstanceEntry* entry = findInstanceByname(instanceName);
+	struct InstanceEntry* entry = findInstanceByName(instanceName);
 	if (entry) {
 		/* start instance using supplied component interface */
 		if (!entry->interface->start(entry->instance))
@@ -491,7 +513,7 @@ int startInstance(const char* instanceName)
 int
 stopInstance(const char* instanceName)
 {
-	struct InstanceEntry* entry = findInstanceByname(instanceName);
+	struct InstanceEntry* entry = findInstanceByName(instanceName);
 	if (entry) {
 		/* start instance using supplied component interface */
 		if (!entry->interface->stop(entry->instance))

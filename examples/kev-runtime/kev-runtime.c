@@ -115,7 +115,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				while ((n = cfs_read(fdFile, buf, 60)) > 0) {
 					for (jj = 0 ; jj < n ; jj++) printf("%c", (char)buf[jj]);
 				}
-				printf("\n");
+				printf("DONE WITH CAT\n");
 				cfs_close(fdFile);
 				if (n!=0)
 					printf("Some error reading the file\n");
