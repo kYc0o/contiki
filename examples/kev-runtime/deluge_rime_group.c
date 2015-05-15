@@ -32,10 +32,9 @@ const GroupInterface DelugeRimeGroupInterface = {
 };
 
 typedef struct  {
+	void* mierda;
 	/* internal values */
-    struct announcement announ;
 	ContainerRoot* lastReceivedModel;
-	int flag;
 	/* attributes */
 	char* fileNameWithModel;
 	uint32_t interval;
@@ -50,6 +49,9 @@ typedef struct  {
 
 static uint16_t currentValue;
 
+
+static struct announcement announ_secret;
+
 /* user-defined events */
 static process_event_t NEW_AVAILABLE_OA_MODEL; // new over the air model (I just invented the term, :-))
 static process_event_t NEW_OA_MODEL_DOWNLOADED; // the model was downloaded
@@ -57,6 +59,7 @@ static process_event_t NEW_OA_MODEL_DOWNLOADED; // the model was downloaded
 /* this process handle the reception of messages */
 PROCESS(delugeGroupP, "delugeGroupProcess");
 
+static uint8_t nr_pages;
 
 static void
 received_announcement(struct announcement *a, const rimeaddr_t *from,
@@ -66,9 +69,9 @@ received_announcement(struct announcement *a, const rimeaddr_t *from,
 
 	
 	uint8_t proposedVersion = GET_VERSION_FROM_ANNOUN(value);
-	uint8_t currentVersion = GET_VERSION_FROM_ANNOUN(currentValue	);
+	uint8_t currentVersion = GET_VERSION_FROM_ANNOUN(currentValue);
 	
-	printf("OKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK proposed = %d, current = %d\n", proposedVersion, currentVersion);
+	//printf("OKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK proposed = %d, current = %d\n", proposedVersion, currentVersion);
 
 	if (currentVersion < proposedVersion) {
 		/* some nasty debug message */
@@ -78,20 +81,15 @@ received_announcement(struct announcement *a, const rimeaddr_t *from,
 		/* We are now aware of a new version, save it */
 		announcement_set_value(a, value);
 		currentValue = value;
-
+		
 		/* retransmite announcement */
 		announcement_bump(a);
 
 		/* create file with as many pages as specified in the new announced value */
-		uint8_t nr_pages = GET_PAGES_FROM_ANNOUN(value);
-		printf("number of pages is %d\n", nr_pages);
-
+		nr_pages = GET_PAGES_FROM_ANNOUN(value);
+		
 		/* notify about the new model */
-		process_post(&delugeGroupP, NEW_AVAILABLE_OA_MODEL, (void*)nr_pages);
-	}
-	else {
-		/* keep the all previous value because it is newer */
-		announcement_set_value(a, currentValue);
+		process_post(&delugeGroupP, NEW_AVAILABLE_OA_MODEL, &nr_pages);
 	}
 }
 
@@ -104,6 +102,11 @@ modelDownloaded(unsigned version)
 	process_post(&delugeGroupP, NEW_OA_MODEL_DOWNLOADED, NULL);
 }
 
+static struct etimer et;
+static DelugeGroup *instance;
+static struct jsonparse_state jsonState;
+static ContainerRoot * newModel;
+
 /* this process handle the reception of messages */
 PROCESS_THREAD(delugeGroupP, ev, data)
 {
@@ -111,10 +114,6 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 	uint32_t nr_pages;
 	int fd;
 	char* buf;
-	static struct etimer et;
-	static DelugeGroup *instance;
-	static struct jsonparse_state jsonState;
-	static ContainerRoot * newModel;
 
 	PROCESS_BEGIN();
 
@@ -125,16 +124,19 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 	NEW_AVAILABLE_OA_MODEL = process_alloc_event();
 	NEW_OA_MODEL_DOWNLOADED = process_alloc_event();
 
+	announcement_init();
+
 	/* define new announcement */
-	announcement_register(&instance->announ,
+	announcement_register(&announ_secret,
 			DELUGE_GROUP_ANNOUNCEMENT,
 			received_announcement);
 	
 	/* set announcement's initial value*/
 	currentValue = MAKE_ANNOUN(0, 1);
-	announcement_set_value(&instance->announ, currentValue);
+	announcement_set_value(&announ_secret, currentValue);
 
-	printf("Ok, at %p I have my instance DelugeGroup \n", instance);
+	printf("Ok, at %p I have my instance DelugeGroup with announcament at %p and callback at %p\n", instance, &announ_secret, 
+			&received_announcement);
 
 	/* set timer for announcements */
 	etimer_set(&et, CLOCK_SECOND * instance->interval);
@@ -143,23 +145,24 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 		/* Listen for announcements every interval seconds. */
 		PROCESS_WAIT_EVENT();
 		if (ev == PROCESS_EVENT_TIMER) {
+			//printf("================================================>>>>> Doing ev == PROCESS_EVENT_TIMER in %s\n", __FILE__);
 			// let's check if there is some new value for the announcement
 			announcement_listen(1);
 			etimer_restart(&et);
 		}
 		else if (ev == NEW_AVAILABLE_OA_MODEL){
 			/* receive the new over the air model */
-	
+			uint8_t * p_nr_pages = (uint8_t *)data; 
 			/* contains the number of pages */
-			nr_pages = (uint32_t)data;
+			nr_pages = *p_nr_pages;
 			
 			/* create the file with the required number of pages */
 			cfs_remove(instance->fileNameWithModel);
 			fd = cfs_open(instance->fileNameWithModel, CFS_WRITE);
 			buf = (char*) malloc(S_PAGE);
 			memset(buf, '0' , S_PAGE);
+			printf("Number of pages is %ld\n", nr_pages);
 			while(nr_pages) {
-				printf("Number of pages is %ld\n", nr_pages);
 				cfs_seek(fd, 0, CFS_SEEK_END);
 				cfs_write(fd, buf, S_PAGE);
 				nr_pages--;
@@ -195,6 +198,7 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 			/* save a reference to the new model */
 			instance->lastReceivedModel = newModel;
 
+
 			/* Afterwards, just call notifyNewModel */			
 			if (newModel != NULL && notifyNewModel(newModel)== PROCESS_ERR_OK)
 				printf("INFO: Model was successfully sent\n");
@@ -225,7 +229,6 @@ int startDelugeGroup(void* instance)
 	inst->interval = 3; // in second
 	
 	inst->lastReceivedModel = NULL;
-	inst->flag = 0;
 	
 	process_start(&delugeGroupP, (char*)inst);
 
@@ -261,8 +264,6 @@ sendDelugeGroup(void* instance, ContainerRoot* model)
 	if (inst->lastReceivedModel == model)
 		return 0;
 
-	if (inst->flag) return 0;
-
 	printf("Sending the model through deluge\n");
 	
 	// TODO serialize model to a file
@@ -291,10 +292,10 @@ sendDelugeGroup(void* instance, ContainerRoot* model)
 	// set my local announcement to the new version
 	uint8_t newVersion = GET_VERSION_FROM_ANNOUN(currentValue) + 1;
 	currentValue = MAKE_ANNOUN(nPages, newVersion);
-	announcement_set_value(&inst->announ, currentValue);
+	announcement_set_value(&announ_secret, currentValue);
 
 	// distribute announcement to other motes
-	announcement_bump(&inst->announ);
+	announcement_bump(&announ_secret);
 
 	// activar deluge
 	if (deluge_disseminate(inst->fileNameWithModel, 1/*newVersion*/, NULL)) {

@@ -703,6 +703,7 @@ PROCESS_THREAD(deluge_process, ev, data)
   }
 
 exit:
+  PRINTF("CLOSING THE DELUGE PROCESS\n");
   unicast_close(&deluge_uc);
   broadcast_close(&deluge_broadcast);
   if(current_object.cfs_fd >= 0) {

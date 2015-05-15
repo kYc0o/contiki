@@ -106,6 +106,8 @@ static struct Runtime {
 	ContainerRoot *tmp_newModel;
 } runtime;
 
+
+
 static const char *DEFAULTMODEL = "{\"eClass\" : \"org.kevoree.ContainerRoot\",\"generated_KMF_ID\" : \"BXX5q3eV\",\"nodes\" : [{\"eClass\" : \"org.kevoree.ContainerNode\",\"name\" : \"node0\",\"metaData\" : \"\",\"started\" : \"1\",\"components\" : [],\"hosts\" : [],\"host\" : [],\"groups\" : [\"groups[group0]\"],\"networkInformation\" : [{\"eClass\" : \"org.kevoree.NetworkInfo\",\"name\" : \"ip\",\"values\" : [{\"eClass\" : \"org.kevoree.NetworkProperty\",\"name\" : \"front\",\"value\" : \"m3-XX.lille.iotlab.info\"},{\"eClass\" : \"org.kevoree.NetworkProperty\",\"name\" : \"local\",\"value\" : \"fe80:0000:0000:0000:0323:4501:4471:0343\"}]}],\"typeDefinition\" : [\"typeDefinitions[ContikiNode/0.0.1]\"],\"dictionary\" : [],\"fragmentDictionary\" : []}],\"typeDefinitions\" : [{\"eClass\" : \"org.kevoree.NodeType\",\"name\" : \"ContikiNode\",\"version\" : \"0.0.1\",\"factoryBean\" : \"\",\"bean\" : \"\",\"abstract\" : \"0\",\"deployUnit\" : [\"deployUnits[org.kevoree.library.c//kevoree-contiki-node/0.0.1]\"],\"dictionaryType\" : [{\"eClass\" : \"org.kevoree.DictionaryType\",\"generated_KMF_ID\" : \"o8AVQY3e\",\"attributes\" : []}],\"superTypes\" : []},{\"eClass\" : \"org.kevoree.GroupType\",\"name\" : \"CoAPGroup\",\"version\" : \"0.0.1\",\"factoryBean\" : \"\",\"bean\" : \"\",\"abstract\" : \"0\",\"deployUnit\" : [\"deployUnits[//kevoree-group-coap/0.0.1]\"],\"dictionaryType\" : [{\"eClass\" : \"org.kevoree.DictionaryType\",\"generated_KMF_ID\" : \"3dddTFpd\",\"attributes\" : [{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"proxy_port\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"int\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"20000\"},{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"port\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"number\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"\"},{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"path\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"string\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"\"}]}],\"superTypes\" : []}],\"repositories\" : [],\"dataTypes\" : [],\"libraries\" : [{\"eClass\" : \"org.kevoree.TypeLibrary\",\"name\" : \"ContikiLib\",\"subTypes\" : [\"typeDefinitions[ContikiNode/0.0.1]\",\"typeDefinitions[CoAPGroup/0.0.1]\"]},{\"eClass\" : \"org.kevoree.TypeLibrary\",\"name\" : \"Default\",\"subTypes\" : []}],\"hubs\" : [],\"mBindings\" : [],\"deployUnits\" : [{\"eClass\" : \"org.kevoree.DeployUnit\",\"name\" : \"kevoree-group-coap\",\"groupName\" : \"\",\"version\" : \"0.0.1\",\"url\" : \"\",\"hashcode\" : \"\",\"type\" : \"ce\"},{\"eClass\" : \"org.kevoree.DeployUnit\",\"name\" : \"kevoree-contiki-node\",\"groupName\" : \"org.kevoree.library.c\",\"version\" : \"0.0.1\",\"url\" : \"\",\"hashcode\" : \"\",\"type\" : \"ce\"}],\"nodeNetworks\" : [],\"groups\" : [{\"eClass\" : \"org.kevoree.Group\",\"name\" : \"group0\",\"metaData\" : \"\",\"started\" : \"1\",\"subNodes\" : [\"nodes[node0]\"],\"typeDefinition\" : [\"typeDefinitions[CoAPGroup/0.0.1]\"],\"dictionary\" : [],\"fragmentDictionary\" : [{\"eClass\" : \"org.kevoree.FragmentDictionary\",\"generated_KMF_ID\" : \"VEj2RlNr\",\"name\" : \"contiki-node\",\"values\" : []}]}]}";
 
 /* kevoree event types */
@@ -379,7 +381,7 @@ int initKevRuntime(const DeployUnitRetriver* retriever)
 int registerComponent(int count, ... )
 {
 	va_list ap;
-	ComponentInterface* interface;
+	KevInterface* interface;
 
 	/* this is here for debug, when you deploy an example which is a component 
 	 * you must start the runtime somehow	
@@ -391,7 +393,7 @@ int registerComponent(int count, ... )
 
 	/* iterate to register arguments */
 	while (count) {
-		interface = va_arg(ap, ComponentInterface*);
+		interface = va_arg(ap, KevInterface*);
 		count--;
 
 		PRINTF("Registering Kevoree Type %s located at %p\n", interface->name, interface);
@@ -423,7 +425,7 @@ int notifyNewModel(ContainerRoot *model)
 }
 
 /* create an instance of some type */
-int createInstance(char* typeName, char* instanceName, void** instance)
+int createInstance(const char* typeName, const char* instanceName, void** instance)
 {
 	struct TypeEntry* entry;
 	/* iterate through list of ComponentInterface */
@@ -432,22 +434,24 @@ int createInstance(char* typeName, char* instanceName, void** instance)
 			entry = list_item_next(entry)) {
 		if (!strcmp(typeName, entry->interface->name)) {
 			PRINTF("\tType Found\n");
+			void* tmp;
 
 			/* create instance using supplied component interface */
-			*instance = entry->interface->newInstance(entry->interface->name);
+			tmp = entry->interface->newInstance(entry->interface->name);
+			*instance = tmp;
 
-			PRINTF("\tInstance create at %p\n", *instance);
+			PRINTF("\tInstance created at %p\n", tmp);
 
-			if (!*instance)
+			if (tmp == NULL)
 				return ERR_KEV_INSTANCE_CREATION_FAIL;
 
 			// create metadata for the instance
 			struct InstanceEntry* instEntry = (struct InstanceEntry*)malloc(sizeof(struct InstanceEntry));
-			instEntry->instance = *instance;
+			instEntry->instance = tmp;
 			instEntry->interface = entry->interface;
 			instEntry->name = (char*)strdup(instanceName);
 			LIST_STRUCT_INIT(instEntry, dictionary);
-			// fill the dictionary with objects of structure DictionaryPair
+			//FIXME: fill the dictionary with objects of structure DictionaryPair
 
 			// save the instance
 			list_add(runtime.instances, instEntry);
@@ -579,7 +583,6 @@ disseminateTheModel(ContainerRoot* model)
 			gInt->send(entry->instance, model);
 		}
 	}
-	return NULL;
 }
 
 static int

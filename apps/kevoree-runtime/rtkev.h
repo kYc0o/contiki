@@ -86,7 +86,7 @@ int unregisterComponent(const char* name);
 int notifyNewModel(ContainerRoot *model);
 
 /* create an instance of some type */
-int createInstance(char* typeName, char* instanceName, void** instance);
+int createInstance(const char* typeName, const char* instanceName, void** instance);
 int removeInstance(const char* instanceName);
 int startInstance(const char* instanceName);
 int stopInstance(const char* instanceName);
