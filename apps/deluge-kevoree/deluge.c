@@ -58,7 +58,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DEBUG	1
+#define DEBUG	0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...)	printf(__VA_ARGS__)
@@ -476,7 +476,7 @@ handle_packet(struct deluge_msg_packet *msg)
       write_page(&current_object, packet.pagenum, current_object.current_page);
       page->version = packet.version;
       page->flags = PAGE_COMPLETE;
-      PRINTF("Page %u completed\n", packet.pagenum);
+      printf("Page %u completed\n", packet.pagenum);
 
       current_object.current_rx_page++;
 

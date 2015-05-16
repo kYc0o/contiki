@@ -135,14 +135,14 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 	char* buf;
 	uint8_t nr_pages_local;
 
-	PROCESS_BEGIN();
-	
 	static struct etimer et;
 	static DelugeGroup *instance;
 	
 	static struct jsonparse_state jsonState;
 	static ContainerRoot * newModel;
 
+	PROCESS_BEGIN();
+	
 	/* keep track of the singleton instance */
 	instance = (DelugeGroup*)data;
 
@@ -192,10 +192,12 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 			cfs_close(fd);
 
 			/* Deluge-based dissemination */
-			if (deluge_disseminate(instance->fileNameWithModel, 0/*currentVersion*/, modelDownloaded))
+			if (deluge_disseminate(instance->fileNameWithModel, 0, modelDownloaded)) {
 				PRINTF("ERROR: some problem waiting for new version of the file\n");
-			else
+			}
+			else {
 				PRINTF("INFO: Waiting for new version of the file \n");
+			}
 
 		}
 		else if (ev == NEW_OA_MODEL_DOWNLOADED) {
