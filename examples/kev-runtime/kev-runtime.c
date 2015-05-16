@@ -1,3 +1,24 @@
+/*
+ * kev-runtime.c
+ * This file is part of Kevoree-Contiki
+ *
+ * Copyright (C) 2015 - Inti Gonzalez-Herrera
+ *
+ * Kevoree-Contiki is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Kevoree-Contiki is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Kevoree-Contiki. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+
 #include "contiki.h"
 #include "dev/serial-line.h"
 #include "cfs/cfs.h"
