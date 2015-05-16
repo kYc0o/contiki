@@ -17,12 +17,12 @@ typedef int (*StopInstanceCallBack)(void*);
 typedef int (*UpdateInstanceCallBack)(void*);
 
 #define KEV_INSTANCE_FIELDS \
-	enum InterfaceType interfaceType; \
-	const char* name; \
-    NewInstanceCallBack newInstance; \
-    StartInstanceCallBack start; \
-    StopInstanceCallBack stop; \
-    UpdateInstanceCallBack update;
+	const enum InterfaceType interfaceType; \
+	char const * const name; \
+    const NewInstanceCallBack newInstance; \
+    const StartInstanceCallBack start; \
+    const StopInstanceCallBack stop; \
+    const UpdateInstanceCallBack update;
 
 /* generic definition if kevoree types (components, channels, groups ans so on) */
 typedef struct {
@@ -45,7 +45,7 @@ typedef int (*SendModelCallBack)(void*, ContainerRoot*);
  */
 typedef struct {
 	KEV_INSTANCE_FIELDS
-	SendModelCallBack send;
+	const SendModelCallBack send;
 } GroupInterface;
 
 typedef struct {

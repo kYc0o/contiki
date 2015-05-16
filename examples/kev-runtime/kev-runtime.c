@@ -7,6 +7,7 @@
 #include "rtkev.h"
 #include "shell_group.h"
 #include "deluge_rime_group.h"
+#include "udpComponent.h"
 #include "ShellBasedDeployUnitRetriever.h"
 
 #include "ContainerRoot.h"
@@ -18,12 +19,12 @@
 
 /* built-in kevoree types */
 extern const GroupInterface ShellGroupInterface;
-DECLARE_KEV_TYPES(2, &ShellGroupInterface, &DelugeRimeGroupInterface)
+DECLARE_KEV_TYPES(3, &ShellGroupInterface, &DelugeRimeGroupInterface, &UDPClientInterface)
 
 extern struct process shellGroupP;
 
-const static char* typeOfInstances[] = {"ShellGroupType", "DelugeRimeGroupType"};
-const static char* builtinInstances[] = {"shellGroup0", "delugeGroup0"};
+const static char* typeOfInstances[] = {"ShellGroupType", "DelugeRimeGroupType", UDP_CLIENT_COMPONENT_TYPE_NAME};
+const static char* builtinInstances[] = {"shellGroup0", "delugeGroup0", "udpClient0"};
 
 PROCESS(kevRuntime, "KevRuntime");
 AUTOSTART_PROCESSES(&kevRuntime);
@@ -54,7 +55,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 	printf("Kevoree server started !\n");
 
 	/* create built-in types */
-	for (i = 0 ; i < 2; i++) {
+	for (i = 0 ; i < 3; i++) {
 		do {
 			static struct etimer et;
 			/* Listen for announcements every one second. */

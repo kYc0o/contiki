@@ -102,20 +102,23 @@ modelDownloaded(unsigned version)
 	process_post(&delugeGroupP, NEW_OA_MODEL_DOWNLOADED, NULL);
 }
 
-static struct etimer et;
-static DelugeGroup *instance;
-static struct jsonparse_state jsonState;
-static ContainerRoot * newModel;
+
 
 /* this process handle the reception of messages */
 PROCESS_THREAD(delugeGroupP, ev, data)
 {
 
-	uint32_t nr_pages;
+	uint16_t nr_pages_local;
 	int fd;
 	char* buf;
 
 	PROCESS_BEGIN();
+	
+	static struct etimer et;
+	static DelugeGroup *instance;
+	
+	static struct jsonparse_state jsonState;
+	static ContainerRoot * newModel;
 
 	/* keep track of the singleton instance */
 	instance = (DelugeGroup*)data;
@@ -154,18 +157,18 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 			/* receive the new over the air model */
 			uint8_t * p_nr_pages = (uint8_t *)data; 
 			/* contains the number of pages */
-			nr_pages = *p_nr_pages;
+			nr_pages_local = *p_nr_pages;
 			
 			/* create the file with the required number of pages */
 			cfs_remove(instance->fileNameWithModel);
 			fd = cfs_open(instance->fileNameWithModel, CFS_WRITE);
 			buf = (char*) malloc(S_PAGE);
 			memset(buf, '0' , S_PAGE);
-			printf("Number of pages is %ld\n", nr_pages);
-			while(nr_pages) {
+			printf("Number of pages is %d\n", nr_pages_local);
+			while(nr_pages_local) {
 				cfs_seek(fd, 0, CFS_SEEK_END);
 				cfs_write(fd, buf, S_PAGE);
-				nr_pages--;
+				nr_pages_local--;
 			}
 			free(buf);
 			cfs_close(fd);
