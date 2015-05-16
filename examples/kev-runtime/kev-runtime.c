@@ -27,7 +27,7 @@
 
 #include "rtkev.h"
 #include "shell_group.h"
-#include "deluge_rime_group.h"
+/*#include "deluge_rime_group.h"*/
 #include "udpComponent.h"
 #include "ShellBasedDeployUnitRetriever.h"
 
@@ -40,12 +40,14 @@
 
 /* built-in kevoree types */
 extern const GroupInterface ShellGroupInterface;
-DECLARE_KEV_TYPES(3, &ShellGroupInterface, &DelugeRimeGroupInterface, &UDPClientInterface)
-
+DECLARE_KEV_TYPES(2, &ShellGroupInterface, &UDPClientInterface)
+/* &DelugeRimeGroupInterface,*/
 extern struct process shellGroupP;
 
-const static char* typeOfInstances[] = {"ShellGroupType", "DelugeRimeGroupType", UDP_CLIENT_COMPONENT_TYPE_NAME};
-const static char* builtinInstances[] = {"shellGroup0", "delugeGroup0", "udpClient0"};
+const static char* typeOfInstances[] = {"ShellGroupType", UDP_CLIENT_COMPONENT_TYPE_NAME};
+/*"DelugeRimeGroupType", */
+const static char* builtinInstances[] = {"shellGroup0", "udpClient0"};
+/* "delugeGroup0",*/
 
 PROCESS(kevRuntime, "KevRuntime");
 AUTOSTART_PROCESSES(&kevRuntime);
