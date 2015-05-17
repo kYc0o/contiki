@@ -16,7 +16,12 @@ UIP_CONF_IPV6=1
 #linker optimizations
 SMALL=1
 
-#CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
+# shell client
+CLIENT=client
+
+# a server implementing a software repository
+REPOSITORY_SERVER = UDPKevoreeRepo/src/UDPServer
+REPOSITORY_SERVER_SRC = UDPKevoreeRepo/src/UDPServer.java
 
 all: $(CONTIKI_PROJECT)
 
@@ -25,6 +30,11 @@ components:
 
 client: $(CONSOLE_CLIENT_SRCS)
 	gcc -std=gnu99 $(CONSOLE_CLIENT_SRCS) -o client -lpthread
+
+repository-server: $(REPOSITORY_SERVER)
+
+$(REPOSITORY_SERVER): $(REPOSITORY_SERVER_SRC)
+	javac $(REPOSITORY_SERVER_SRC)
 
 CONTIKI = ../..
 include $(CONTIKI)/Makefile.include

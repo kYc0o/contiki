@@ -13,3 +13,6 @@ make components
 
 # compile the client, this fake application we created to make our life as developers easier
 make client
+
+# compile the server implementing the software repository
+make repository-server
