@@ -1,12 +1,10 @@
 CONTIKI_PROJECT = kev-runtime
-CONTIKI_SOURCEFILES += kev-runtime.c myencode.c shell_group.c ShellBasedDeployUnitRetriever.c udpComponent.c 
-#deluge_rime_group.c
+CONTIKI_SOURCEFILES += kev-runtime.c myencode.c shell_group.c ShellBasedDeployUnitRetriever.c udpComponent.c deluge_group.c
 
 ELF_LOADER=1
 TARGET=iotlab-m3
 
-APPS += json-from-file kevoree kevoree-runtime
-#deluge-kevoree
+APPS += json-from-file kevoree kevoree-runtime deluge-udp
 
 CONSOLE_CLIENT_SRCS = client.c myencode.c
 

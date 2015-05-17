@@ -540,7 +540,14 @@ void notifyDeployUnitDownloaded(const char* fileName)
 /* loads an elf file into the system and executes its autostart processes */
 void loadElfFile(const char* filename)
 {
-	uint32_t fdFile, received;
+	int fdFile;
+	uint32_t received;
+	
+	/* sanity check */
+	if (filename == NULL) {
+		printf("ERROR: Why are you trying to load a (null) file as an elf at %s:%d\n",__FILE__,__LINE__);
+		return;
+	}
 	// Cleanup previous loads
 	if (elfloader_autostart_processes != NULL)
 		autostart_exit(elfloader_autostart_processes);
@@ -566,7 +573,10 @@ void loadElfFile(const char* filename)
 		}
 	}
 	else if (ELFLOADER_SYMBOL_NOT_FOUND == received) {
-		printf("Symbol not found: '%s'\n", elfloader_unknown);
+		printf("ERROR: Symbol not found: '%s'\n", elfloader_unknown);
+	}
+	else {
+		printf("ERROR %ld detected while loading %s as an elf\n", received, filename);
 	}
 }
 

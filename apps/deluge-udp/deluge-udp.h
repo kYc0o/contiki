@@ -159,6 +159,8 @@ struct deluge_page {
   uint8_t version;
 };
 
-int deluge_disseminate(char *file, unsigned version);
+typedef void (*OnCompletionCallback)(unsigned version);
+
+int deluge_disseminate(char *file, unsigned version, OnCompletionCallback method);
 
 #endif

@@ -24,6 +24,9 @@
 #include "cfs/cfs.h"
 #include "json.h"
 #include "jsonparse.h"
+#include "net/uip.h"
+#include "simple-udp.h"
+
 
 #include "ContainerRoot.h"
 #include "JSONModelLoader.h"
@@ -31,10 +34,8 @@
 #include "ModelCompare.h"
 
 #include "rtkev.h"
-
-#include "net/rime/announcement.h"
-
-#include "deluge.h"
+#include "deluge-udp.h"
+#include "deluge_group.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -53,7 +54,7 @@ static int sendDelugeGroup(void* instance, ContainerRoot* model);
 
 const GroupInterface DelugeRimeGroupInterface = {
 		.interfaceType = GroupInstanceInterface,
-		.name = "DelugeRimeGroupType",
+		.name = DELUGE_GROUP_TYPENAME,
 		.newInstance = newDelugeGroup,
 		.start = startDelugeGroup,
 		.stop = stopDelugeGroup,
@@ -61,20 +62,19 @@ const GroupInterface DelugeRimeGroupInterface = {
 		.send = sendDelugeGroup
 };
 
+struct ModelInfo {
+	uint16_t version;
+	uint16_t nr_pages;
+};
+
 typedef struct  {
 	/* internal values */
-	struct announcement a;
+	struct ModelInfo info;
 	ContainerRoot* lastReceivedModel;
 	/* attributes */
 	char* fileNameWithModel;
 	uint32_t interval;
 } DelugeGroup;
-
-#define DELUGE_GROUP_ANNOUNCEMENT 128
-
-#define MAKE_ANNOUN(P,V) (((P)<<8)|(V))
-#define GET_PAGES_FROM_ANNOUN(X) ((X)>>8)
-#define GET_VERSION_FROM_ANNOUN(X) ((X)&0x00FF)
 
 /* user-defined events */
 static process_event_t NEW_AVAILABLE_OA_MODEL; // new over the air model (I just invented the term, :-))
@@ -86,34 +86,41 @@ PROCESS(delugeGroupP, "delugeGroupProcess");
 /* number of pages the synchronized file should have */
 static uint8_t nr_pages;
 
+/* connection used to disseminate a model version, just the version */
+static struct simple_udp_connection deluge_group_broadcast;
+
+/* this is disgunting, but there is no way to pass a context to the receiver */
+static DelugeGroup *instance;
+
+/**
+ * \brief Callback executed when a message is received with information about a proposed Kevoree model
+ */
 static void
-received_announcement(struct announcement *a, const rimeaddr_t *from,
-		      uint16_t id, uint16_t value)
+model_version_recv(struct simple_udp_connection *c,
+         const uip_ipaddr_t *sender_addr,
+         uint16_t sender_port,
+         const uip_ipaddr_t *receiver_addr,
+         uint16_t receiver_port,
+         const uint8_t *data,
+         uint16_t datalen)
 {
-	if (id != DELUGE_GROUP_ANNOUNCEMENT) return;
-
-	
-	uint8_t proposedVersion = GET_VERSION_FROM_ANNOUN(value);
-	uint8_t currentVersion = GET_VERSION_FROM_ANNOUN(a->value);
-	
-	PRINTF("OKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK proposed = %d, current = %d\n", proposedVersion, currentVersion);
-
-	if (currentVersion < proposedVersion) {
-		/* some nasty debug message */
-		PRINTF("Got announcement from %d.%d, id %d, value %d, proposedVersion %d\n",
- 					from->u8[0], from->u8[1], id, value, proposedVersion);
-
-		/* We are now aware of a new version, save it */
-		announcement_set_value(a, value);
+	if (datalen == sizeof(struct ModelInfo)) {
+		struct ModelInfo* model_info = (struct ModelInfo*)data;
+#if 0
+		PRINTF("A new model proposal has been received. Version=%d, Pages=%d. Origin = ", model_info->version, model_info->nr_pages);
+		uip_debug_ipaddr_print(sender_addr);
+		printf("\n");
+#endif
 		
-		/* retransmite announcement */
-		announcement_bump(a);
-
-		/* create file with as many pages as specified in the new announced value */
-		nr_pages = GET_PAGES_FROM_ANNOUN(value);
+		if (model_info->version > instance->info.version) {
+			printf("well, here is the new version Version=%d, Pages=%d\n", model_info->version, model_info->nr_pages);
 		
-		/* notify about the new model */
-		process_post(&delugeGroupP, NEW_AVAILABLE_OA_MODEL, NULL);
+			/* We are now aware of a new version, save it */
+			instance->info = * model_info;
+			
+			/* notify about the new model */
+			process_post(&delugeGroupP, NEW_AVAILABLE_OA_MODEL, NULL);
+		}
 	}
 }
 
@@ -134,12 +141,11 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 	int fd;
 	char* buf;
 	uint8_t nr_pages_local;
-
 	static struct etimer et;
-	static DelugeGroup *instance;
 	
 	static struct jsonparse_state jsonState;
 	static ContainerRoot * newModel;
+	static uip_ipaddr_t addr;
 
 	PROCESS_BEGIN();
 	
@@ -150,16 +156,13 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 	NEW_AVAILABLE_OA_MODEL = process_alloc_event();
 	NEW_OA_MODEL_DOWNLOADED = process_alloc_event();
 
-	announcement_init();
+	/* initialize model announcement's system */
+	simple_udp_register(&deluge_group_broadcast, 34555, NULL, 34555, model_version_recv);
 
-	/* define new announcement */
-	announcement_register(&instance->a,
-			DELUGE_GROUP_ANNOUNCEMENT,
-			received_announcement);
-	
 	/* set announcement's initial value*/
-	announcement_set_value(&instance->a, MAKE_ANNOUN(0, 1));
-
+	instance->info.version = 0;
+	instance->info.nr_pages = 0;
+	
 	/* set timer for announcements */
 	etimer_set(&et, CLOCK_SECOND * instance->interval);
 
@@ -167,15 +170,17 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 		/* Listen for announcements every interval seconds. */
 		PROCESS_WAIT_EVENT();
 		if (ev == PROCESS_EVENT_TIMER) {
-			// let's check if there is some new value for the announcement
-			announcement_listen(1);
+			/* announce my model */
+			uip_create_linklocal_allnodes_mcast(&addr);
+  			simple_udp_sendto(&deluge_group_broadcast, &instance->info, sizeof(struct ModelInfo), &addr);
+  			
 			etimer_restart(&et);
 		}
 		else if (ev == NEW_AVAILABLE_OA_MODEL){
 			/* receive the new over the air model */
 			 
 			/* contains the number of pages */
-			nr_pages_local = nr_pages;
+			nr_pages_local = instance->info.nr_pages;
 			
 			/* create the file with the required number of pages */
 			cfs_remove(instance->fileNameWithModel);
@@ -202,9 +207,6 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 		}
 		else if (ev == NEW_OA_MODEL_DOWNLOADED) {
 			/* deserialize the model received over the air */
-
-			// int fd_read;
-
 			PRINTF("New model %s received in group with instance %p\n", instance->fileNameWithModel, instance);
 			newModel = NULL;
 			
@@ -238,8 +240,7 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 static
 void* newDelugeGroup(const char* name)
 {
-	DelugeGroup* i = (DelugeGroup*)malloc(sizeof(DelugeGroup));
-	// probably it is good idea to zeroed the memory
+	DelugeGroup* i = (DelugeGroup*)calloc(1, sizeof(DelugeGroup));
 	return i;
 }
 
@@ -249,7 +250,7 @@ int startDelugeGroup(void* instance)
 	DelugeGroup* inst = (DelugeGroup*) instance;
 
 	inst->fileNameWithModel = "new_model-compact.json";
-	inst->interval = 3; // in second
+	inst->interval = 10; // in second
 	
 	inst->lastReceivedModel = NULL;
 	
@@ -315,14 +316,16 @@ sendDelugeGroup(void* inst, ContainerRoot* model)
 	}
 
 	// set my local announcement to the new version
-	uint8_t newVersion = GET_VERSION_FROM_ANNOUN(instance->a.value) + 1;
-	announcement_set_value(&instance->a, MAKE_ANNOUN(nPages, newVersion));
-
-	// distribute announcement to other motes
+	instance->info.version = instance->info.version + 1;
+	instance->info.nr_pages = nPages;
+	
+	// FIXME distribute announcement to other motes
+#if 0
 	announcement_bump(&instance->a);
+#endif
 
-	// activar deluge
-	if (deluge_disseminate(instance->fileNameWithModel, 1/*newVersion*/, NULL)) {
+	// activate deluge
+	if (deluge_disseminate(instance->fileNameWithModel, 1, NULL)) {
 		PRINTF("ERROR: some problem dissemineting\n");
 	}
 	else {

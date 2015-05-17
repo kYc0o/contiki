@@ -27,7 +27,7 @@
 
 #include "rtkev.h"
 #include "shell_group.h"
-/*#include "deluge_rime_group.h"*/
+#include "deluge_group.h"
 #include "udpComponent.h"
 #include "ShellBasedDeployUnitRetriever.h"
 
@@ -37,17 +37,44 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+
+/* list of retrieving strategies */
+#define NAIVE_UDP_BASED_RETRIEVER 0
+#define SMART_UDP_BASED_RETRIEVER 1
+#define SHELL_BASED_RETRIEVER 2
+
+/* strategy to use */
+#define DEPLOY_UNIT_RETRIEVER_STRATEGY SHELL_BASED_RETRIEVER
 
 /* built-in kevoree types */
 extern const GroupInterface ShellGroupInterface;
-DECLARE_KEV_TYPES(2, &ShellGroupInterface, &UDPClientInterface)
-/* &DelugeRimeGroupInterface,*/
 extern struct process shellGroupP;
 
-const static char* typeOfInstances[] = {"ShellGroupType", UDP_CLIENT_COMPONENT_TYPE_NAME};
-/*"DelugeRimeGroupType", */
-const static char* builtinInstances[] = {"shellGroup0", "udpClient0"};
-/* "delugeGroup0",*/
+/* declaring built-in instances */
+DECLARE_KEV_TYPES(3, &ShellGroupInterface, &DelugeRimeGroupInterface, &UDPClientInterface)
+struct Built_In_Instance {
+	const char* type_name;
+	const char* instance_name;
+	const bool enabled;
+};
+static const struct Built_In_Instance built_in_instances [] ={
+	{
+		.type_name = "ShellGroupType",
+		.instance_name = "shellGroup0",
+		.enabled = true
+	},
+	{
+		.type_name = DELUGE_GROUP_TYPENAME,
+		.instance_name = "delugeGroup0",
+		.enabled = true
+	},
+	{
+		.type_name = UDP_CLIENT_COMPONENT_TYPE_NAME,
+		.instance_name = "udpClient0",
+		.enabled = false
+	}
+};
 
 PROCESS(kevRuntime, "KevRuntime");
 AUTOSTART_PROCESSES(&kevRuntime);
@@ -63,32 +90,49 @@ PROCESS_THREAD(kevRuntime, ev, data)
 	static int i;
 	
 	void* instTmp;
+	
+	int result;
 
 	PROCESS_BEGIN();
 
 	/* definitively we want to dynamically load modules */
 	elfloader_init();
-	if (initKevRuntime(&shellBasedRetriever)) {
+	
+	/* initialize Kevoree Runtime */
+	result = 1;
+#if DEPLOY_UNIT_RETRIEVER_STRATEGY == NAIVE_UDP_BASED_RETRIEVER
+	
+#elif DEPLOY_UNIT_RETRIEVER_STRATEGY == SMART_UDP_BASED_RETRIEVER
+
+#elif DEPLOY_UNIT_RETRIEVER_STRATEGY == SHELL_BASED_RETRIEVER
+	result = initKevRuntime(&shellBasedRetriever);
+#endif
+	if (result != 0) {
 		printf("Runtime initialization error\n");
 		PROCESS_EXIT();
 	}
+	
 	/* let's register core components */
 	REGISTER_KEV_TYPES_NOW();
 
 	printf("Kevoree server started !\n");
 
 	/* create built-in types */
-	for (i = 0 ; i < 3; i++) {
+	for (i = 0 ; i < sizeof(built_in_instances)/sizeof(struct Built_In_Instance); i++) {
+		// skip instance if it is disabled
+		if (!built_in_instances[i].enabled) continue;
+		
+		/* install instance */
 		do {
 			static struct etimer et;
 			/* Listen for announcements every one second. */
 			etimer_set(&et, CLOCK_SECOND * 1);
 			PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 			instTmp = NULL;
-			createInstance(typeOfInstances[i], builtinInstances[i], &instTmp);
+			createInstance(built_in_instances[i].type_name, built_in_instances[i].instance_name, &instTmp);
 		} while (instTmp == NULL);
-		printf("The instance %s is located at %p\n", builtinInstances[i], instTmp);
-		startInstance(builtinInstances[i]);
+		printf("The instance %s is located at %p\n", built_in_instances[i].instance_name, instTmp);
+		startInstance(built_in_instances[i].instance_name);
 	}
 
 	while(1) {

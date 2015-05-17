@@ -62,13 +62,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DEBUG	1
+#define DEBUG	0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...)	printf(__VA_ARGS__)
 #define PRINT6ADDR(addr) PRINTF("[%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x]", ((uint8_t *)addr)[0], ((uint8_t *)addr)[1], ((uint8_t *)addr)[2], ((uint8_t *)addr)[3], ((uint8_t *)addr)[4], ((uint8_t *)addr)[5], ((uint8_t *)addr)[6], ((uint8_t *)addr)[7], ((uint8_t *)addr)[8], ((uint8_t *)addr)[9], ((uint8_t *)addr)[10], ((uint8_t *)addr)[11], ((uint8_t *)addr)[12], ((uint8_t *)addr)[13], ((uint8_t *)addr)[14], ((uint8_t *)addr)[15])
 #else
 #define PRINTF(...)
+#define PRINT6ADDR(addr)
 #endif
 
 /* Implementation-specific variables. */
@@ -96,6 +97,10 @@ static struct ctimer profile_timer;
 /* Deluge objects will get an ID that defaults to the current value of
    the next_object_id parameter. */
 static deluge_object_id_t next_object_id;
+
+
+/* used to store the callback' address */
+static OnCompletionCallback currentObjectCompletionCallback;
 
 /* Rime callbacks. */
 /*static void broadcast_recv(struct broadcast_conn *, const rimeaddr_t *);
@@ -224,7 +229,7 @@ init_object(struct deluge_object *obj, char *filename, unsigned version)
   obj->filename = filename;
   obj->object_id = next_object_id++;
   obj->size = file_size(filename);
-  printf("object size: %d\n", obj->size);
+  PRINTF("object size: %d\n", obj->size);
   obj->version = obj->update_version = version;
   obj->current_rx_page = 0;
   obj->nrequests = 0;
@@ -507,15 +512,21 @@ handle_packet(struct deluge_msg_packet *msg)
       write_page(&current_object, packet.pagenum, current_object.current_page);
       page->version = packet.version;
       page->flags = PAGE_COMPLETE;
-      PRINTF("Page %u completed\n", packet.pagenum);
+      printf("Page %u completed\n", packet.pagenum);
 
       current_object.current_rx_page++;
 
       if(packet.pagenum == OBJECT_PAGE_COUNT(current_object) - 1) {
-	current_object.version = current_object.update_version;
-	leds_on(LEDS_RED);
-	PRINTF("Update completed for object %u, version %u\n", 
+		current_object.version = current_object.update_version;
+		leds_on(LEDS_RED);
+		PRINTF("Update completed for object %u, version %u\n", 
 	       (unsigned)current_object.object_id, packet.version);
+	       
+	  	/* notify to whoever is listening */
+	  	if (currentObjectCompletionCallback != NULL) {
+	  		currentObjectCompletionCallback(packet.version);
+	  	}
+	       
       } else if(current_object.current_rx_page < OBJECT_PAGE_COUNT(current_object)) {
         if(ctimer_expired(&rx_timer)) {
 	  ctimer_set(&rx_timer,
@@ -687,8 +698,10 @@ broadcast_recv(struct simple_udp_connection *c,
 }
 
 int
-deluge_disseminate(char *file, unsigned version)
+deluge_disseminate(char *file, unsigned version, OnCompletionCallback method)
 {
+  currentObjectCompletionCallback = method;
+  
   /* This implementation disseminates at most one object. */
   if(next_object_id > 0 || init_object(&current_object, file, version) < 0) {
     return -1;
