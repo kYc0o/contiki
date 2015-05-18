@@ -223,12 +223,12 @@ processTrace(AdaptationPrimitive *ap) {
 	struct DictionaryPair* pair;
 	switch(ap->primitiveType) {
 	case AddDeployUnit:
-		PRINTF("INFO: Processing %s\n", ap->ref->internalGetKey(ap->ref));
-		if (!isAlreadyInstalled(ap->ref->internalGetKey(ap->ref))) {
-			runtime.deployUnitRetriever->getDeployUnit(ap->ref->internalGetKey(ap->ref));
+		PRINTF("INFO: Processing %s\n", ap->ref->VT->internalGetKey(ap->ref));
+		if (!isAlreadyInstalled(ap->ref->VT->internalGetKey(ap->ref))) {
+			runtime.deployUnitRetriever->getDeployUnit(ap->ref->VT->internalGetKey(ap->ref));
 			// FIXME : this is wrong, we should only add the entry to the list once we download it, but I am lazy and I know it won't fail (at least for the ShellRetriever)
 			struct DeployUnitEntry* entry = (struct DeployUnitEntry*)malloc(sizeof(struct DeployUnitEntry));
-			entry->id = strdup(ap->ref->internalGetKey(ap->ref));
+			entry->id = strdup(ap->ref->VT->internalGetKey(ap->ref));
 			list_add(runtime.deployUnits, entry);
 		}
 		else
@@ -236,15 +236,15 @@ processTrace(AdaptationPrimitive *ap) {
 		break;
 	case AddInstance:
 		ci = (ComponentInstance*)ap->ref;
-		td = ci->super->typeDefinition;
-		PRINTF("INFO: Processing %s\n", td->internalGetKey(td));
-		createInstance(td->internalGetKey(td), ci->super->super->name, &inst);
+		td = ci->typeDefinition;
+		PRINTF("INFO: Processing %s\n", td->VT->internalGetKey(td));
+		createInstance(td->VT->internalGetKey(td), ci->name, &inst);
 		process_post(&kev_model_installer, ADAPTATION_EXECUTED, NULL);
 		break;
 	case UpdateDictionaryInstance:
 		ci = (ComponentInstance*)ap->ref;
-		Dictionary *d = ci->super->dictionary;
-		e = findInstanceByName(ci->super->super->name);
+		Dictionary *d = ci->dictionary;
+		e = findInstanceByName(ci->name);
 		/* components */
 		hashmap_map* m = d->values;
 
@@ -267,8 +267,8 @@ processTrace(AdaptationPrimitive *ap) {
 		break;
 	case StartInstance:
 		ci = (ComponentInstance*)ap->ref;
-		PRINTF("INFO: Processing StartInstance %s\n", ci->super->super->name);
-		startInstance(ci->super->super->name);
+		PRINTF("INFO: Processing StartInstance %s\n", ci->name);
+		startInstance(ci->name);
 		process_post(&kev_model_installer, ADAPTATION_EXECUTED, NULL);
 		break;
 	}
