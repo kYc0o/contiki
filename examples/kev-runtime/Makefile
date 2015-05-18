@@ -1,5 +1,11 @@
 CONTIKI_PROJECT = kev-runtime
-CONTIKI_SOURCEFILES += kev-runtime.c myencode.c shell_group.c ShellBasedDeployUnitRetriever.c udpComponent.c deluge_group.c
+CONTIKI_SOURCEFILES += kev-runtime.c \
+	myencode.c \
+	shell_group.c \
+	ShellBasedDeployUnitRetriever.c \
+	udpComponent.c \
+	deluge_group.c \
+	NaiveUDPBasedDeployUnitRetriever.c
 
 ELF_LOADER=1
 TARGET=iotlab-m3

@@ -30,6 +30,7 @@
 #include "deluge_group.h"
 #include "udpComponent.h"
 #include "ShellBasedDeployUnitRetriever.h"
+#include "NaiveUDPBasedDeployUnitRetriever.h"
 
 #include "ContainerRoot.h"
 #include "JSONModelLoader.h"
@@ -45,7 +46,7 @@
 #define SHELL_BASED_RETRIEVER 2
 
 /* strategy to use */
-#define DEPLOY_UNIT_RETRIEVER_STRATEGY SHELL_BASED_RETRIEVER
+#define DEPLOY_UNIT_RETRIEVER_STRATEGY NAIVE_UDP_BASED_RETRIEVER
 
 /* built-in kevoree types */
 extern const GroupInterface ShellGroupInterface;
@@ -101,7 +102,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 	/* initialize Kevoree Runtime */
 	result = 1;
 #if DEPLOY_UNIT_RETRIEVER_STRATEGY == NAIVE_UDP_BASED_RETRIEVER
-	
+	result = initKevRuntime(&naive_udp_retriever);
 #elif DEPLOY_UNIT_RETRIEVER_STRATEGY == SMART_UDP_BASED_RETRIEVER
 
 #elif DEPLOY_UNIT_RETRIEVER_STRATEGY == SHELL_BASED_RETRIEVER

@@ -1,0 +1,6 @@
+#ifndef __NAIVE_UDP_DEPLOY_UNIT_RETRIEVER__
+#define __NAIVE_UDP_DEPLOY_UNIT_RETRIEVER__
+
+extern const DeployUnitRetriver naive_udp_retriever;
+
+#endif
