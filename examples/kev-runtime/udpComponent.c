@@ -41,8 +41,22 @@
 #define DEBUG DEBUG_PRINT
 #include "net/uip-debug.h"
 
-
 #define UDP_PORT 1234
+
+static struct simple_udp_connection unicast_connection;
+
+#if BUF_USES_STACK
+static char *bufptr, *bufend;
+#define ADD(...) do {                                                   \
+		bufptr += snprintf(bufptr, bufend - bufptr, __VA_ARGS__);      \
+} while(0)
+#else
+static char buf[256];
+static int blen;
+#define ADD(...) do {                                                   \
+		blen += snprintf(&buf[blen], sizeof(buf) - blen, __VA_ARGS__);      \
+} while(0)
+#endif
 
 /* forward declaration */
 static void* newUDPClient(const char*);
@@ -109,22 +123,100 @@ int updateUDPClient(void* instance)
 }
 
 static void
-receiver(struct simple_udp_connection *c,
-		const uip_ipaddr_t *sender_addr,
-		uint16_t sender_port,
-		const uip_ipaddr_t *receiver_addr,
-		uint16_t receiver_port,
-		const uint8_t *data,
-		uint16_t datalen)
+ipaddr_add(const uip_ipaddr_t *addr)
 {
-	printf("Data received from ");
-	uip_debug_ipaddr_print(sender_addr);
-	printf(" on port %d from port %d with length %d: '%s'\n",
-			receiver_port, sender_port, datalen, data);
+	uint16_t a;
+	int i, f;
+	for(i = 0, f = 0; i < sizeof(uip_ipaddr_t); i += 2) {
+		a = (addr->u8[i] << 8) + addr->u8[i + 1];
+		if(a == 0 && f >= 0) {
+			if(f++ == 0) ADD("::");
+		} else {
+			if(f > 0) {
+				f = -1;
+			} else if(i > 0) {
+				ADD(":");
+			}
+			ADD("%x", a);
+		}
+	}
 }
 
-static void
-print_local_addresses(void)
+static void generate_routes()
+{
+	static uip_ds6_route_t *r;
+	static uip_ds6_nbr_t *nbr;
+#if BUF_USES_STACK
+	char buf[256];
+#endif
+
+#if BUF_USES_STACK
+	bufptr = buf;bufend=bufptr+sizeof(buf);
+#else
+	blen = 0;
+#endif
+	ADD("Neighbors\n");
+
+	for(nbr = nbr_table_head(ds6_neighbors);
+			nbr != NULL;
+			nbr = nbr_table_next(ds6_neighbors, nbr)) {
+
+#if BUF_USES_STACK
+		{char* j=bufptr+25;
+		ipaddr_add(&nbr->ipaddr);
+		while (bufptr < j) ADD(" ");
+		switch (nbr->state) {
+		case NBR_INCOMPLETE: ADD(" INCOMPLETE");break;
+		case NBR_REACHABLE: ADD(" REACHABLE");break;
+		case NBR_STALE: ADD(" STALE");break;
+		case NBR_DELAY: ADD(" DELAY");break;
+		case NBR_PROBE: ADD(" NBR_PROBE");break;
+		}
+		}
+#else
+		{uint8_t j=blen+25;
+		ipaddr_add(&nbr->ipaddr);
+		while (blen < j) ADD(" ");
+		switch (nbr->state) {
+		case NBR_INCOMPLETE: ADD(" INCOMPLETE");break;
+		case NBR_REACHABLE: ADD(" REACHABLE");break;
+		case NBR_STALE: ADD(" STALE");break;
+		case NBR_DELAY: ADD(" DELAY");break;
+		case NBR_PROBE: ADD(" NBR_PROBE");break;
+		}
+		}
+#endif
+		ipaddr_add(&nbr->ipaddr);
+
+		ADD("\n");
+#if BUF_USES_STACK
+		if(bufptr > bufend - 45) {
+			SEND_STRING(&s->sout, buf);
+			bufptr = buf; bufend = bufptr + sizeof(buf);
+		}
+#else
+		if(blen > sizeof(buf) - 45) {
+			blen = 0;
+		}
+#endif
+	}
+	ADD("\nRoutes\n");
+#if BUF_USES_STACK
+	bufptr = buf; bufend = bufptr + sizeof(buf);
+#else
+	blen = 0;
+#endif
+
+	for(r = uip_ds6_route_head(); r != NULL; r = uip_ds6_route_next(r)) {
+
+#if BUF_USES_STACK
+		ADD("<a href=http://[");
+		ipaddr_add(&r->ipaddr);
+		ADD("]/status.shtml>");
+		ipaddr_add(&r->ipaddr);
+		ADD("</a>");
+
+		ipaddr_add(&r->ipaddr);
 {
 	int i;
 	uint8_t state;
@@ -140,6 +232,11 @@ print_local_addresses(void)
 			return; // please, just one address, I don't care if the interface has more than one address
 		}
 	}
+		blen = 0;
+#endif
+	}
+
+	printf("%s", buf);
 }
 
 PROCESS_THREAD(udp_component_kev, ev, data)
@@ -183,8 +280,7 @@ PROCESS_THREAD(udp_component_kev, ev, data)
 			
 			/* send message to the server */
 			simple_udp_sendto(&unicast_connection, buf, strlen(buf) + 1, &addr);
-			
-			/* generate_routes(); */
+			generate_routes();
 			etimer_restart(&timer);
 		} else {
 			/* process network messages */
