@@ -72,7 +72,7 @@ static const struct Built_In_Instance built_in_instances [] ={
 	{
 		.type_name = UDP_CLIENT_COMPONENT_TYPE_NAME,
 		.instance_name = "udpClient0",
-		.enabled = false
+		.enabled = true
 	}
 };
 
