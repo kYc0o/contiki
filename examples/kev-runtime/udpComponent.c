@@ -57,7 +57,21 @@ static int blen;
 		blen += snprintf(&buf[blen], sizeof(buf) - blen, __VA_ARGS__);      \
 } while(0)
 #endif
-
+/*-------------------------------------------------------------------------------------*/
+static void
+receiver(struct simple_udp_connection *c,
+		const uip_ipaddr_t *sender_addr,
+		uint16_t sender_port,
+		const uip_ipaddr_t *receiver_addr,
+		uint16_t receiver_port,
+		const uint8_t *data,
+		uint16_t datalen)
+{
+	printf("Data received from ");
+	uip_debug_ipaddr_print(sender_addr);
+	printf(" on port %d from port %d with length %d: '%s'\n",
+			receiver_port, sender_port, datalen, data);
+}
 /* forward declaration */
 static void* newUDPClient(const char*);
 static int startUDPClient(void* instance);
@@ -82,7 +96,7 @@ static
 void* newUDPClient(const char* componentTypeName)
 {
 	UDPClientComponent* i = (UDPClientComponent*)calloc(1, sizeof(UDPClientComponent));
-	
+
 	return i;
 }
 
@@ -95,13 +109,13 @@ int startUDPClient(void* instance)
 	UDPClientComponent* i = (UDPClientComponent*)instance;
 	KevContext* ctx = getContext(i);
 	printf("Hey instance of udp client %s\n", getInstanceName(ctx));
-	
+
 	/* setting parameters based on the dictionary or, as in this case, using constant values */
 	i->remotePort = UDP_PORT;
 	i->interval = 10000; // 10 seconds as interval
-	
+
 	free(ctx);
-	
+
 	process_start(&udp_component_kev, instance);
 	return 0;
 }
@@ -148,9 +162,6 @@ static void generate_routes()
 	static uip_ds6_nbr_t *nbr;
 #if BUF_USES_STACK
 	char buf[256];
-#endif
-
-#if BUF_USES_STACK
 	bufptr = buf;bufend=bufptr+sizeof(buf);
 #else
 	blen = 0;
@@ -186,21 +197,21 @@ static void generate_routes()
 		}
 		}
 #endif
-		ipaddr_add(&nbr->ipaddr);
-
 		ADD("\n");
 #if BUF_USES_STACK
 		if(bufptr > bufend - 45) {
-			SEND_STRING(&s->sout, buf);
+			PRINTF("%s", buf);
 			bufptr = buf; bufend = bufptr + sizeof(buf);
 		}
 #else
 		if(blen > sizeof(buf) - 45) {
+			PRINTF("%s", buf);
 			blen = 0;
 		}
 #endif
 	}
 	ADD("\nRoutes\n");
+	PRINTF("%s", buf);
 #if BUF_USES_STACK
 	bufptr = buf; bufend = bufptr + sizeof(buf);
 #else
@@ -208,35 +219,50 @@ static void generate_routes()
 #endif
 
 	for(r = uip_ds6_route_head(); r != NULL; r = uip_ds6_route_next(r)) {
-
-#if BUF_USES_STACK
-		ADD("<a href=http://[");
 		ipaddr_add(&r->ipaddr);
-		ADD("]/status.shtml>");
-		ipaddr_add(&r->ipaddr);
-		ADD("</a>");
-
-		ipaddr_add(&r->ipaddr);
-{
-	int i;
-	uint8_t state;
-
-	PRINTF("Local IPv6 address: \n");
-	for(i = 0; i < UIP_DS6_ADDR_NB; i++) {
-		state = uip_ds6_if.addr_list[i].state;
-		if(uip_ds6_if.addr_list[i].isused &&
-				(state == ADDR_TENTATIVE || state == ADDR_PREFERRED)) {
-			printf("\t");
-			PRINT6ADDR(&uip_ds6_if.addr_list[i].ipaddr);
-			PRINTF("\n");
-			return; // please, just one address, I don't care if the interface has more than one address
+		ADD("/%u (via ", r->length);
+		ipaddr_add(uip_ds6_route_nexthop(r));
+		if(1 || (r->state.lifetime < 600)) {
+			ADD(") %us\n", (unsigned int)r->state.lifetime); // iotlab printf does not have %lu
+		} else {
+			ADD(")\n");
 		}
-	}
+		PRINTF("%s", buf);
+#if BUF_USES_STACK
+		bufptr = buf; bufend = bufptr + sizeof(buf);
+#else
 		blen = 0;
 #endif
 	}
+}
 
-	printf("%s", buf);
+void
+print_local_addresses(void)
+{
+  int i;
+  uint8_t state;
+
+  PRINTF("Node IPv6 addresses: \n");
+  for(i = 0; i < UIP_DS6_ADDR_NB; i++) {
+    state = uip_ds6_if.addr_list[i].state;
+    if(uip_ds6_if.addr_list[i].isused) {
+      PRINTF("Address:  ");
+      PRINT6ADDR(&uip_ds6_if.addr_list[i].ipaddr);
+      /*
+      // hack to make address "final"
+      // ?why? not required ?
+      if(state == ADDR_TENTATIVE) {
+        uip_ds6_if.addr_list[i].state = ADDR_PREFERRED;
+      }
+      */
+      switch (state) {
+        case ADDR_TENTATIVE: PRINTF(" ADDR_TENTATIVE"); break;
+        case ADDR_PREFERRED: PRINTF(" ADDR_PREFERRED"); break;
+        case ADDR_DEPRECATED: PRINTF(" ADDR_DEPRECATED"); break;
+      }
+      PRINTF("\n");
+    }
+  }
 }
 
 PROCESS_THREAD(udp_component_kev, ev, data)
@@ -247,14 +273,14 @@ PROCESS_THREAD(udp_component_kev, ev, data)
 	static UDPClientComponent* inst;
 	static uint16_t message_number;
 	PROCESS_BEGIN();
-	
+
 	PRINTF("UDP server started\n");
-	
+
 	/* confire server address */
 	uip_ip6addr(&addr, 0xaaaa, 0, 0, 0, 0, 0, 0, 1);
 
 	inst = (UDPClientComponent*) data;
-	
+
 	/* print local address */
 	print_local_addresses();
 
@@ -270,14 +296,14 @@ PROCESS_THREAD(udp_component_kev, ev, data)
 		PROCESS_WAIT_EVENT();
 		if (ev == PROCESS_EVENT_TIMER) {
 			char buf[20];
-			
+
 			sprintf(buf, "Message %d", message_number++);
-			
+
 			printf("Sending %s unicast to ", buf);
 			uip_debug_ipaddr_print(&addr);
-			
+
 			printf("\n");
-			
+
 			/* send message to the server */
 			simple_udp_sendto(&unicast_connection, buf, strlen(buf) + 1, &addr);
 			generate_routes();
