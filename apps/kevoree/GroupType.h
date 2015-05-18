@@ -1,45 +1,70 @@
 #ifndef __GroupType_H
 #define __GroupType_H
 
-#include <string.h>
+#include "KMFContainer.h"
 #include <stdbool.h>
 #include "hashmap.h"
-#include "KMF4C.h"
-/*#include "TypeDefinition.h"*/
+#include "NamedElement.h"
+#include "TypeDefinition.h"
 
 typedef struct _GroupType GroupType;
-typedef struct _TypeDefinition TypeDefinition;
-typedef struct _Visitor Visitor;
 
-typedef char* (*fptrGroupTypeMetaClassName)(GroupType*);
-typedef char* (*fptrGroupTypeInternalGetKey)(GroupType*);
-typedef void (*fptrDeleteGroupType)(GroupType*);
-typedef void (*fptrVisitAttrGroupType)(void*, char*, Visitor*, bool);
-typedef void (*fptrVisitRefsGroupType)(void*, char*, Visitor*);
-
-typedef struct _GroupType {
-	void *pDerivedObj;
-	char *eContainer;
-	char *path;
-	map_t refs;
+typedef struct _GroupType_VT {
+	TypeDefinition_VT *super;
+	/*
+	 * KMFContainer
+	 * NamedElement
+	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
-	fptrVisitAttr VisitAttributes;
-	fptrVisitAttr VisitPathAttributes;
-	fptrVisitRefs VisitReferences;
-	fptrVisitRefs VisitPathReferences;
-	fptrFindByPath FindByPath;
-	fptrDelete Delete;
-	TypeDefinition* super;
+	fptrVisit visit;
+	fptrFindByPath findByPath;
+	fptrDelete delete;
+	/*
+	 * TypeDefinition
+	 */
+	fptrTypeDefAddDeployUnit addDeployUnit;
+	fptrTypeDefAddDictionaryType addDictionaryType;
+	fptrTypeDefAddSuperTypes addSuperTypes;
+	fptrTypeDefRemoveDeployUnit removeDeployUnit;
+	fptrTypeDefRemoveDictionaryType removeDictionaryType;
+	fptrTypeDefRemoveSuperTypes removeSuperTypes;
+	/*
+	 * GroupType
+	 */
+} GroupType_VT;
+
+typedef struct _GroupType {
+	GroupType *next;
+	GroupType_VT *VT;
+	/*
+	 * KMFContainer
+	 */
+	char *eContainer;
+	char *path;
+	/*
+	 * NamedElement
+	 */
+	char *name;
+	/*
+	 * TypeDefinition
+	 */
+	char *version;
+	char *factoryBean;
+	char *bean;
+	bool abstract;
+	char *internalKey;
+	DeployUnit *deployUnits;
+	DictionaryType *dictionaryType;
+	map_t superTypes;
+	/*
+	 * GroupType
+	 */
 } GroupType;
 
-TypeDefinition* newPoly_GroupType(void);
 GroupType* new_GroupType(void);
-char* GroupType_metaClassName(void * const this);
-char* GroupType_internalGetKey(void * const this);
-void deletePoly_GroupType(void * const this);
-void delete_GroupType(void * const this);
-void GroupType_VisitAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void GroupType_VisitPathAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
+void initGroupType(GroupType * const this);
+
+extern const GroupType_VT groupType_VT;
 
 #endif /* __GroupType_H */

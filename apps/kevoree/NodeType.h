@@ -1,44 +1,63 @@
 #ifndef H_NodeType
 #define H_NodeType
 
-#include <stdbool.h>
-#include "KMF4C.h"
-/*#include "TypeDefinition.h"*/
+#include "TypeDefinition.h"
 
 typedef struct _NodeType NodeType;
-typedef struct _TypeDefinition TypeDefinition;
-typedef struct _Visitor Visitor;
 
-typedef char* (*fptrNodeTypeMetaClassName)(NodeType*);
-typedef char* (*fptrNodeTypeInternalGetKey)(void*);
-typedef void (*fptrDeleteNodeType)(NodeType*);
-typedef void (*fptrVisitAttrNodeType)(void*, char*, Visitor*, bool);
-typedef void (*fptrVisitRefsNodeType)(void*, char*, Visitor*);
-typedef void* (*fptrFindByPathNodeType)(char*, TypeDefinition*);
-
-typedef struct _NodeType {
-	void *pDerivedObj;
-	char *eContainer;
-	char *path;
-	map_t refs;
+typedef struct _NodeType_VT {
+	TypeDefinition_VT *super;
+	/*
+	 * KMFContainer
+	 * NamedElement
+	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
-	fptrVisitAttr VisitAttributes;
-	fptrVisitAttr VisitPathAttributes;
-	fptrVisitRefs VisitReferences;
-	fptrVisitRefs VisitPathReferences;
-	fptrFindByPath FindByPath;
-	fptrDelete Delete;
-	TypeDefinition* super;
+	fptrVisit visit;
+	fptrFindByPath findByPath;
+	fptrDelete delete;
+	/*
+	 * TypeDefinition
+	 */
+	fptrTypeDefAddDeployUnit addDeployUnit;
+	fptrTypeDefAddDictionaryType addDictionaryType;
+	fptrTypeDefAddSuperTypes addSuperTypes;
+	fptrTypeDefRemoveDeployUnit removeDeployUnit;
+	fptrTypeDefRemoveDictionaryType removeDictionaryType;
+	fptrTypeDefRemoveSuperTypes removeSuperTypes;
+	/*
+	 * NodeType
+	 */
+} NodeType_VT;
+
+typedef struct _NodeType {
+	TypeDefinition *next;
+	NodeType_VT *VT;
+	/*
+	 * KMFContainer
+	 */
+	char *eContainer;
+	char *path;
+	/*
+	 * TypeDefinition
+	 */
+	char *name;
+	char *version;
+	char *factoryBean;
+	char *bean;
+	bool abstract;
+	char *internalKey;
+	DeployUnit *deployUnits;
+	DictionaryType *dictionaryType;
+	map_t superTypes;
+	/*
+	 * NodeType
+	 */
 } NodeType;
 
-TypeDefinition* newPoly_NodeType(void);
 NodeType* new_NodeType(void);
-void deletePoly_NodeType(void * const this);
-void delete_NodeType(void * const this);
-char* NodeType_metaClassName(void * const this);
-char* NodeType_internalGetKey(void * const this);
-void NodeType_VisitAttributes(void * const this, char* parent, Visitor* visitor, bool recursive);
-void NodeType_VisitPathAttributes(void * const this, char* parent, Visitor* visitor, bool recursive);
+void initNodeType(NodeType * const this);
+
+extern const NodeType_VT nodeType_VT;
 
 #endif /* H_NodeType */

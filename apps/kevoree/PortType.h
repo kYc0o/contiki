@@ -2,44 +2,69 @@
 #define __PortType_H
 
 #include <stdbool.h>
-#include "KMF4C.h"
+
+#include "hashmap.h"
+#include "KMFContainer.h"
+#include "NamedElement.h"
+#include "TypeDefinition.h"
 
 typedef struct _PortType PortType;
-typedef struct _TypeDefinition TypeDefinition;
-typedef struct _Visitor Visitor;
 
-typedef char* (*fptrPortTypeMetaClassName)(PortType*);
-typedef char* (*fptrPortTypeInternalGetKey)(PortType*);
-typedef void (*fptrDeletePortType)(PortType*);
-typedef void (*fptrVisitAttrPortType)(void*, char*, Visitor*, bool);
-typedef void (*fptrVisitRefsPortType)(void*, char*, Visitor*);
-typedef void* (*fptrFindByPathPortType)(char*, TypeDefinition*);
-
-typedef struct _PortType {
-	void *pDerivedObj;
-	char *eContainer;
-	char *path;
-	map_t refs;
+typedef struct _PortType_VT {
+	TypeDefinition_VT *super;
+	/*
+	 * KMFContainer
+	 * NamedElement
+	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
-	fptrVisitAttr VisitAttributes;
-	fptrVisitAttr VisitPathAttributes;
-	fptrVisitRefs VisitReferences;
-	fptrVisitRefs VisitPathReferences;
-	fptrFindByPath FindByPath;
-	fptrDelete Delete;
-	TypeDefinition* super;
+	fptrVisit visit;
+	fptrFindByPath findByPath;
+	fptrDelete delete;
+	/*
+	 * TypeDefinition
+	 */
+	fptrTypeDefAddDeployUnit addDeployUnit;
+	fptrTypeDefAddDictionaryType addDictionaryType;
+	fptrTypeDefAddSuperTypes addSuperTypes;
+	fptrTypeDefRemoveDeployUnit removeDeployUnit;
+	fptrTypeDefRemoveDictionaryType removeDictionaryType;
+	fptrTypeDefRemoveSuperTypes removeSuperTypes;
+} PortType_VT;
+
+typedef struct _PortType {
+	PortType *next;
+	PortType_VT *VT;
+	/*
+	 * KMFContainer
+	 */
+	char *eContainer;
+	char *path;
+	/*
+	 * NamedElement
+	 */
+	char *name;
+	/*
+	 * TypeDefinition
+	 */
+	char *version;
+	char *factoryBean;
+	char *bean;
+	bool abstract;
+	char *internalKey;
+	DeployUnit *deployUnits;
+	DictionaryType *dictionaryType;
+	map_t superTypes;
+	TypeDefinition_VT *typDefVT;
+	/*
+	 * PortType
+	 */
 	bool synchrone;
 } PortType;
 
-TypeDefinition* newPoly_PortType(void);
 PortType* new_PortType(void);
-char* PortType_metaClassName(void * const this);
-char* PortType_internalGetKey(void * const this);
-void deletePoly_PortType(void * const this);
-void delete_PortType(void * const this);
-void PortType_VisitAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void PortType_VisitPathAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void* PortType_FindByPath(char* attribute, void * const this);
+void initPortType(PortType * const this);
+
+extern const PortType_VT portType_VT;
 
 #endif /*__PortType_H */

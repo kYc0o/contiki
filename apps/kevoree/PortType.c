@@ -1,5 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+
 #include "NamedElement.h"
 #include "TypeDefinition.h"
 #include "Visitor.h"
@@ -12,170 +14,112 @@
 #define PRINTF(...)
 #endif
 
-TypeDefinition* newPoly_PortType()
+void initPortType(PortType * const this)
 {
-	PortType* pPortTypeObj = NULL;
-	TypeDefinition* pObj = new_TypeDefinition();
-
-	/* Allocating memory */
-	pPortTypeObj = (PortType*)malloc(sizeof(PortType));
-
-	if (pPortTypeObj == NULL)
-	{
-		pObj->Delete(pObj);
-		return NULL;
-	}
-
-	pObj->pDerivedObj = pPortTypeObj; /* Pointing to derived object */
-	pPortTypeObj->super = pObj;
-	
-	pPortTypeObj->synchrone = -1;
-
-	pObj->super->metaClassName = PortType_metaClassName;
-	pObj->internalGetKey = PortType_internalGetKey;
-	pObj->VisitAttributes = PortType_VisitAttributes;
-	pObj->VisitPathAttributes = PortType_VisitPathAttributes;
-	pObj->VisitReferences = TypeDefinition_VisitReferences;
-	pObj->VisitPathReferences = TypeDefinition_VisitPathReferences;
-	pObj->FindByPath = PortType_FindByPath;
-	
-	pObj->Delete = deletePoly_PortType;
-
-	return pObj;
+	initTypeDefinition((TypeDefinition*)this);
+	this->synchrone = -1;
 }
 
-PortType* new_PortType()
+static char
+*PortType_metaClassName(PortType * const this)
 {
-	PortType* pPortTypeObj = NULL;
-	TypeDefinition* pObj = new_TypeDefinition();
-	
-	if(pObj == NULL)
-		return NULL;
-
-	/* Allocating memory */
-	pPortTypeObj = (PortType*)malloc(sizeof(PortType));
-
-	if (pPortTypeObj == NULL)
-	{
-		return NULL;
-	}
-
-	pPortTypeObj->super = pObj;
-
-	pPortTypeObj->synchrone = -1;
-	
-	pPortTypeObj->metaClassName = PortType_metaClassName;
-	pPortTypeObj->internalGetKey = PortType_internalGetKey;
-	pPortTypeObj->VisitAttributes = PortType_VisitAttributes;
-	pPortTypeObj->VisitPathAttributes = PortType_VisitPathAttributes;
-	pPortTypeObj->VisitReferences = TypeDefinition_VisitReferences;
-	pPortTypeObj->VisitPathReferences = TypeDefinition_VisitPathReferences;
-	pPortTypeObj->FindByPath = PortType_FindByPath;
-	
-	pPortTypeObj->Delete = delete_PortType;
-
-	return pPortTypeObj;
-}
-
-char* PortType_metaClassName(void * const this)
-{
-	/*
-	char *name;
-
-	name = malloc(sizeof(char) * (strlen("PortType")) + 1);
-	if(name != NULL)
-		strcpy(name, "PortType");
-	else
-		return NULL;
-	
-	return name;
-	*/
 	return "PortType";
 }
 
-char* PortType_internalGetKey(void * const this)
+static char
+*PortType_internalGetKey(PortType * const this)
 {
-	return TypeDefinition_internalGetKey((TypeDefinition*)this);
+	return typeDefinition_VT.internalGetKey((TypeDefinition*)this);
 }
 
-void deletePoly_PortType(void * const this)
+static void
+delete_PortType(PortType * const this)
 {
-	TypeDefinition *pObj = (TypeDefinition*)this;
-	PortType* pPortTypeObj;
-	pPortTypeObj = pObj->pDerivedObj;
-	/*destroy derived obj*/
-	free(pPortTypeObj);
-	/*destroy base Obj*/
-	delete_TypeDefinition(pObj);
-}
-
-void delete_PortType(void * const this)
-{
-	PortType *pObj = (PortType*)this;
 	/* destroy base object */
-	delete_TypeDefinition(pObj->super);
+	typeDefinition_VT.delete((TypeDefinition*)this);
 	/* destroy data memebers */
-	free(pObj);
+	/*
+	 * There are no data members
+	 */
 }
 
-void PortType_VisitAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
+static void
+PortType_visit(PortType * const this, char *parent, fptrVisitAction action, fptrVisitActionRef secondAction, bool visitPaths)
 {
-	if(recursive)
-	{
-		PortType* porttype = ((TypeDefinition*)this)->pDerivedObj;
+	char path[256];
+	memset(&path[0], 0, sizeof(path));
 
-		char path[256];
-		memset(&path[0], 0, sizeof(path));
+	typeDefinition_VT.visit((TypeDefinition*)this, parent, action, secondAction, visitPaths);
 
-		TypeDefinition_VisitAttributes(((TypeDefinition*)(this)), parent, visitor, recursive);
-
-		sprintf(path, "synchrone");
-		visitor->action(path, BOOL, (void*)porttype->synchrone);
-		visitor->action(NULL, RETURN, NULL);
-	}
-	else
-	{
-		TypeDefinition_VisitAttributes(((TypeDefinition*)(this)), parent, visitor, recursive);
-	}
-}
-
-void PortType_VisitPathAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	if(recursive)
-	{
-		PortType* porttype = ((TypeDefinition*)this)->pDerivedObj;
-
-		char path[256];
-		memset(&path[0], 0, sizeof(path));
-
-		TypeDefinition_VisitPathAttributes(((TypeDefinition*)(this)), parent, visitor, recursive);
-
+	if (visitPaths) {
 		sprintf(path, "%s\\synchrone", parent);
-		visitor->action(path, BOOL, (void*)(porttype->synchrone));
-	}
-	else
-	{
-		TypeDefinition_VisitPathAttributes(((TypeDefinition*)(this)), parent, visitor, recursive);
+		action(path, BOOL, (void*)(this->synchrone));
+	} else {
+		action("synchrone", BOOL, (void*)this->synchrone);
+		action(NULL, RETURN, NULL);
 	}
 }
 
-void* PortType_FindByPath(char* attribute, void * const this)
+void
+*PortType_findByPath(PortType * const this, char *attribute)
 {
-	TypeDefinition *pObj = (TypeDefinition*)this;
 	/* TypeDefinition attributes */
-	if(!strcmp("name",attribute) ||  !strcmp("version",attribute) || !strcmp("factoryBean",attribute) || !strcmp("bean",attribute) || !strcmp("abstract",attribute))
-	{
-		return TypeDefinition_FindByPath(attribute, pObj);
-	}
 	/* Local attributes */
-	else if(!strcmp("synchrone", attribute))
-	{
-		PortType* porttype = pObj->pDerivedObj;
-		return (void*)porttype->synchrone;
+	if(!strcmp("synchrone", attribute)) {
+		return (void*)this->synchrone;
 	}
 	/* TypeDefinition references */
-	else
-	{
-		return TypeDefinition_FindByPath(attribute, pObj);
+	else {
+		return typeDefinition_VT.findByPath((TypeDefinition*)this, attribute);
 	}
+}
+
+const PortType_VT portType_VT = {
+		/*
+		 * KMFContainer
+		 * NamedElement
+		 */
+		.super = &typeDefinition_VT,
+		.metaClassName = PortType_metaClassName,
+		.internalGetKey = PortType_internalGetKey,
+		.visit = PortType_visit,
+		.findByPath = TypeDefinition_findByPath,
+		.delete = delete_PortType,
+		/*
+		 * TypeDefinition
+		 */
+		.addDeployUnit = TypeDefinition_addDeployUnit,
+		.addDictionaryType = TypeDefinition_addDictionaryType,
+		.addSuperTypes = TypeDefinition_addSuperTypes,
+		.removeDeployUnit = TypeDefinition_removeDeployUnit,
+		.removeDictionaryType = TypeDefinition_removeDictionaryType,
+		.removeSuperTypes = TypeDefinition_removeSuperTypes
+		/*
+		 * NodeType
+		 */
+};
+
+PortType
+*new_PortType()
+{
+	PortType* pPortTypeObj = NULL;
+
+	/* Allocating memory */
+	pPortTypeObj = (PortType*)malloc(sizeof(PortType));
+
+	if (pPortTypeObj == NULL) {
+		PRINTF("ERROR: Cannot create PortType!\n");
+		return NULL;
+	}
+
+	/*
+	 * Virtual Table
+	 */
+	pPortTypeObj->VT = &portType_VT;
+	/*
+	 * PortType
+	 */
+	initPortType(pPortTypeObj);
+
+	return pPortTypeObj;
 }

@@ -15,13 +15,14 @@ typedef struct _KMFContainer KMFContainer;
 typedef void (*fptrDeleteAP)(AdaptationPrimitive*);
 
 typedef struct _AdaptationPrimitive {
-	void* next;
 	fptrDeleteAP delete;
+	int priority;
 	int primitiveType;
 	char *targetNodeName;
 	KMFContainer *ref;
 } AdaptationPrimitive;
 
 AdaptationPrimitive *new_AdaptationPrimitive(void);
+void delete_AdaptationPrimitive(AdaptationPrimitive * const this);
 
 #endif /* ADAPTATIONPRIMITIVE_H_ */

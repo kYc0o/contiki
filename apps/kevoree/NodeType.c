@@ -1,4 +1,6 @@
 #include <string.h>
+#include <stdlib.h>
+
 #include "NodeType.h"
 #include "TypeDefinition.h"
 #include "NamedElement.h"
@@ -10,115 +12,98 @@
 #define PRINTF(...)
 #endif
 
-TypeDefinition* newPoly_NodeType()
+void initNodeType(NodeType * const this)
 {
-	NodeType* pNodeTypeObj = NULL;
-	TypeDefinition* pObj = new_TypeDefinition();
-
-	/* Allocating memory */
-	pNodeTypeObj = (NodeType*)malloc(sizeof(NodeType));
-
-	if (pNodeTypeObj == NULL)
-	{
-		pObj->Delete(pObj);
-		return NULL;
-	}
-
-	pObj->pDerivedObj = pNodeTypeObj; /* Pointing to derived object */
-	pNodeTypeObj->super = pObj;
-
-	pObj->super->metaClassName = NodeType_metaClassName;
-	pObj->internalGetKey = NodeType_internalGetKey;
-	pObj->VisitAttributes = NodeType_VisitAttributes;
-	pObj->VisitPathAttributes = NodeType_VisitPathAttributes;
-	pObj->VisitReferences = TypeDefinition_VisitReferences;
-	pObj->VisitPathReferences = TypeDefinition_VisitPathReferences;
-	
-	pObj->Delete = deletePoly_NodeType;
-
-	return pObj;
+	/*
+	 * Initialize parent
+	 */
+	initTypeDefinition((TypeDefinition*)this);
 }
+
+static char
+*NodeType_internalGetKey(NodeType * const this)
+{
+	return typeDefinition_VT.internalGetKey((TypeDefinition*)this);
+}
+
+static char
+*NodeType_metaClassName(void * const this)
+{
+	return "NodeType";
+}
+
+static void
+delete_NodeType(NodeType * const this)
+{
+	/* destroy base object */
+	typeDefinition_VT.delete((TypeDefinition*)this);
+	/* destroy data members */
+	/*
+	 * There are no data members
+	 */
+
+}
+
+static void NodeType_visit(NodeType * const this, char *parent, fptrVisitAction action, fptrVisitActionRef secondAction, bool visitPaths)
+{
+	typeDefinition_VT.visit((TypeDefinition*)this, parent, action, secondAction, visitPaths);
+
+}
+
+static void *NodeType_findByPath(NodeType * const this, char *attribute)
+{
+	return typeDefinition_VT.findByPath((TypeDefinition*)this, attribute);
+}
+
+const NodeType_VT nodeType_VT = {
+		/*
+		 * KMFContainer
+		 * NamedElement
+		 */
+		.super = &typeDefinition_VT,
+		.metaClassName = NodeType_metaClassName,
+		.internalGetKey = NodeType_internalGetKey,
+		.visit = NodeType_visit,
+		.findByPath = NodeType_findByPath,
+		.delete = delete_NodeType,
+		/*
+		 * TypeDefinition
+		 */
+		.addDeployUnit = TypeDefinition_addDeployUnit,
+		.addDictionaryType = TypeDefinition_addDictionaryType,
+		.addSuperTypes = TypeDefinition_addSuperTypes,
+		.removeDeployUnit = TypeDefinition_removeDeployUnit,
+		.removeDictionaryType = TypeDefinition_removeDictionaryType,
+		.removeSuperTypes = TypeDefinition_removeSuperTypes
+		/*
+		 * NodeType
+		 */
+};
 
 NodeType* new_NodeType()
 {
 	NodeType* pNodeTypeObj = NULL;
-	TypeDefinition* pObj = new_TypeDefinition();
-	
-	if(pObj == NULL)
-		return NULL;
 
 	/* Allocating memory */
-	pNodeTypeObj = (NodeType*)malloc(sizeof(NodeType));
+	pNodeTypeObj = malloc(sizeof(NodeType));
 
-	if (pNodeTypeObj == NULL)
-	{
+	if (pNodeTypeObj == NULL) {
+		PRINTF("ERROR: Cannot create NodeType!\n");
 		return NULL;
 	}
 
-	/*pObj->pDerivedObj = pNodeTypeObj;  Pointing to derived object */
-	pNodeTypeObj->super = pObj;
+	/*
+	 * Virtual Table
+	 */
+	pNodeTypeObj->VT = &nodeType_VT;
 
-	pNodeTypeObj->metaClassName = NodeType_metaClassName;
-	pNodeTypeObj->internalGetKey = NodeType_internalGetKey;
-	pNodeTypeObj->VisitAttributes = NodeType_VisitAttributes;
-	pNodeTypeObj->VisitPathAttributes = NodeType_VisitPathAttributes;
-	pNodeTypeObj->VisitReferences = TypeDefinition_VisitAttributes;
-	pNodeTypeObj->VisitPathReferences = TypeDefinition_VisitPathAttributes;
-	pNodeTypeObj->FindByPath = TypeDefinition_FindByPath;
-	
-	pNodeTypeObj->Delete = delete_NodeType;
+	/*
+	 * NodeType
+	 */
+	initNodeType(pNodeTypeObj);
+	/*
+	 * There are no members
+	 */
 
 	return pNodeTypeObj;
-}
-
-char* NodeType_internalGetKey(void* const this)
-{
-	return TypeDefinition_internalGetKey((TypeDefinition*)this);
-}
-
-char* NodeType_metaClassName(void * const this)
-{
-	/*
-	char *name;
-
-	name = malloc(sizeof(char) * (strlen("NodeType")) + 1);
-	if(name != NULL)
-		strcpy(name, "NodeType");
-	else
-		return NULL;
-	
-	return name;
-	*/
-	return "NodeType";
-}
-
-void deletePoly_NodeType(void * const this)
-{
-	TypeDefinition *pObj = (TypeDefinition*)this;
-	NodeType* pNodeTypeObj;
-	pNodeTypeObj = pObj->pDerivedObj;
-	/*destroy derived obj*/
-	free(pNodeTypeObj);
-	/*destroy base Obj*/
-	delete_TypeDefinition(this);
-}
-
-void delete_NodeType(void * const this)
-{
-	NodeType *pObj = (NodeType*)this;
-	/* destroy base object */
-	delete_TypeDefinition(pObj->super);
-	/* destroy data memebers */
-	free(pObj);
-	
-}
-
-void NodeType_VisitAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	TypeDefinition_VisitAttributes(((TypeDefinition*)(this)), parent, visitor, recursive);
-}
-
-void NodeType_VisitPathAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	TypeDefinition_VisitPathAttributes(((TypeDefinition*)(this)), parent, visitor, recursive);
 }

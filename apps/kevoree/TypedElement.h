@@ -2,54 +2,59 @@
 #define __TypedElement_H
 
 #include "hashmap.h"
+#include "KMFContainer.h"
+#include "NamedElement.h"
 
 typedef struct _TypedElement TypedElement;
-typedef struct _NamedElement NamedElement;
-typedef struct _Visitor Visitor;
 
-typedef char* (*fptrTypElemMetaClassName)(TypedElement*);
-typedef char* (*fptrTypElemInternalGetKey)(TypedElement*);
 typedef TypedElement* (*fptrTypElemFindGenericTypesByID)(TypedElement*, char*);
 typedef void (*fptrTypElemAddGenericTypes)(TypedElement*, TypedElement*);
 typedef void (*fptrTypElemRemoveGenericTypes)(TypedElement*, TypedElement*);
-typedef void (*fptrDeleteTypedElement)(TypedElement*);
-typedef void (*fptrVisitAttrTypedElement)(void*, char*, Visitor*);
-typedef void (*fptrVisitRefsTypedElement)(void*, char*, Visitor*);
-typedef void* (*fptrFindByPathTypedElement)(char*, TypedElement*);
 
-typedef struct _TypedElement {
-	void *pDerivedObj;
-	char *eContainer;
-	char *path;
-	map_t refs;
+typedef struct _TypedElement_VT {
+	NamedElement_VT *super;
+	/*
+	 * KMFContainer
+	 * NamedElement
+	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
-	fptrVisitAttr VisitAttributes;
-	fptrVisitAttr VisitPathAttributes;
-	fptrVisitRefs VisitReferences;
-	fptrVisitRefs VisitPathReferences;
-	fptrFindByPath FindByPath;
-	fptrDelete Delete;
-	NamedElement* super;
+	fptrVisit visit;
+	fptrFindByPath findByPath;
+	fptrDelete delete;
+	/*
+	 * TypedElement
+	 */
+	fptrTypElemFindGenericTypesByID findGenericTypesByID;
+	fptrTypElemAddGenericTypes addGenericTypes;
+	fptrTypElemRemoveGenericTypes removeGenericTypes;
+} TypedElement_VT;
+
+typedef struct _TypedElement {
+	TypedElement *next;
+	TypedElement_VT *VT;
+	/*
+	 * KMFContainer
+	 */
+	char *eContainer;
+	char *path;
+	/*
+	 * NamedElement
+	 */
+	char *name;
+	/*
+	 * TypedElement
+	 */
 	map_t genericTypes;
-	fptrTypElemFindGenericTypesByID FindGenericTypesByID;
-	fptrTypElemAddGenericTypes AddGenericTypes;
-	fptrTypElemRemoveGenericTypes RemoveGenericTypes;
 } TypedElement;
 
-NamedElement* newPoly_TypedElement(void);
 TypedElement* new_TypedElement(void);
-char* TypedElement_metaClassName(void * const this);
-char* TypedElement_internalGetKey(void * const this);
-TypedElement* TypedElement_FindGenericTypesByID(TypedElement* const this, char* id);
-void TypedElement_AddGenericTypes(TypedElement* const this, TypedElement* ptr);
-void TypedElement_RemoveGenericTypes(TypedElement* const this, TypedElement* ptr);
-void deletePoly_TypedElement(void * const this);
-void delete_TypedElement(void * const this);
-void TypedElement_VisitAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void TypedElement_VisitPathAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void TypedElement_VisitReferences(void* const this, char* parent, Visitor* visitor, bool recursive);
-void TypedElement_VisitPathReferences(void* const this, char* parent, Visitor* visitor, bool recursive);
-void* TypedElement_FindByPath(char* attribute, void * const this);
+void initTypedElement(TypedElement * const this);
+
+TypedElement *TypedElement_findGenericTypesByID(TypedElement * const this, char *id);
+void TypedElement_addGenericTypes(TypedElement * const this, TypedElement *ptr);
+void TypedElement_removeGenericTypes(TypedElement * const this, TypedElement *ptr);
+
+extern const TypedElement_VT typedElement_VT;
 
 #endif /* __TypedElement_H */

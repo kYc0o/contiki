@@ -3,56 +3,74 @@
 
 #include <stdbool.h>
 #include "hashmap.h"
-#include "KMF4C.h"
+#include "Instance.h"
 
 typedef struct _ContainerNode ContainerNode;
 typedef struct _Group Group;
-typedef struct _Instance Instance;
-typedef struct _Visitor Visitor;
 
-typedef char* (*fptrGroupInternalGetKey)(Group*);
-typedef char* (*fptrGroupMetaClassName)(Group*);
 typedef ContainerNode* (*fptrGroupFindSubNodesByID)(Group*, char*);
 typedef void (*fptrGroupAddSubNodes)(Group*, ContainerNode*);
 typedef void (*fptrGroupRemoveSubNodes)(Group*, ContainerNode*);
-typedef void (*fptrDeleteGroup)(Group*);
-typedef void (*fptrVisitAttrGroup)(void*, char*, Visitor*, bool);
-typedef void (*fptrVisitRefsGroup)(void*, char*, Visitor*, bool);
 typedef void* (*fptrFindByPathGroup)(char*, Group*);
 
-typedef struct _Group { 
-	void *pDerivedObj;
-	char *eContainer;
-	char *path;
-	map_t refs;
+typedef struct _Group_VT {
+	Instance_VT *super;
+	/*
+	 * KMFContainer_VT
+	 * NamedElement_VT
+	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
-	fptrVisitAttr VisitAttributes;
-	fptrVisitAttr VisitPathAttributes;
-	fptrVisitRefs VisitReferences;
-	fptrVisitRefs VisitPathReferences;
-	fptrFindByPath FindByPath;
-	fptrDelete Delete;
-	Instance *super;
+	fptrVisit visit;
+	fptrFindByPath findByPath;
+	fptrDelete delete;
+	/*
+	 * Instance_VT
+	 */
+	fptrInstFindFragDictByID findFragmentDictionaryByID;
+	fptrInstAddTypeDefinition addTypeDefinition;
+	fptrInstAddDictionary addDictionary;
+	fptrInstAddFragmentDictionary addFragmentDictionary;
+	fptrInstRemoveTypeDefinition removeTypeDefinition;
+	fptrInstRemoveDictionary removeDictionary;
+	fptrInstRemoveFragmentDictionary removeFragmentDictionary;
+	/*
+	 * Group_VT
+	 */
+	fptrGroupAddSubNodes addSubNodes;
+	fptrGroupRemoveSubNodes removeSubNodes;
+	fptrGroupFindSubNodesByID findSubNodesByID;
+} Group_VT;
+
+typedef struct _Group {
+	Group *next;
+	Group_VT *VT;
+	/*
+	 * KMFContainer
+	 */
+	char *eContainer;
+	char *path;
+	/*
+	 * NamedElement
+	 */
+	char *name;
+	/*
+	 * Instance
+	 */
+	char *metaData;
+	bool started;
+	TypeDefinition *typeDefinition;
+	Dictionary *dictionary;
+	map_t fragmentDictionary;
+	/*
+	 * Group
+	 */
 	map_t subNodes;
-	fptrGroupAddSubNodes AddSubNodes;
-	fptrGroupRemoveSubNodes RemoveSubNodes;
-	fptrGroupFindSubNodesByID FindSubNodesByID;
 } Group;
 
-Instance* newPoly_Group(void);
 Group* new_Group(void);
-char* Group_internalGetKey(void* const this);
-char* Group_metaClassName(void* const this);
-ContainerNode* Group_FindSubNodesByID(Group* const this, char* id);
-void Group_AddSubNodes(Group* const this, ContainerNode* ptr);
-void Group_RemoveSubNodes(Group* const this, ContainerNode* ptr);
-void deletePoly_Group(void * const this);
-void delete_Group(void * const this);
-void Group_VisitAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void Group_VisitPathAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void Group_VisitReferences(void* const this, char* parent, Visitor* visitor, bool recursive);
-void Group_VisitPathReferences(void* const this, char* parent, Visitor* visitor, bool recursive);
-void* Group_FindByPath(char *attribute, void * const this);
+void initGroup(Group * const this);
+
+extern const Group_VT group_VT;
 
 #endif /* H_Group */

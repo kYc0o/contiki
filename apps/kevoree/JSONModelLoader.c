@@ -17,7 +17,7 @@ JSONModelLoader *new_JSONModelLoader()
 {
 	JSONModelLoader *pObj = NULL;
 
-	pObj = (JSONModelLoader*)malloc(sizeof(JSONModelLoader));
+	pObj = malloc(sizeof(JSONModelLoader));
 
 	if(pObj == NULL)
 	{
@@ -36,7 +36,7 @@ ObjectReference *new_ObjectReference(char *srcObjId, char *refId)
 {
 	ObjectReference *pObj = NULL;
 
-	pObj = (ObjectReference*)malloc(sizeof(ObjectReference));
+	pObj = malloc(sizeof(ObjectReference));
 
 	if(pObj == NULL)
 	{
@@ -183,12 +183,12 @@ int resolveReferences(any_t root, any_t objRef)
 			if(!strcmp(refObjId, "groups"))
 			{
 				free(refObjId);
-				Group *grp = model->FindGroupsByID(model, refId);
-				ContainerNode *node = model->FindNodesByID(model, srcId);
+				Group *grp = model->VT->findGroupsByID(model, refId);
+				ContainerNode *node = model->VT->findNodesByID(model, srcId);
 				if(grp != NULL && node != NULL)
 				{
 					PRINTF("Adding group %s to node %s\n", grp->internalGetKey(grp), node->internalGetKey(node));
-					node->AddGroups(node, grp);
+					node->VT->addGroups(node, grp);
 					return MAP_OK;
 				}
 				else
@@ -203,12 +203,12 @@ int resolveReferences(any_t root, any_t objRef)
 				{
 					free(srcObjId2);
 					PRINTF("Resolving for typeDefinitions in nodes!\n");
-					TypeDefinition *typdef = model->FindTypeDefsByID(model, refId);
-					ContainerNode *node = model->FindNodesByID(model, srcId);
+					TypeDefinition *typdef = model->VT->findTypeDefsByID(model, refId);
+					ContainerNode *node = model->VT->findNodesByID(model, srcId);
 					if(typdef != NULL && node != NULL)
 					{
 						PRINTF("Adding typeDefinition %s to node %s\n", typdef->internalGetKey(typdef), node->internalGetKey(node));
-						node->super->AddTypeDefinition(node->super, typdef);
+						node->VT->addTypeDefinition(node, typdef);
 						return MAP_OK;
 					}
 					else
@@ -220,17 +220,17 @@ int resolveReferences(any_t root, any_t objRef)
 				{
 					free(srcObjId2);
 					PRINTF("Resolving for typeDefinitions in components!\n");
-					TypeDefinition *typdef = model->FindTypeDefsByID(model, refId);
+					TypeDefinition *typdef = model->VT->findTypeDefsByID(model, refId);
 					if (typdef == NULL) {
 						PRINTF("ERROR: Cannot retrieve TypeDefinition %s\n", refId);
 					}
 
-					ContainerNode *node = model->FindNodesByID(model, srcId);
+					ContainerNode *node = model->VT->findNodesByID(model, srcId);
 					if (node == NULL) {
 						PRINTF("ERROR: Cannot retrieve ContainerNode %s\n", srcId);
 					}
 
-					ComponentInstance *comp = node->FindComponentsByID(node, srcId2);
+					ComponentInstance *comp = node->VT->findComponentsByID(node, srcId2);
 					if (comp == NULL) {
 						PRINTF("ERROR: Cannot retrieve ComponentInstance %s\n", srcId2);
 					}
@@ -238,7 +238,7 @@ int resolveReferences(any_t root, any_t objRef)
 					if(typdef != NULL && node != NULL && comp != NULL)
 					{
 						PRINTF("Adding typeDefinition %s to component %s\n", typdef->internalGetKey(typdef), comp->internalGetKey(comp));
-						comp->super->AddTypeDefinition(comp->super, typdef);
+						comp->VT->addTypeDefinition(comp, typdef);
 						return MAP_OK;
 					}
 					else
@@ -254,12 +254,12 @@ int resolveReferences(any_t root, any_t objRef)
 			if(!strcmp(refObjId, "deployUnits"))
 			{
 				free(refObjId);
-				DeployUnit *du = model->FindDeployUnitsByID(model, refId);
-				TypeDefinition *typdef = model->FindTypeDefsByID(model, srcId);
+				DeployUnit *du = model->VT->findDeployUnitsByID(model, refId);
+				TypeDefinition *typdef = model->VT->findTypeDefsByID(model, srcId);
 				if(du != NULL && typdef != NULL)
 				{
 					PRINTF("Adding deployUnit %s to typeDefinition %s\n", du->internalGetKey(du), typdef->internalGetKey(typdef));
-					typdef->AddDeployUnit(typdef, du);
+					typdef->VT->addDeployUnit(typdef, du);
 					return MAP_OK;
 				}
 				else
@@ -274,12 +274,12 @@ int resolveReferences(any_t root, any_t objRef)
 			if(!strcmp(refObjId, "typeDefinitions"))
 			{
 				free(refObjId);
-				TypeDefinition *typdef = model->FindTypeDefsByID(model, refId);
-				TypeLibrary *typlib = model->FindLibrariesByID(model, srcId);
+				TypeDefinition *typdef = model->VT->findTypeDefsByID(model, refId);
+				TypeLibrary *typlib = model->VT->findLibrariesByID(model, srcId);
 				if(typdef != NULL && typlib != NULL)
 				{
 					PRINTF("Adding typeDefinition %s to library %s\n", typdef->internalGetKey(typdef), typlib->internalGetKey(typlib));
-					typlib->AddSubTypes(typlib, typdef);
+					typlib->VT->addSubTypes(typlib, typdef);
 					return MAP_OK;
 				}
 				else
@@ -294,12 +294,12 @@ int resolveReferences(any_t root, any_t objRef)
 			if(!strcmp(refObjId, "nodes"))
 			{
 				free(refObjId);
-				ContainerNode *node = model->FindNodesByID(model, refId);
-				Group *group = model->FindGroupsByID(model, srcId);
+				ContainerNode *node = model->VT->findNodesByID(model, refId);
+				Group *group = model->VT->findGroupsByID(model, srcId);
 				if(node != NULL && group != NULL)
 				{
 					PRINTF("Adding node %s to group %s\n", node->internalGetKey(node), group->internalGetKey(group));
-					group->AddSubNodes(group, node);
+					group->VT->addSubNodes(group, node);
 					return MAP_OK;
 				}
 				else
@@ -310,12 +310,12 @@ int resolveReferences(any_t root, any_t objRef)
 			else if(!strcmp(refObjId, "typeDefinitions"))
 			{
 				free(refObjId);
-				TypeDefinition *typdef = model->FindTypeDefsByID(model, refId);
-				Group *group = model->FindGroupsByID(model, srcId);
+				TypeDefinition *typdef = model->VT->findTypeDefsByID(model, refId);
+				Group *group = model->VT->findGroupsByID(model, srcId);
 				if(typdef != NULL && group != NULL)
 				{
 					PRINTF("Adding typeDefinition %s to group %s\n", typdef->internalGetKey(typdef), group->internalGetKey(group));
-					group->super->AddTypeDefinition(group->super, typdef);
+					group->VT->addTypeDefinition(group, typdef);
 					return MAP_OK;
 				}
 				else
@@ -454,7 +454,7 @@ ContainerRoot *JSONKevDeserializer(struct jsonparse_state *jsonState, char _json
 														ContainerNode *node = createContainerNode(jsonState, jsonparse_next(jsonState), strJson, new_model, loader);
 														if(new_model != NULL && node != NULL)
 														{
-															new_model->AddNodes(new_model, node);
+															new_model->VT->addNodes(new_model, node);
 															PRINTF("Successfully added node %s to new_model %s\n", node->internalGetKey(node), new_model->internalGetKey(new_model));
 														}
 														else
@@ -523,7 +523,7 @@ ContainerRoot *JSONKevDeserializer(struct jsonparse_state *jsonState, char _json
 														if(new_model != NULL && typdef != NULL)
 														{
 															PRINTF("Adding TypeDefinition %s to new_model %s...\n", typdef->internalGetKey(typdef), new_model->internalGetKey(new_model));
-															new_model->AddTypeDefinitions(new_model, typdef);
+															new_model->VT->addTypeDefinitions(new_model, typdef);
 															PRINTF("TypeDefinition added successfully!\n");
 														}
 														else
@@ -588,7 +588,7 @@ ContainerRoot *JSONKevDeserializer(struct jsonparse_state *jsonState, char _json
 													{
 														TypeLibrary *typlib = createTypeLibrary(jsonState, jsonparse_next(jsonState), strJson, new_model, loader);
 														if(new_model != NULL && typlib != NULL)
-															new_model->AddLibraries(new_model, typlib);
+															new_model->VT->addLibraries(new_model, typlib);
 														else
 															PRINTF("TypeLibrary cannot be added to model!\n");
 													}
@@ -649,7 +649,7 @@ ContainerRoot *JSONKevDeserializer(struct jsonparse_state *jsonState, char _json
 													{
 														DeployUnit *depunit = createDeployUnit(jsonState, jsonparse_next(jsonState), strJson, new_model);
 														if(new_model != NULL && depunit != NULL)
-															new_model->AddDeployUnits(new_model, depunit);
+															new_model->VT->addDeployUnits(new_model, depunit);
 														else
 															PRINTF("DeployUnit cannot be added to model!\n");
 													}
@@ -710,7 +710,7 @@ ContainerRoot *JSONKevDeserializer(struct jsonparse_state *jsonState, char _json
 													{
 														Group *group = createGroup(jsonState, jsonparse_next(jsonState), strJson, new_model, loader);
 														if(new_model != NULL && group != NULL)
-															new_model->AddGroups(new_model, group);
+															new_model->VT->addGroups(new_model, group);
 														else
 															PRINTF("Group cannot be added to model!\n");
 													}

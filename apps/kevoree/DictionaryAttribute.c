@@ -1,3 +1,8 @@
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
 #include "NamedElement.h"
 #include "TypedElement.h"
 #include "DictionaryType.h"
@@ -11,246 +16,159 @@
 #define PRINTF(...)
 #endif
 
-TypedElement* newPoly_DictionaryAttribute()
-{
-	DictionaryAttribute* pDicAttrObj = NULL;
-	TypedElement* pObj = new_TypedElement();
-
-	/* Allocating memory */
-	pDicAttrObj = (DictionaryAttribute*)malloc(sizeof(DictionaryAttribute));
-
-	if (pDicAttrObj == NULL)
-	{
-		pObj->Delete(pObj);
-		return NULL;
-	}
-
-	pObj->pDerivedObj = pDicAttrObj; /* Pointing to derived object */
-	((DictionaryAttribute*)pObj->pDerivedObj)->super = pObj;
-	pObj->VisitAttributes = DictionaryAttribute_VisitAttributes;
-	pObj->VisitPathAttributes = DictionaryAttribute_VisitPathAttributes;
-	pObj->VisitReferences = DictionaryAttribute_VisitReferences;
-	pObj->VisitPathReferences = DictionaryAttribute_VisitPathReferences;
-	
-	pObj->metaClassName = DictionaryAttribute_metaClassName;
-	pObj->internalGetKey = DictionaryAttribute_internalGetKey;
-	
-	pDicAttrObj->optional = -1;
-	pDicAttrObj->state = -1;
-	pDicAttrObj->datatype = NULL;
-	pDicAttrObj->fragmentDependant = -1;
-	pDicAttrObj->defaultValue = NULL;
-	pDicAttrObj->eContainer = NULL;
-	pDicAttrObj->path = NULL;
-	
-	pObj->FindByPath = DictionaryAttribute_FindByPath;
-	
-	pObj->Delete = deletePoly_DictionaryAttribute;
-
-	return pObj;
-}
-
-DictionaryAttribute* new_DictionaryAttribute()
-{
-	DictionaryAttribute* pDicAttrObj = NULL;
-	TypedElement* pObj = new_TypedElement();
-	
-	if(pObj == NULL)
-		return NULL;
-
-	/* Allocating memory */
-	pDicAttrObj = (DictionaryAttribute*)malloc(sizeof(DictionaryAttribute));
-
-	if (pDicAttrObj == NULL)
-	{
-		return NULL;
-	}
-
-	pDicAttrObj->super = pObj;
-	pDicAttrObj->VisitAttributes = DictionaryAttribute_VisitAttributes;
-	pDicAttrObj->VisitPathAttributes = DictionaryAttribute_VisitPathAttributes;
-	pDicAttrObj->VisitReferences = DictionaryAttribute_VisitReferences;
-	pDicAttrObj->VisitPathReferences = DictionaryAttribute_VisitPathReferences;
-	
-	pDicAttrObj->optional = -1;
-	pDicAttrObj->state = -1;
-	pDicAttrObj->datatype = NULL;
-	pDicAttrObj->fragmentDependant = -1;
-	pDicAttrObj->defaultValue = NULL;
-	pDicAttrObj->eContainer = NULL;
-	pDicAttrObj->path = NULL;
-	
-	pDicAttrObj->metaClassName = DictionaryAttribute_metaClassName;
-	pObj->super->metaClassName = DictionaryAttribute_metaClassName;
-	pDicAttrObj->internalGetKey = DictionaryAttribute_internalGetKey;
-	pDicAttrObj->FindByPath = DictionaryAttribute_FindByPath;
-	
-	pDicAttrObj->Delete = delete_DictionaryAttribute;
-
-	return pDicAttrObj;
-}
-
-void deletePoly_DictionaryAttribute(void* const this)
-{
-	if(this != NULL)
-	{
-		DictionaryAttribute* pDicAttrObj;
-		pDicAttrObj = (DictionaryAttribute*)((TypedElement*)this)->pDerivedObj;
-		/*destroy derived obj*/
-		pDicAttrObj->optional = -1;
-		pDicAttrObj->state = -1;
-		free(pDicAttrObj->datatype);
-		pDicAttrObj->fragmentDependant = -1;
-		free(pDicAttrObj->defaultValue);
-		free(pDicAttrObj->eContainer);
-		free(pDicAttrObj);
-		/*destroy base Obj*/
-		delete_TypedElement(((TypedElement*)this));
-	}
-}
-
-void delete_DictionaryAttribute(void* const this)
-{
-	if(this != NULL)
-	{
-		/* destroy base object */
-		delete_TypedElement(((DictionaryAttribute*)this)->super);
-		/* destroy data memebers */
-		DictionaryAttribute* pDicAttrObj = (DictionaryAttribute*)this;
-		pDicAttrObj->optional = -1;
-		pDicAttrObj->state = -1;
-		free(pDicAttrObj->datatype);
-		pDicAttrObj->fragmentDependant = -1;
-		free(pDicAttrObj->defaultValue);
-		free(pDicAttrObj->eContainer);
-		free(this);
-		/*this = NULL;*/
-	}
-}
-
-char* DictionaryAttribute_internalGetKey(void* const this)
-{
-	DictionaryAttribute *pObj = (DictionaryAttribute*)this;
-	return pObj->super->internalGetKey(pObj->super);
-}
-
-char* DictionaryAttribute_metaClassName(void* const this)
+void initDictionaryAttribute(DictionaryAttribute * const this)
 {
 	/*
-	DictionaryAttribute *pObj = (DictionaryAttribute*)this;
-	char *name;
+	 * Initialize parent
+	 */
+	initTypedElement((TypedElement*)this);
 
-	name = malloc(sizeof(char) * (strlen("DictionaryAttribute")) + 1);
-	if(name != NULL)
-		strcpy(name, "DictionaryAttribute");
-	else
-		return NULL;
-	
-	return name;
-	*/
+	/*
+	 * Initialize itself
+	 */
+	this->optional = -1;
+	this->state = -1;
+	this->datatype = NULL;
+	this->fragmentDependant = -1;
+	this->defaultValue = NULL;
+}
+
+static void
+delete_DictionaryAttribute(DictionaryAttribute * const this)
+{
+	/* destroy base object */
+	typedElement_VT.delete((TypedElement*)this);
+
+	/* destroy data members */
+	free(this->datatype);
+	free(this->defaultValue);
+}
+
+static char
+*DictionaryAttribute_internalGetKey(DictionaryAttribute * const this)
+{
+	return typedElement_VT.internalGetKey((TypedElement*)this);
+}
+
+static char
+*DictionaryAttribute_metaClassName(DictionaryAttribute * const this)
+{
 	return "DictionaryAttribute";
 }
 
-void DictionaryAttribute_VisitAttributes(void* const this, char* parent, Visitor* visitor, bool recursive)
+static void
+DictionaryAttribute_visit(DictionaryAttribute * const this, char *parent, fptrVisitAction action, fptrVisitActionRef secondAction, bool visitPaths)
 {
 	char path[256];
 	memset(&path[0], 0, sizeof(path));
 
-	/* TypedElement attributes */
-	TypedElement_VisitAttributes(((DictionaryAttribute*)this)->super, parent, visitor, recursive);
-	
-	/* Local attributes */
-	sprintf(path, "optional");
-	visitor->action(path, BOOL, (void*)((DictionaryAttribute*)(this))->optional);
-	visitor->action(NULL, COLON, NULL);
-
-	sprintf(path, "state");
-	visitor->action(path, BOOL, (void*)((DictionaryAttribute*)(this))->state);
-	visitor->action(NULL, COLON, NULL);
-
-	sprintf(path, "datatype");
-	visitor->action(path, STRING, ((DictionaryAttribute*)(this))->datatype);
-	visitor->action(NULL, COLON, NULL);
-
-	sprintf(path, "fragmentDependant");
-	visitor->action(path, BOOL, (void*)((DictionaryAttribute*)(this))->fragmentDependant);
-	visitor->action(NULL, COLON, NULL);
-
-	sprintf(path, "defaultValue");
-	visitor->action(path, STRING, ((DictionaryAttribute*)(this))->defaultValue);
-	visitor->action(NULL, RETURN, NULL);
-}
-
-void DictionaryAttribute_VisitPathAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	char path[256];
-	memset(&path[0], 0, sizeof(path));
-
-	/* TypedElement attributes */
-	TypedElement_VisitPathAttributes(((DictionaryAttribute*)this)->super, parent, visitor, recursive);
+	/*
+	 * Visit parent
+	 */
+	typedElement_VT.visit((DictionaryAttribute*)this, parent, action, secondAction, visitPaths);
 
 	/* Local attributes */
-	sprintf(path, "%s\\optional", parent);
-	visitor->action(path, BOOL, (void*)((DictionaryAttribute*)(this))->optional);
-	sprintf(path, "%s\\state", parent);
-	visitor->action(path, BOOL, (void*)((DictionaryAttribute*)(this))->state);
-	sprintf(path, "%s\\datatype", parent);
-	visitor->action(path, STRING, ((DictionaryAttribute*)(this))->datatype);
-	sprintf(path, "%s\\fragmentDependant", parent);
-	visitor->action(path, BOOL, (void*)((DictionaryAttribute*)(this))->fragmentDependant);
-	sprintf(path, "%s\\defaultValue", parent);
-	visitor->action(path, STRING, ((DictionaryAttribute*)(this))->defaultValue);
-}
-
-void DictionaryAttribute_VisitReferences(void* const this, char* parent, Visitor* visitor, bool recursive)
-{
-	/*
-	 * TODO create "this" object
-	 */
-	TypedElement_VisitReferences(((DictionaryAttribute*)(this))->super, parent, visitor, recursive);
-}
-
-void DictionaryAttribute_VisitPathReferences(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	/*
-	 * TODO create "this" object
-	 */
-	TypedElement_VisitPathReferences(((DictionaryAttribute*)(this))->super, parent, visitor, recursive);
-}
-
-void *DictionaryAttribute_FindByPath(char *attribute, void *const this)
-{
-	DictionaryAttribute *pObj = (DictionaryAttribute*)this;
-	/* TypedElement attributes and references */
-	if(!strcmp("name", attribute) || !strcmp("genericTypes", attribute))
-	{
-		return TypedElement_FindByPath(attribute, pObj->super);
+	if (visitPaths) {
+		sprintf(path, "%s\\optional", parent);
+		action(path, BOOL, (void*)this->optional);
+		sprintf(path, "%s\\state", parent);
+		action(path, BOOL, (void*)this->state);
+		sprintf(path, "%s\\datatype", parent);
+		action(path, STRING, this->datatype);
+		sprintf(path, "%s\\fragmentDependant", parent);
+		action(path, BOOL, (void*)this->fragmentDependant);
+		sprintf(path, "%s\\defaultValue", parent);
+		action(path, STRING, this->defaultValue);
+	} else {
+		action("optional", BOOL, (void*)this->optional);
+		action(NULL, COLON, NULL);
+		action("state", BOOL, (void*)this->state);
+		action(NULL, COLON, NULL);
+		action("datatype", STRING, this->datatype);
+		action(NULL, COLON, NULL);
+		action("fragmentDependant", BOOL, (void*)this->fragmentDependant);
+		action(NULL, COLON, NULL);
+		action("defaultValue", STRING, this->defaultValue);
+		action(NULL, RETURN, NULL);
 	}
+
+}
+
+static void
+*DictionaryAttribute_findByPath(DictionaryAttribute * const this, char *attribute)
+{
+	/* TypedElement attributes and references */
 	/* Local attributes */
-	else if(!strcmp("optional", attribute))
+	if(!strcmp("optional", attribute))
 	{
-		return (void*)pObj->optional;
+		return (void*)this->optional;
 	}
 	else if(!strcmp("state", attribute))
 	{
-		return (void*)pObj->state;
+		return (void*)this->state;
 	}
 	else if(!strcmp("datatype", attribute))
 	{
-		return pObj->datatype;
+		return this->datatype;
 	}
 	else if(!strcmp("fragmentDependant", attribute))
 	{
-		return (void*)pObj->fragmentDependant;
+		return (void*)this->fragmentDependant;
 	}
 	else if(!strcmp("defaultValue", attribute))
 	{
-		return pObj->defaultValue;
+		return this->defaultValue;
 	}
 	/* There is no local references */
 	else
 	{
-		PRINTF("Wrong attribute or reference\n");
+		return typedElement_VT.findByPath((TypedElement*)this, attribute);
+	}
+}
+
+const DictionaryAttribute_VT dictionaryAttribute_VT = {
+		.super = &typedElement_VT,
+		/*
+		 * KMFContainer
+		 * NamedElement
+		 */
+		.metaClassName = DictionaryAttribute_metaClassName,
+		.internalGetKey = DictionaryAttribute_internalGetKey,
+		.visit = DictionaryAttribute_visit,
+		.findByPath = DictionaryAttribute_findByPath,
+		.delete = delete_DictionaryAttribute,
+		/*
+		 * TypedElement
+		 */
+		.findGenericTypesByID = TypedElement_findGenericTypesByID,
+		.addGenericTypes = TypedElement_addGenericTypes,
+		.removeGenericTypes = TypedElement_removeGenericTypes
+		/*
+		 * DictionaryAttribute
+		 */
+};
+
+DictionaryAttribute* new_DictionaryAttribute()
+{
+	DictionaryAttribute* pDicAttrObj = NULL;
+
+	/* Allocating memory */
+	pDicAttrObj = malloc(sizeof(DictionaryAttribute));
+
+	if (pDicAttrObj == NULL) {
+		PRINTF("ERROR: Cannot create DictionaryAttribute!\n");
 		return NULL;
 	}
+
+	/*
+	 * Virtual Table
+	 */
+	pDicAttrObj->VT = &dictionaryAttribute_VT;
+
+	/*
+	 * DictionaryAttribute
+	 */
+	initDictionaryAttribute(pDicAttrObj);
+
+	return pDicAttrObj;
 }

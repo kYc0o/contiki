@@ -13,7 +13,7 @@
 
 typedef struct _TraceSequence TraceSequence;
 typedef struct _ContainerRoot ContainerRoot;
-typedef enum Type Type;
+typedef enum _Type Type;
 
 TraceSequence *ModelCompare(ContainerRoot *_newModel, ContainerRoot *_currentModel);
 bool actionRemove(char *_path, char *value);

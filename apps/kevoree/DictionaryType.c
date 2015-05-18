@@ -1,3 +1,7 @@
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "DictionaryAttribute.h"
 #include "TypeDefinition.h"
 #include "Visitor.h"
@@ -11,77 +15,48 @@
 #define PRINTF(...)
 #endif
 
-DictionaryType* new_DictionaryType()
-{
-	DictionaryType* pObj = NULL;
-	/* Allocating memory */
-	pObj = (DictionaryType*)malloc(sizeof(DictionaryType));
-
-	if (pObj == NULL)
-	{
-		return NULL;
-	}
-
-	memset(&pObj->generated_KMF_ID[0], 0, sizeof(pObj->generated_KMF_ID));
-	rand_str(pObj->generated_KMF_ID, 8);
-
-	pObj->attributes = NULL;
-	pObj->eContainer = NULL;
-	pObj->path = NULL;
-
-	pObj->AddAttributes = DictionaryType_AddAttributes;
-	pObj->RemoveAttributes = DictionaryType_RemoveAttributes;
-	pObj->FindAttributesByID = DictionaryType_FindAttributesByID;
-
-	pObj->internalGetKey = DictionaryType_internalGetKey;
-	pObj->metaClassName = DictionaryType_metaClassName;
-	pObj->Delete = delete_DictionaryType;
-	pObj->VisitAttributes = DictionaryType_VisitAttributes;
-	pObj->VisitPathAttributes = DictionaryType_VisitPathAttributes;
-	pObj->VisitReferences = DictionaryType_VisitReferences;
-	pObj->VisitPathReferences = DictionaryType_VisitPathReferences;
-	pObj->FindByPath = DictionaryType_FindByPath;
-
-	return pObj;
-}
-
-void delete_DictionaryType(void* const this)
-{
-	if(this != NULL)
-	{
-		DictionaryType *pObj = (DictionaryType*)this;
-		free(pObj->generated_KMF_ID);
-		/* TODO check if hashmap is not NULL */
-		hashmap_free(pObj->attributes);
-		free(pObj->eContainer);
-		free(pObj);
-		/*this = NULL;*/
-	}
-}
-
-char* DictionaryType_internalGetKey(void* const this)
-{
-	DictionaryType *pObj = (DictionaryType*)this;
-	return pObj->generated_KMF_ID;
-}
-
-char* DictionaryType_metaClassName(void* const this)
+void initDictionaryType(DictionaryType * const this)
 {
 	/*
-	char *name;
+	 * Initialize parent
+	 */
+	initKMFContainer((KMFContainer*)this);
 
-	name = malloc(sizeof(char) * (strlen("DictionaryType")) + 1);
-	if(name != NULL)
-		strcpy(name, "DictionaryType");
-	else
-		return NULL;
+	/*
+	 * Initialize itself
+	 */
+	memset(&this->generated_KMF_ID[0], 0, sizeof(this->generated_KMF_ID));
+	rand_str(this->generated_KMF_ID, 8);
+	this->attributes = NULL;
+}
 
-	return name;
-	*/
+static void
+delete_DictionaryType(DictionaryType * const this)
+{
+	/* destroy base object */
+	KMF_VT.delete((KMFContainer*)this);
+
+	/* destroy data members */
+	if (this->attributes != NULL) {
+		deleteContainerContents(this->attributes);
+		hashmap_free(this->attributes);
+	}
+}
+
+static char
+*DictionaryType_internalGetKey(DictionaryType * const this)
+{
+	return this->generated_KMF_ID;
+}
+
+static char
+*DictionaryType_metaClassName(DictionaryType * const this)
+{
 	return "DictionaryType";
 }
 
-DictionaryAttribute* DictionaryType_FindAttributesByID(DictionaryType* const this, char* id)
+static DictionaryAttribute
+*DictionaryType_findAttributesByID(DictionaryType * const this, char *id)
 {
 	DictionaryAttribute* value = NULL;
 
@@ -98,164 +73,98 @@ DictionaryAttribute* DictionaryType_FindAttributesByID(DictionaryType* const thi
 	}
 }
 
-void DictionaryType_AddAttributes(DictionaryType* const this, DictionaryAttribute* ptr)
+static void
+DictionaryType_addAttributes(DictionaryType * const this, DictionaryAttribute *ptr)
 {
-	DictionaryAttribute* container = NULL;
+	DictionaryAttribute *container = NULL;
 
-	char *internalKey = ptr->internalGetKey(ptr);
+	char *internalKey = ptr->VT->internalGetKey(ptr);
 
-	if(internalKey == NULL)
-	{
-		PRINTF("The DictionaryAttribute cannot be added in DictionaryType because the key is not defined\n");
-	}
-	else
-	{
-		if(this->attributes == NULL)
-		{
+	if(internalKey == NULL) {
+		PRINTF("ERROR: The DictionaryAttribute cannot be added in DictionaryType because the key is not defined\n");
+	} else {
+		if(this->attributes == NULL) {
 			this->attributes = hashmap_new();
 		}
-		if(hashmap_get(this->attributes, internalKey, (void**)(&container)) == MAP_MISSING)
-		{
-			/*container = (DictionaryAttribute*)ptr;*/
-			if(hashmap_put(this->attributes, internalKey, ptr) == MAP_OK)
-			{
-				ptr->eContainer = malloc(sizeof(char) * (strlen(this->path)) + 1);
-				strcpy(ptr->eContainer, this->path);
+		if(hashmap_get(this->attributes, internalKey, (void**)(&container)) == MAP_MISSING) {
+			if(hashmap_put(this->attributes, internalKey, ptr) == MAP_OK) {
+				ptr->eContainer = strdup(this->path);
 				ptr->path = malloc(sizeof(char) * (strlen(this->path) + strlen("/attributes[]") + strlen(internalKey)) + 1);
 				sprintf(ptr->path, "%s/attributes[%s]", this->path, internalKey);
+			} else {
+				PRINTF("ERROR: attribute cannot be added!\n");
 			}
+		} else {
+			PRINTF("WARNING: id %s already exists in attributes map\n", internalKey);
 		}
 	}
 }
 
-void DictionaryType_RemoveAttributes(DictionaryType* const this, DictionaryAttribute* ptr)
+static void
+DictionaryType_removeAttributes(DictionaryType * const this, DictionaryAttribute *ptr)
 {
-	char *internalKey = ptr->internalGetKey(ptr);
+	char *internalKey = ptr->VT->internalGetKey(ptr);
 
-	if(internalKey == NULL)
-	{
-		PRINTF("The DictionaryValue cannot be removed in Dictionary because the key is not defined\n");
-	}
-	else
-	{
-		if(hashmap_remove(this->attributes, internalKey) == MAP_OK)
-		{
+	if(internalKey == NULL) {
+		PRINTF("ERROR: The DictionaryValue cannot be removed in Dictionary because the key is not defined\n");
+	} else {
+		if(hashmap_remove(this->attributes, internalKey) == MAP_OK) {
 			free(ptr->eContainer);
 			ptr->eContainer = NULL;
 			free(ptr->path);
 			ptr->path = NULL;
+		} else {
+			PRINTF("ERROR: attribute %s cannot be removed!\n", internalKey);
 		}
 	}
 }
 
-void DictionaryType_VisitAttributes(void* const this, char* parent, Visitor* visitor, bool recursive)
+static void
+DictionaryType_visit(DictionaryType * const this, char *parent, fptrVisitAction action, fptrVisitActionRef secondAction, bool visitPaths)
 {
 	char path[256];
-	char *cClass = NULL;
 	memset(&path[0], 0, sizeof(path));
 
-	cClass = malloc(sizeof(char) * (strlen("org.kevoree.") + strlen(((DictionaryType*)this)->metaClassName((DictionaryType*)this))) + 1);
-	sprintf(cClass, "org.kevoree.%s", ((DictionaryType*)this)->metaClassName((DictionaryType*)this));
-	sprintf(path, "eClass");
-	visitor->action(path, STRING, cClass);
-	visitor->action(NULL, COLON, NULL);
-	free(cClass);
-
-	sprintf(path, "generated_KMF_ID");
-	visitor->action(path, STRING, ((DictionaryType*)(this))->generated_KMF_ID);
-	visitor->action(NULL, COLON, NULL);
-}
-
-void DictionaryType_VisitPathAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	char path[256];
-	char *cClass = NULL;
-	memset(&path[0], 0, sizeof(path));
-
-	/*sprintf(path,"%s\\cClass", parent);
-	cClass = ((DictionaryType*)this)->metaClassName((DictionaryType*)this);
-	visitor->action(path, STRING, cClass);
-	free(cClass);*/
-
-	sprintf(path, "%s\\generated_KMF_ID", parent);
-	visitor->action(path, STRING, ((DictionaryType*)(this))->generated_KMF_ID);
-}
-
-void DictionaryType_VisitReferences(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	int i;
-
-	char path[256];
-	memset(&path[0], 0, sizeof(path));
+	if (visitPaths) {
+		sprintf(path, "%s\\generated_KMF_ID", parent);
+		action(path, STRING, this->generated_KMF_ID);
+	} else {
+		/*
+		 * Visit parent
+		 */
+		KMF_VT.visit((KMFContainer*)this, parent, action, secondAction, visitPaths);
+		action("generated_KMF_ID", STRING, this->generated_KMF_ID);
+		action(NULL, COLON, NULL);
+	}
 
 	hashmap_map* m = NULL;
 
-	if((m = (hashmap_map*) ((DictionaryType*)(this))->attributes) != NULL)
-	{
-		int length = hashmap_length(((DictionaryType*)(this))->attributes);
+	int length;
 
-		visitor->action("attributes", SQBRACKET, NULL);
-		/* compare nodes*/
-		for(i = 0; i< m->table_size; i++)
-		{
-			if(m->data[i].in_use != 0)
-			{
-				visitor->action(NULL, BRACKET, NULL);
-				any_t data = (any_t) (m->data[i].data);
-				DictionaryAttribute* n = data;
-				n->VisitAttributes(n, path, visitor,true);
-				n->VisitReferences(n, path, visitor, true);
-				if(length > 1)
-				{
-					visitor->action(NULL, CLOSEBRACKETCOLON, NULL);
-					length--;
-				}
-				else
-					visitor->action(NULL, CLOSEBRACKET, NULL);
-			}
+	if((m = (hashmap_map*)this->attributes) != NULL) {
+		length = hashmap_length(this->attributes);
+		if (visitPaths) {
+			sprintf(path,"%s/attributes", parent);
+			Visitor_visitPaths(m, "attributes", path, action, secondAction);
+		} else {
+			action("attributes", SQBRACKET, NULL);
+			Visitor_visitModelContainer(m, length, action);
+			action(NULL, CLOSESQBRACKET, NULL);
 		}
-		visitor->action(NULL, CLOSESQBRACKET, NULL);
+	} else if (!visitPaths) {
+		action("attributes", SQBRACKET, NULL);
+		action(NULL, CLOSESQBRACKET, NULL);
 	}
-	else
-	{
-		visitor->action("attributes", SQBRACKET, NULL);
-		visitor->action(NULL, CLOSESQBRACKET, NULL);
-	}
+
 }
 
-void DictionaryType_VisitPathReferences(void *const this, char *parent, Visitor *visitor, bool recursive)
+static void
+*DictionaryType_findByPath(DictionaryType * const this, char *attribute)
 {
-	int i;
-
-	char path[256];
-	memset(&path[0], 0, sizeof(path));
-
-	hashmap_map* m = NULL;
-
-	if((m = (hashmap_map*) ((DictionaryType*)(this))->attributes) != NULL)
-	{
-		/* compare nodes*/
-		for(i = 0; i< m->table_size; i++)
-		{
-			if(m->data[i].in_use != 0)
-			{
-				any_t data = (any_t) (m->data[i].data);
-				DictionaryAttribute* n = data;
-				sprintf(path, "%s/attributes[%s]", parent, n->internalGetKey(n));
-				n->VisitPathAttributes(n, path, visitor, true);
-				n->VisitPathReferences(n, path, visitor, true);
-			}
-		}
-	}
-}
-
-void* DictionaryType_FindByPath(char* attribute, void* const this)
-{
-	DictionaryType *pObj = (DictionaryType*)this;
 	/* Local attributes */
 	if(!strcmp("generated_KMF_ID", attribute))
 	{
-		return pObj->generated_KMF_ID;
+		return this->generated_KMF_ID;
 	}
 	/* Local references */
 	else
@@ -340,15 +249,15 @@ void* DictionaryType_FindByPath(char* attribute, void* const this)
 			free(obj);
 			if(nextAttribute == NULL)
 			{
-				DictionaryAttribute *dicattr =  pObj->FindAttributesByID(pObj, key);
+				DictionaryAttribute *dicattr =  this->VT->findAttributesByID(this, key);
 				PRINTF("DEBUG: returning %s object\n", dicattr->metaClassName(dicattr));
 				return dicattr;
 			}
 			else
 			{
-				DictionaryAttribute* value = pObj->FindAttributesByID(pObj, key);
+				DictionaryAttribute* value = this->VT->findAttributesByID(this, key);
 				if(value != NULL)
-					return value->FindByPath(nextPath, value);
+					return value->VT->findByPath(value, nextPath);
 				else
 					return NULL;
 			}
@@ -356,8 +265,53 @@ void* DictionaryType_FindByPath(char* attribute, void* const this)
 		else
 		{
 			free(obj);
-			PRINTF("Wrong attribute or reference\n");
+			PRINTF("WARNING: Wrong attribute or reference %s\n", attribute);
 			return NULL;
 		}
 	}
+}
+
+const DictionaryType_VT dictionaryType_VT = {
+		.super = &KMF_VT,
+		/*
+		 * KMFContainer
+		 * NamedElement
+		 */
+		.metaClassName = DictionaryType_metaClassName,
+		.internalGetKey = DictionaryType_internalGetKey,
+		.visit = DictionaryType_visit,
+		.findByPath = DictionaryType_findByPath,
+		.delete = delete_DictionaryType,
+		/*
+		 * DictionaryType
+		 */
+		.addAttributes = DictionaryType_addAttributes,
+		.removeAttributes = DictionaryType_removeAttributes,
+		.findAttributesByID = DictionaryType_findAttributesByID
+};
+
+DictionaryType
+*new_DictionaryType()
+{
+	DictionaryType* pObj = NULL;
+
+	/* Allocating memory */
+	pObj = malloc(sizeof(DictionaryType));
+
+	if (pObj == NULL) {
+		PRINTF("ERROR: Cannot create DictionaryType!\n");
+		return NULL;
+	}
+
+	/*
+	 * Virtual Table
+	 */
+	pObj->VT = &dictionaryType_VT;
+
+	/*
+	 * DictionaryType
+	 */
+	initDictionaryType(pObj);
+
+	return pObj;
 }

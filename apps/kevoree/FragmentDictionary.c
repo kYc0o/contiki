@@ -1,7 +1,13 @@
+#include <stddef.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "Dictionary.h"
 #include "Instance.h"
 #include "Visitor.h"
 #include "FragmentDictionary.h"
+#include "tools.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -10,176 +16,130 @@
 #define PRINTF(...)
 #endif
 
-Dictionary* newPoly_FragmentDictionary()
+void initFragmentDictionary(FragmentDictionary * const this)
 {
-	FragmentDictionary* pFragDicObj = NULL;
-	Dictionary* pObj = new_Dictionary();
+	/*
+	 * Initialize parent
+	 */
+	initDictionary((Dictionary*)this);
 
-	/* Allocating memory */
-	pFragDicObj = (FragmentDictionary*)malloc(sizeof(FragmentDictionary));
-
-	if (pFragDicObj == NULL)
-	{
-		pObj->Delete(pObj);
-		return NULL;
-	}
-
-	pObj->pDerivedObj = pFragDicObj; /* Pointing to derived object */
-	((FragmentDictionary*)pObj->pDerivedObj)->super = pObj;
-
-	pObj->VisitAttributes = FragmentDictionary_VisitAttributes;
-	pObj->VisitPathAttributes = FragmentDictionary_VisitPathAttributes;
-	pObj->VisitReferences = FragmentDictionary_VisitReferences;
-	pObj->VisitPathReferences = FragmentDictionary_VisitPathReferences;
-	
-	pObj->metaClassName = FragmentDictionary_metaClassName;
-	pObj->internalGetKey = FragmentDictionary_internalGetKey;
-	
-	pFragDicObj->name = NULL;
-	pFragDicObj->eContainer = NULL;
-	
-	pObj->FindByPath = FragmentDictionary_FindByPath;
-	
-	pObj->Delete = deletePoly_FragmentDictionary;
-
-	return pObj;
+	/*
+	 * Initialize itself
+	 */
+	this->name = NULL;
 }
 
-FragmentDictionary* new_FragmentDictionary(void)
+static void
+delete_FragmentDictionary(FragmentDictionary * const this)
 {
-	FragmentDictionary* pFragDicObj = NULL;
-	Dictionary* pObj = new_Dictionary();
-	
-	if(pObj == NULL)
-		return NULL;
-
-	/* Allocating memory */
-	pFragDicObj = (FragmentDictionary*)malloc(sizeof(FragmentDictionary));
-
-	if (pFragDicObj == NULL)
-	{
-		return NULL;
-	}
-
-	pFragDicObj->super = pObj;
-	pFragDicObj->VisitAttributes = FragmentDictionary_VisitAttributes;
-	pFragDicObj->VisitPathAttributes = FragmentDictionary_VisitPathAttributes;
-	pFragDicObj->VisitReferences = FragmentDictionary_VisitReferences;
-	pFragDicObj->VisitPathReferences = FragmentDictionary_VisitPathReferences;
-	
-	pFragDicObj->name = NULL;
-	pFragDicObj->eContainer = NULL;
-	
-	pFragDicObj->metaClassName = FragmentDictionary_metaClassName;
-	pObj->metaClassName = FragmentDictionary_metaClassName;
-	pFragDicObj->internalGetKey = FragmentDictionary_internalGetKey;
-	pFragDicObj->FindByPath = FragmentDictionary_FindByPath;
-	
-	pFragDicObj->Delete = delete_FragmentDictionary;
-
-	return pFragDicObj;
+	/* destroy base object */
+	dictionary_VT.delete((Dictionary*)this);
+	/* destroy data members */
+	/*
+	 * There are no data members
+	 */
+	free(this->name);
 }
 
-void deletePoly_FragmentDictionary(void* const this)
+static char
+*FragmentDictionary_internalGetKey(FragmentDictionary * const this)
 {
-	if(this != NULL)
-	{
-		FragmentDictionary* pFragDicObj;
-		pFragDicObj = (FragmentDictionary*)((Dictionary*)this)->pDerivedObj;
-		/*destroy derived obj*/
-		free(pFragDicObj->name);
-		free(pFragDicObj->eContainer);
-		free(pFragDicObj);
-		/*destroy base Obj*/
-		delete_Dictionary(((Dictionary*)this));
-	}
+	return this->name;
 }
 
-void delete_FragmentDictionary(void* const this)
+static char
+*FragmentDictionary_metaClassName(FragmentDictionary * const this)
 {
-	if(this != NULL)
-	{
-		/* destroy base object */
-		delete_Dictionary(((FragmentDictionary*)this)->super);
-		/* destroy data memebers */
-		FragmentDictionary* pDicAttrObj = (FragmentDictionary*)this;
-		free(pDicAttrObj->name);
-		free(pDicAttrObj->eContainer);
-		free(this);
-		/*this = NULL;*/
-	}
-}
-
-char* FragmentDictionary_internalGetKey(void* const this)
-{
-	FragmentDictionary *pObj = (FragmentDictionary*)this;
-	return pObj->name;
-}
-
-char* FragmentDictionary_metaClassName(void* const this)
-{
-	/*char *name;
-
-	name = malloc(sizeof(char) * (strlen("FragmentDictionary")) + 1);
-	if(name != NULL)
-		strcpy(name, "FragmentDictionary");
-	else
-		return NULL;
-	
-	return name;
-	*/
 	return "FragmentDictionary";
 }
 
-void FragmentDictionary_VisitAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
+static void
+FragmentDictionary_visit(FragmentDictionary * const this, char *parent, fptrVisitAction action, fptrVisitActionRef secondAction, bool visitPaths)
 {
 	char path[256];
 	memset(&path[0], 0, sizeof(path));
 
-	/* Dictionary attributes */
-	Dictionary_VisitAttributes(((FragmentDictionary*)this)->super, parent, visitor, recursive);
-	
-	/* Local attributes */
-	sprintf(path, "name");
-	visitor->action(path, STRING, ((FragmentDictionary*)(this))->name);
-	visitor->action(NULL, COLON, NULL);
-}
+	/*
+	 * Visit parent
+	 */
+	dictionary_VT.visit((FragmentDictionary*)this, parent, action, secondAction, visitPaths);
 
-void FragmentDictionary_VisitPathAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	char path[256];
-	memset(&path[0], 0, sizeof(path));
 
-	/* Dictionary attributes */
-	Dictionary_VisitPathAttributes(((FragmentDictionary*)this)->super, parent, visitor, recursive);
-
-	/* Local attributes */
-	sprintf(path, "%s\\name", parent);
-	visitor->action(path, STRING, ((FragmentDictionary*)(this))->name);
-}
-
-void FragmentDictionary_VisitReferences(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	Dictionary_VisitReferences(((FragmentDictionary*)(this))->super, parent, visitor, recursive);
-}
-
-void FragmentDictionary_VisitPathReferences(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	Dictionary_VisitPathReferences(((FragmentDictionary*)(this))->super, parent, visitor, recursive);
-}
-
-void* FragmentDictionary_FindByPath(char* attribute, void* const this)
-{
-	FragmentDictionary *pObj = (FragmentDictionary*)this;
-
-	/* Local attributes */
-	if(!strcmp("name", attribute))
-	{
-		return pObj->name;
+	if (visitPaths) {
+		sprintf(path, "%s\\name", parent);
+		action(path, STRING, this->name);
+	} else {
+		action(NULL, COLON, NULL);
+		action("name", STRING, ((FragmentDictionary*)(this))->name);
+		action(NULL, RETURN, NULL);
 	}
+}
+
+static void
+*FragmentDictionary_findByPath(FragmentDictionary * const this, char *attribute)
+{
+	void *try = NULL;
+
+	/* Local attributes */
 	/* Dictionary attributes and references */
-	else /*(!strcmp("generated_KMF_ID", attribute) || !strcmp("values", attribute))*/
-	{
-		return Dictionary_FindByPath(attribute, pObj->super);
+	if (!strcmp("name", attribute)) {
+		return this->name;
+	} else {
+		return dictionary_VT.findByPath((Dictionary*)this, attribute);
 	}
+}
+
+const FragmentDictionary_VT fragmentDictionary_VT = {
+		.super = &dictionary_VT,
+		/*
+		 * KMFContainer
+		 * NamedElement
+		 */
+		.metaClassName = FragmentDictionary_metaClassName,
+		.internalGetKey = FragmentDictionary_internalGetKey,
+		.visit = FragmentDictionary_visit,
+		.findByPath = FragmentDictionary_findByPath,
+		.delete = delete_FragmentDictionary,
+		/*
+		 * Dictionary
+		 */
+		.addValues = Dictionary_addValues,
+		.removeValues = Dictionary_removeValues,
+		.findValuesByID = Dictionary_findValuesByID
+		/*
+		 * FragmentDictionary
+		 */
+};
+
+FragmentDictionary
+*new_FragmentDictionary(void)
+{
+	FragmentDictionary* pFragDicObj = NULL;
+
+	/* Allocating memory */
+	pFragDicObj = malloc(sizeof(FragmentDictionary));
+
+	if (pFragDicObj == NULL) {
+		PRINTF("ERROR: Cannot create FragmentDictionary!\n");
+		return NULL;
+	}
+
+	pFragDicObj->VT = &fragmentDictionary_VT;
+	/*
+	 * KMFContainer
+	 */
+	pFragDicObj->eContainer = NULL;
+	pFragDicObj->path = NULL;
+	/*
+	 * Dictionary
+	 */
+	memset(&pFragDicObj->generated_KMF_ID[0], 0, sizeof(pFragDicObj->generated_KMF_ID));
+	rand_str(pFragDicObj->generated_KMF_ID, 8);
+	pFragDicObj->values = NULL;
+	/*
+	 * FragmentDictionary
+	 */
+	initFragmentDictionary(pFragDicObj);
+
+	return pFragDicObj;
 }

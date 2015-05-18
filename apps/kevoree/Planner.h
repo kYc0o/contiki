@@ -10,7 +10,7 @@
 #define PLANNER_H_
 
 #include "Primitives.h"
-#include "list.h"
+#include "lib/list.h"
 
 /*typedef struct _Planner Planner;*/
 typedef struct _AdaptationModel AdaptationModel;

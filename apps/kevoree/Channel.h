@@ -1,58 +1,76 @@
 #ifndef __Channel_H
 #define __Channel_H
 
+#include "KMFContainer.h"
 #include <stdbool.h>
 #include "hashmap.h"
-#include "KMF4C.h"
+#include "Instance.h"
 
 typedef struct _MBinding MBinding;
 typedef struct _Channel Channel;
-typedef struct _Instance Instance;
-typedef struct _Visitor Visitor;
 
-typedef char* (*fptrChannelInternalGetKey)(Channel*);
-typedef char* (*fptrChannelMetaClassName)(Channel*);
 typedef void (*fptrChannelAddBindings)(Channel*, MBinding*);
 typedef void (*fptrChannelRemoveBindings)(Channel*, MBinding*);
 typedef MBinding* (*fptrChannelFindBindingsByID)(Channel*, char*);
-typedef void (*fptrVisitAttrChannel)(void*, char*, Visitor*, bool);
-typedef void (*fptrVisitRefsChannel)(void*, char*, Visitor*, bool);
-typedef void* (*fptrFindByPathChannel)(char*, Channel*);
-typedef void (*fptrDeleteChannel)(void*);
 
-typedef struct _Channel {
-	void *pDerivedObj;
-	char *eContainer;
-	char *path;
-	map_t refs;
+typedef struct _Channel_VT {
+	Instance_VT *super;
+	/*
+	 * KMFContainer_VT
+	 * NamedElement_VT
+	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
-	fptrVisitAttr VisitAttributes;
-	fptrVisitAttr VisitPathAttributes;
-	fptrVisitRefs VisitReferences;
-	fptrVisitRefs VisitPathReferences;
-	fptrFindByPath FindByPath;
-	fptrDelete Delete;
-	Instance *super;
+	fptrVisit visit;
+	fptrFindByPath findByPath;
+	fptrDelete delete;
+	/*
+	 * Instance_VT
+	 */
+	fptrInstFindFragDictByID findFragmentDictionaryByID;
+	fptrInstAddTypeDefinition addTypeDefinition;
+	fptrInstAddDictionary addDictionary;
+	fptrInstAddFragmentDictionary addFragmentDictionary;
+	fptrInstRemoveTypeDefinition removeTypeDefinition;
+	fptrInstRemoveDictionary removeDictionary;
+	fptrInstRemoveFragmentDictionary removeFragmentDictionary;
+	/*
+	 * Channel_VT
+	 */
+	fptrChannelFindBindingsByID findBindingsByID;
+	fptrChannelAddBindings addBindings;
+	fptrChannelRemoveBindings removeBindings;
+} Channel_VT;
+
+typedef struct _Channel {
+	Channel *next;
+	Channel_VT *VT;
+	/*
+	 * KMFContainer
+	 */
+	char *eContainer;
+	char *path;
+	/*
+	 * NamedElement
+	 */
+	char *name;
+	/*
+	 * Instance
+	 */
+	char *metaData;
+	bool started;
+	TypeDefinition *typeDefinition;
+	Dictionary *dictionary;
+	map_t fragmentDictionary;
+	/*
+	 * Channel
+	 */
 	map_t bindings;
-	fptrChannelFindBindingsByID FindBindingsByID;
-	fptrChannelAddBindings AddBindings;
-	fptrChannelRemoveBindings RemoveBindings;
 } Channel;
 
-Instance* newPoly_Channel(void);
 Channel* new_Channel(void);
-void deletePoly_Channel(void* const this);
-void delete_Channel(void* const this);
-char* Channel_metaClassName(void* const this);
-char* Channel_internalGetKey(void* const this);
-void Channel_AddBindings(Channel* const this, MBinding* ptr);
-void Channel_RemoveBindings(Channel* const this, MBinding* ptr);
-MBinding* Channel_FindBindingsByID(Channel* const this, char* id);
-void Channel_VisitAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void Channel_VisitPathAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void Channel_VisitReferences(void* const this, char* parent, Visitor* visitor, bool recursive);
-void Channel_VisitPathReferences(void* const this, char* parent, Visitor* visitor, bool recursive);
-void* Channel_FindByPath(char* attribute, void* const this);
+void initChannel(Channel * const this);
+
+extern const Channel_VT channel_VT;
 
 #endif /*__Channel_H */

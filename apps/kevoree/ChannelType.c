@@ -3,6 +3,11 @@
 #include "Visitor.h"
 #include "ChannelType.h"
 
+#include <stddef.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #define DEBUG 0
 #if DEBUG
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -10,236 +15,177 @@
 #define PRINTF(...)
 #endif
 
-TypeDefinition* newPoly_ChannelType()
+void initChannelType(ChannelType * const this)
 {
-	ChannelType* pChanTypeObj = NULL;
-	TypeDefinition* pObj = new_TypeDefinition();
-	
-	if(pObj == NULL)
-		return NULL;
+	/*
+	 * Initialize parent
+	 */
+	initTypeDefinition((TypeDefinition*)this);
 
-	/* Allocating memory */
-	pChanTypeObj = (ChannelType*)malloc(sizeof(ChannelType));
-
-	if (pChanTypeObj == NULL)
-	{
-		pObj->Delete(pObj);
-		return NULL;
-	}
-
-	pObj->pDerivedObj = pChanTypeObj; /* Pointing to derived object */
-	pChanTypeObj->super = pObj;
-	
-	pChanTypeObj->path = NULL;
-	pChanTypeObj->eContainer = NULL;
-	pChanTypeObj->refs = NULL;
-	pChanTypeObj->lowerBindings = -1;
-	pChanTypeObj->upperBindings = -1;
-	pChanTypeObj->lowerFragments = -1;
-	pChanTypeObj->upperFragments = -1;
-
-	pObj->metaClassName = ChannelType_metaClassName;
-	pObj->super->metaClassName = ChannelType_metaClassName;
-	pObj->internalGetKey = ChannelType_internalGetKey;
-	pObj->VisitAttributes = ChannelType_VisitAttributes;
-	pObj->VisitPathAttributes = ChannelType_VisitPathAttributes;
-	pObj->VisitReferences = ChannelType_VisitReferences;
-	pObj->VisitPathReferences = ChannelType_VisitPathReferences;
-	pObj->FindByPath = ChannelType_FindByPath;
-	
-	pObj->Delete = deletePoly_ChannelType;
-
-	return pObj;
+	/*
+	 * Initialize itself
+	 */
+	this->lowerBindings = -1;
+	this->upperBindings = -1;
+	this->lowerFragments = -1;
+	this->upperFragments = -1;
 }
 
-ChannelType* new_ChannelType()
+void
+ChannelType_addDeployUnit(ChannelType * const this, DeployUnit *ptr)
 {
-	ChannelType* pChanTypeObj = NULL;
-	TypeDefinition* pObj = new_TypeDefinition();
-	
-	if(pObj == NULL)
-		return NULL;
-
-	/* Allocating memory */
-	pChanTypeObj = (ChannelType*)malloc(sizeof(ChannelType));
-
-	if (pChanTypeObj == NULL)
-	{
-		pObj->Delete(pObj);
-		return NULL;
-	}
-
-	/*pObj->pDerivedObj = pChanTypeObj;  Pointing to derived object */
-	pObj->pDerivedObj = NULL;
-	pChanTypeObj->super = pObj;
-	
-	pChanTypeObj->eContainer = NULL;
-	pChanTypeObj->path = NULL;
-	pChanTypeObj->refs = NULL;
-	pChanTypeObj->lowerBindings = -1;
-	pChanTypeObj->upperBindings = -1;
-	pChanTypeObj->lowerFragments = -1;
-	pChanTypeObj->upperFragments = -1;
-
-	pChanTypeObj->metaClassName = ChannelType_metaClassName;
-	pChanTypeObj->internalGetKey = ChannelType_internalGetKey;
-	pChanTypeObj->VisitAttributes = ChannelType_VisitAttributes;
-	pChanTypeObj->VisitPathAttributes = ChannelType_VisitPathAttributes;
-	pChanTypeObj->VisitReferences = ChannelType_VisitReferences;
-	pChanTypeObj->VisitPathReferences = ChannelType_VisitPathReferences;
-	
-	pChanTypeObj->Delete = delete_ChannelType;
-
-	return pChanTypeObj;
+	this->deployUnits = ptr;
 }
 
-void deletePoly_ChannelType(void* const this)
+void
+ChannelType_addDictionaryType(ChannelType * const this, DictionaryType *ptr)
 {
-	if(this != NULL)
-	{
-		ChannelType* pChanTypeObj;
-		pChanTypeObj = (ChannelType*)((TypeDefinition*)this)->pDerivedObj;
-		/*destroy derived obj*/
-		free(pChanTypeObj);
-		/*destroy base Obj*/
-		delete_TypeDefinition((TypeDefinition*)this);
-	}
+	typeDefinition_VT.addDictionaryType((TypeDefinition*)this, ptr);
 }
 
-void delete_ChannelType(void* const this)
+void
+ChannelType_removeDeployUnit(ChannelType * const this, DeployUnit *ptr)
+{
+	this->deployUnits = NULL;
+}
+
+void
+ChannelType_removeDictionaryType(ChannelType * const this, DictionaryType *ptr)
+{
+	typeDefinition_VT.removeDictionaryType((TypeDefinition*)this, ptr);
+}
+
+void
+ChannelType_addSuperTypes(ChannelType * const this, TypeDefinition *ptr)
+{
+	typeDefinition_VT.addSuperTypes((TypeDefinition*)this, ptr);
+}
+
+void
+ChannelType_removeSuperTypes(ChannelType * const this, TypeDefinition *ptr)
+{
+	typeDefinition_VT.removeSuperTypes((TypeDefinition*)this, ptr);
+}
+
+
+void
+delete_ChannelType(ChannelType * const this)
 {
 	/* destroy base object */
-	delete_TypeDefinition(((ChannelType*)this)->super);
-	/* destroy data memebers */
-	free(this);
+	typeDefinition_VT.delete((TypeDefinition*)this);
+	/* destroy data members */
+	/*
+	 * No data members
+	 */
 }
 
-char* ChannelType_internalGetKey(void* const this)
+static char
+*ChannelType_internalGetKey(ChannelType* const this)
 {
-	if (this == NULL)
-		return NULL;
-	
-	return TypeDefinition_internalGetKey((TypeDefinition*)this);
+	return typeDefinition_VT.internalGetKey((TypeDefinition*)this);
 }
 
-char* ChannelType_metaClassName(void* const this)
+static char
+*ChannelType_metaClassName(ChannelType * const this)
 {
-	/*ChannelType *pObj = (ChannelType*)this;
-	char *name = NULL;
-
-	name = malloc(sizeof(char) * (strlen("ChannelType")) + 1);
-	if(name != NULL)
-		strcpy(name, "ChannelType");
-	else
-		return NULL;
-	
-	return name;
-	*/
 	return "ChannelType";
 }
 
-void ChannelType_VisitAttributes(void* const this, char* parent, Visitor* visitor, bool recursive)
+static void
+ChannelType_visit(ChannelType * const this, char *parent, fptrVisitAction action, fptrVisitActionRef secondAction, bool visitPaths)
 {
-	/* Local attributes */
-	if(recursive)
-	{
-		char path[256];
-		memset(&path[0], 0, sizeof(path));
+	char path[256];
+	memset(&path[0], 0, sizeof(path));
 
-		/* TypeDefinition attributes */
-		TypeDefinition_VisitAttributes(((TypeDefinition*)(this)), parent, visitor, recursive);
+	typeDefinition_VT.visit((TypeDefinition*)this, parent, action, secondAction, visitPaths);
 
-		sprintf(path, "lowerBindings");
-		visitor->action(path, INTEGER, (void*)((ChannelType*)(((TypeDefinition*)this)->pDerivedObj))->lowerBindings);
-		visitor->action(NULL, COLON, NULL);
-
-		sprintf(path, "upperBindings");
-		visitor->action(path, INTEGER, (void*)((ChannelType*)(((TypeDefinition*)this)->pDerivedObj))->upperBindings);
-		visitor->action(NULL, COLON, NULL);
-
-		sprintf(path, "lowerFragments");
-		visitor->action(path, INTEGER, (void*)((ChannelType*)(((TypeDefinition*)this)->pDerivedObj))->lowerFragments);
-		visitor->action(NULL, COLON, NULL);
-
-		sprintf(path, "upperFragments");
-		visitor->action(path, INTEGER, (void*)((ChannelType*)(((TypeDefinition*)this)->pDerivedObj))->upperFragments);
-		visitor->action(NULL, COLON, NULL);
-	}
-	else
-	{
-		/* TypeDefinition attributes */
-		TypeDefinition_VisitAttributes(((TypeDefinition*)(this)), parent, visitor, recursive);
-	}
-}
-
-void ChannelType_VisitPathAttributes(void* const this, char* parent, Visitor* visitor, bool recursive)
-{
-	/* Local attributes */
-	if(recursive)
-	{
-		char path[256];
-		memset(&path[0], 0, sizeof(path));
-
-		/* TypeDefinition attributes */
-		TypeDefinition_VisitPathAttributes(((TypeDefinition*)(this)), parent, visitor, recursive);
-
+	if (visitPaths) {
 		sprintf(path, "%s\\lowerBindings", parent);
-		visitor->action(path, BOOL, (void*)((ChannelType*)(((TypeDefinition*)this)->pDerivedObj))->lowerBindings);
+		action(path, BOOL, (void*)this->lowerBindings);
 		sprintf(path, "%s\\upperBindings", parent);
-		visitor->action(path, BOOL, (void*)((ChannelType*)(((TypeDefinition*)this)->pDerivedObj))->upperBindings);
+		action(path, BOOL, (void*)this->upperBindings);
 		sprintf(path, "%s\\lowerFragments", parent);
-		visitor->action(path, BOOL, (void*)((ChannelType*)(((TypeDefinition*)this)->pDerivedObj))->lowerFragments);
+		action(path, BOOL, (void*)this->lowerFragments);
 		sprintf(path, "%s\\upperFragments", parent);
-		visitor->action(path, BOOL, (void*)((ChannelType*)(((TypeDefinition*)this)->pDerivedObj))->upperFragments);
-	}
-	else
-	{
-		/* TypeDefinition attributes */
-		TypeDefinition_VisitPathAttributes(((TypeDefinition*)(this)), parent, visitor, recursive);
+		action(path, BOOL, (void*)this->upperFragments);
+	} else {
+		action("lowerBindings", INTEGER, (void*)this->lowerBindings);
+		action(NULL, COLON, NULL);
+		action("upperBindings", INTEGER, (void*)this->upperBindings);
+		action(NULL, COLON, NULL);
+		action("lowerFragments", INTEGER, (void*)this->lowerFragments);
+		action(NULL, COLON, NULL);
+		action("upperFragments", INTEGER, (void*)this->upperFragments);
+		action(NULL, COLON, NULL);
 	}
 }
 
-void ChannelType_VisitReferences(void* const this, char* parent, Visitor* visitor, bool recursive)
+static void
+*ChannelType_findByPath(ChannelType * const this, char *attribute)
 {
-	TypeDefinition_VisitReferences((TypeDefinition*)this, parent, visitor, recursive);
-}
-
-void ChannelType_VisitPathReferences(void* const this, char* parent, Visitor* visitor, bool recursive)
-{
-	TypeDefinition_VisitPathReferences((TypeDefinition*)this, parent, visitor, recursive);
-}
-
-void* ChannelType_FindByPath(char* attribute, void* const this)
-{
-	TypeDefinition *pObj = (TypeDefinition*)this;
-	/*
-	 * TODO Fix polymorphism
-	 */
-	/* TypeDefinition attributes */
-	if(!strcmp("name",attribute) ||  !strcmp("version",attribute) || !strcmp("factoryBean",attribute) || !strcmp("bean",attribute) || !strcmp("abstract",attribute))
-	{
-		return TypeDefinition_FindByPath(attribute, pObj);
-	}
 	/* Local attributes */
-	else if(!strcmp("lowerBindings",attribute))
-	{
-		return (void*)((ChannelType*)pObj->pDerivedObj)->lowerBindings;
-	}
-	else if(!strcmp("upperBindings",attribute))
-	{
-		return (void*)((ChannelType*)pObj->pDerivedObj)->upperBindings;
-	}
-	else if(!strcmp("lowerFragments",attribute))
-	{
-		return (void*)((ChannelType*)pObj->pDerivedObj)->lowerFragments;
-	}
-	else if(!strcmp("upperFragments",attribute))
-	{
-		return (void*)((ChannelType*)pObj->pDerivedObj)->upperFragments;
+	if(!strcmp("lowerBindings", attribute)) {
+		return (void*)this->lowerBindings;
+	} else if(!strcmp("upperBindings", attribute)) {
+		return (void*)this->upperBindings;
+	} else if(!strcmp("lowerFragments", attribute)) {
+		return (void*)this->lowerFragments;
+	} else if(!strcmp("upperFragments", attribute)) {
+		return (void*)this->upperFragments;
 	}
 	/* TypeDefinition references */
-	else
-	{
-		return TypeDefinition_FindByPath(attribute, pObj);
+	else {
+		return typeDefinition_VT.findByPath((TypeDefinition*)this, attribute);
 	}
+}
+
+const ChannelType_VT channelType_VT = {
+		/*
+		 * KMFContainer
+		 * NamedElement
+		 */
+		.super = &typeDefinition_VT,
+		.metaClassName = ChannelType_metaClassName,
+		.internalGetKey = ChannelType_internalGetKey,
+		.visit = ChannelType_visit,
+		.findByPath = ChannelType_findByPath,
+		.delete = delete_ChannelType,
+		/*
+		 * TypeDefinition
+		 */
+		.addDeployUnit = ChannelType_addDeployUnit,
+		.addDictionaryType = ChannelType_addDictionaryType,
+		.addSuperTypes = ChannelType_addSuperTypes,
+		.removeDeployUnit = ChannelType_removeDeployUnit,
+		.removeDictionaryType = ChannelType_removeDictionaryType,
+		.removeSuperTypes = ChannelType_removeSuperTypes
+		/*
+		 * ChannelType
+		 */
+};
+
+ChannelType
+*new_ChannelType()
+{
+	ChannelType *pChanTypeObj = NULL;
+
+	/* Allocating memory */
+	pChanTypeObj = malloc(sizeof(ChannelType));
+
+	if (pChanTypeObj == NULL) {
+		PRINTF("ERROR: Cannot create ChannelType!\n");
+		return NULL;
+	}
+
+	/*
+	 * Virtual Table
+	 */
+	pChanTypeObj->VT = &channelType_VT;
+
+	/*
+	 * ChannelType
+	 */
+	initChannelType(pChanTypeObj);
+
+	return pChanTypeObj;
 }
