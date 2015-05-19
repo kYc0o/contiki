@@ -42,6 +42,14 @@
 
 #include "lib/crc16.h"
 
+
+#define DEBUG 0
+#if DEBUG
+#define PRINTF(...)	printf(__VA_ARGS__)
+#else
+#define PRINTF(...)
+#endif
+
 PROCESS(udp_retriever_p, "Naive UDP Retriever");
 
 /* kevoree event types */
@@ -156,7 +164,9 @@ receiver(struct simple_udp_connection *c,
 	else if (request.status == RECEIVING_PACKETS && pkt->cmd == RESPONSE_PACKET) {
 		struct DeployUnitChunck* chunck = (struct DeployUnitChunck*)pkt;
 		if (chunck->packet_id == request.current_packet) {
-			printf("The chunk %d with %d bytes of the file just arrived\n", chunck->packet_id, (datalen - sizeof(struct DeployUnitChunck)));
+			if (chunck->packet_id % 5 == 0) {
+				printf("The chunk %d with %d bytes of the file just arrived\n", chunck->packet_id, (datalen - sizeof(struct DeployUnitChunck)));
+			}
 			char* b = (char*)data + sizeof(struct DeployUnitChunck);
 			cfs_seek(request.fd, 0, CFS_SEEK_END);
 			cfs_write(request.fd, b, (datalen - sizeof(struct DeployUnitChunck)));
@@ -185,7 +195,7 @@ PROCESS_THREAD(udp_retriever_p, ev, data)
 	static uint16_t message_number;
 	PROCESS_BEGIN();
 	
-	printf("Starting the UDP-based retriever\n");
+	PRINTF("Starting the UDP-based retriever\n");
 	
 	/* register new event type */
 	NEW_DEPLOY_UNIT_REQUEST = process_alloc_event();
@@ -216,7 +226,7 @@ PROCESS_THREAD(udp_retriever_p, ev, data)
 				len = (end - (char*)&pkt);
 				pkt.crc = 0;
 				pkt.crc = crc16_data((unsigned char*)&pkt, len, 0);
-				printf("Sending message of length %d with crc %d to ", len, pkt.crc);
+				PRINTF("Sending message of length %d with crc %d to ", len, pkt.crc);
 				uip_debug_ipaddr_print(&addr);
 				printf("\n");
 				
@@ -239,7 +249,7 @@ PROCESS_THREAD(udp_retriever_p, ev, data)
 			
 			if (request.status != DONE) {
 				/* timer once again */
-				etimer_set(&timer, CLOCK_SECOND * (5));
+				etimer_set(&timer, CLOCK_SECOND * (2));
 			}
 			
 		} else if (ev == NEW_DEPLOY_UNIT_REQUEST) {
@@ -261,7 +271,7 @@ PROCESS_THREAD(udp_retriever_p, ev, data)
 			
 			request.current_packet = 0;
 			
-			printf("Let's request a packet\n");
+			PRINTF("Let's request a packet\n");
 			
 			/* prepare request */
 			struct KevoreePacketRequest pkt;
@@ -269,8 +279,6 @@ PROCESS_THREAD(udp_retriever_p, ev, data)
 			pkt.packet_id = request.current_packet;
 			pkt.crc = 0;
 			pkt.crc = crc16_data((unsigned char*)&pkt, sizeof(struct KevoreePacketRequest), 0);
-			
-			printf("mierda: no otra vez %d len=%d \n", pkt.crc, sizeof(struct KevoreePacketRequest));
 			
 			/* send message to the server */
 			simple_udp_sendto(&unicast_connection, &pkt, sizeof(struct KevoreePacketRequest), &addr);

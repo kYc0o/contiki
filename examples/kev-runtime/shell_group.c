@@ -1,3 +1,25 @@
+/*
+ * shell_group.c
+ * This file is part of Kevoree-Contiki
+ *
+ * Copyright (C) 2015 - Inti Gonzalez-Herrera
+ *
+ * Kevoree-Contiki is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Kevoree-Contiki is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Kevoree-Contiki. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+
+
 #include "contiki.h"
 #include "cfs/cfs.h"
 #include "json.h"
@@ -10,6 +32,14 @@
 
 #include "rtkev.h"
 #include "shell_group.h"
+
+
+#define DEBUG 0
+#if DEBUG
+#define PRINTF(...)	printf(__VA_ARGS__)
+#else
+#define PRINTF(...)
+#endif
 
 /* forward declaration */
 static void* newShellGroup(const char* name);
@@ -51,7 +81,7 @@ PROCESS_THREAD(shellGroupP, ev, data)
 
 	instance = (ShellGroup*)data;
 
-	printf("Ok, here I have my instance %p\n", (struct ShellGroup*)data);
+	PRINTF("Ok, here I have my instance %p\n", (struct ShellGroup*)data);
 
 	/* define new event */
 	NEW_MODEL_IN_JSON = process_alloc_event();
@@ -60,7 +90,7 @@ PROCESS_THREAD(shellGroupP, ev, data)
 		PROCESS_WAIT_EVENT();
 		if (ev == NEW_MODEL_IN_JSON) {
 			/* wow I have a new model, do te magic with the traces and so on */
-			printf("New model %s received in group with instance %p\n", instance->fileNameWithModel, instance);
+			PRINTF("New model %s received in group with instance %p\n", instance->fileNameWithModel, instance);
 			newModel = NULL;
 			
 			if((fd_read = cfs_open(instance->fileNameWithModel, CFS_READ)) != -1) {
@@ -72,13 +102,13 @@ PROCESS_THREAD(shellGroupP, ev, data)
 				jsonparse_setup(&jsonState, instance->fileNameWithModel);
 				newModel = JSONKevDeserializer(&jsonState, jsonparse_next(&jsonState));
 				cfs_close(jsonState.fd);
-				printf("INFO: Deserialized finished\n");
+				PRINTF("INFO: Deserialized finished\n");
 			}
 			/* Afterwards, just call notifyNewModel */
 			if (newModel != NULL && notifyNewModel(newModel)== PROCESS_ERR_OK)
-				printf("INFO: Model was successfully sent\n");
+				PRINTF("INFO: Model was successfully sent\n");
 			else
-				printf("ERROR: The model cannot be loaded!\n");
+				PRINTF("ERROR: The model cannot be loaded!\n");
 		}
 		else if (ev == PROCESS_EVENT_EXIT) {
 			PROCESS_EXIT();
@@ -104,11 +134,11 @@ int startShellGroup(void* instance)
 
 	inst->fileNameWithModel = "new_model-compact.json";
 
-	printf("INFO: Sending instance %s, at %p\n", inst->fileNameWithModel, inst);
+	PRINTF("INFO: Sending instance %s, at %p\n", inst->fileNameWithModel, inst);
 
 	process_start(&shellGroupP, inst);
 
-	printf("INFO: Sent instance %s, at %p\n", inst->fileNameWithModel, inst);
+	PRINTF("INFO: Sent instance %s, at %p\n", inst->fileNameWithModel, inst);
 
 	return 0;
 }
