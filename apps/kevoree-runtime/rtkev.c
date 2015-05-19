@@ -299,6 +299,10 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 		if (newModel != NULL && runtime.currentModel != NULL) {
 			// char *traces;
 			TraceSequence *ts = ModelCompare(newModel, runtime.currentModel);
+			if (ts == NULL) {
+				PRINTF("ERROR: Cannot create traces!\n");
+				PROCESS_EXIT();
+			}
 
 			list_init(plannedAdaptations);
 
