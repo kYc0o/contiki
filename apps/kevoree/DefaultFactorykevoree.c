@@ -93,9 +93,9 @@ ContainerNode *createContainerNode(struct jsonparse_state *jsonState, char jsonT
 					{
 					case JSON_TYPE_STRING:
 						jsonparse_copy_value(jsonState, strJson, MAX_STRJSON_SIZE);
-						if (!strcmp("false", strJson)) {
+						if (!strcmp("0", strJson)) {
 							obj->started = false;
-						} else if (!strcmp("true", strJson)) {
+						} else if (!strcmp("1", strJson)) {
 							obj->started = true;
 						} else {
 							obj->started = false;
@@ -807,9 +807,9 @@ ComponentInstance *createComponentInstance(struct jsonparse_state *jsonState, ch
 					{
 					case JSON_TYPE_STRING:
 						jsonparse_copy_value(jsonState, strJson, MAX_STRJSON_SIZE);
-						if (!strcmp("false", strJson)) {
+						if (!strcmp("0", strJson)) {
 							obj->started = false;
-						} else if (!strcmp("true", strJson)) {
+						} else if (!strcmp("1", strJson)) {
 							obj->started = true;
 						} else {
 							obj->started = false;
