@@ -400,26 +400,11 @@ ComponentInstance
 	 * Virtual Table
 	 */
 	pCompInstanceObj->VT = &componentInstance_VT;
-	/*
-	 * KMFContainer
-	 */
-	pCompInstanceObj->eContainer = NULL;
-	pCompInstanceObj->path = NULL;
-	/*
-	 * NamedElement
-	 */
-	pCompInstanceObj->name = NULL;
-	/*
-	 * Instance
-	 */
-	pCompInstanceObj->metaData = NULL;
-	pCompInstanceObj->started = -1;
-	pCompInstanceObj->typeDefinition = NULL;
-	pCompInstanceObj->dictionary = NULL;
-	pCompInstanceObj->fragmentDictionary = NULL;
+
 	/*
 	 * ComponentInstance
 	 */
+	initComponentInstance(pCompInstanceObj);
 
 	return pCompInstanceObj;
 }
