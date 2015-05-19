@@ -32,12 +32,48 @@ ContainerRoot *new_model = NULL;
 
 LIST(model_traces);
 
+static void actionprintpath(char *path, Type type, void *value)
+{
+	switch(type)
+	{
+	case STRING:
+	case REFERENCE:
+		printf("path = %s  value = %s\n",path,(char*)value);
+		break;
+
+	case BOOL:
+	case INTEGER:
+		printf("path = %s  value = %d\n", path, (int)value);
+		break;
+
+	case STRREF:
+	case BRACKET:
+	case SQBRACKET:
+	case CLOSEBRACKET:
+	case CLOSESQBRACKET:
+	case CLOSEBRACKETCOLON:
+	case CLOSESQBRACKETCOLON:
+	case COLON:
+	case RETURN:
+		printf("Type non valid!\n");
+		break;
+	}
+}
+
 TraceSequence *ModelCompare(ContainerRoot *_newModel, ContainerRoot *_currentModel)
 {
+	if (_newModel == NULL) {
+		PRINTF("ERROR: new model is NULL!\n");
+		return NULL;
+	}
+	if (_currentModel == NULL) {
+		PRINTF("ERROR: current model is NULL!\n");
+		return NULL;
+	}
+
 	current_model = _currentModel;
 	new_model = _newModel;
 
-	/*Visitor *visitor = malloc(sizeof(Visitor));*/
 	TraceSequence *ts = new_TraceSequence();
 	char *trace_sequence;
 
@@ -45,14 +81,8 @@ TraceSequence *ModelCompare(ContainerRoot *_newModel, ContainerRoot *_currentMod
 		return NULL;
 	}
 
-	printf("INFO: new_model detected, comparing with curent_model\n");
-	/*visitor->action = actionUpdate;
-	visitor->secondAction = actionRemove;*/
+	PRINTF("INFO: new_model detected, comparing with curent_model\n");
 	current_model->VT->visit(current_model, "", actionUpdate, actionRemove, true);
-	/*current_model->VisitPaths(current_model, visitor);
-	visitor->action = actionAddSet;
-	visitor->secondAction = actionAdd;
-	new_model->VisitPaths(new_model, visitor);*/
 	new_model->VT->visit(new_model, "", actionAddSet, actionAdd, true);
 
 	if(model_traces == NULL) {
@@ -401,7 +431,7 @@ void actionUpdate(char* _path, Type type, void* value)
 	}
 }
 
-void actionAddSet(char* _path, Type type, void* value)
+void actionAddSet(char *_path, Type type, void *value)
 {
 	char *__path = strdup(_path);
 	char path[250];
@@ -424,15 +454,6 @@ void actionAddSet(char* _path, Type type, void* value)
 	if (!strcmp("generated_KMF_ID", path)) {
 		strcpy(path, "");
 	}
-	/*if ((container = current_model->VT->findByPath(path, current_model)) != NULL) {
-		if ((src = strdup(path)) != NULL) {
-		} else {
-			PRINTF("ERROR: not enough memory for src!\n");
-		}
-		typename = strdup(container->VT->metaClassName(container));
-	} else {
-		PRINTF("INFO: adding %s\n", path);
-	}*/
 
 	switch(type)
 	{
