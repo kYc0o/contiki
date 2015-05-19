@@ -23,6 +23,17 @@
 #include "dev/serial-line.h"
 #include "cfs/cfs.h"
 #include "loader/elfloader.h"
+#include "net/netstack.h"
+
+#include "contiki-net.h"
+#include "net/uip.h"
+#include "net/uip-ds6.h"
+#include "net/rpl/rpl.h"
+
+#include "simple-udp.h"
+#include "net/netstack.h"
+
+
 #include "jsonparse.h"
 
 #include "rtkev.h"
@@ -47,6 +58,36 @@
 
 /* strategy to use */
 #define DEPLOY_UNIT_RETRIEVER_STRATEGY NAIVE_UDP_BASED_RETRIEVER
+
+#define FLASH_FORMATTED "formated.txt"
+#define MAGIC_NUMBER 0xFFEEDDCC
+
+/* used to find out if the flash is formatted */
+static int
+isFormatted()
+{
+	int r = 0;
+	int fd =  cfs_open(FLASH_FORMATTED, CFS_READ);
+	uint32_t x = 0;
+	if (fd < 0) return r;
+	if ((cfs_read(fd, &x, sizeof(uint32_t)) == sizeof(uint32_t)) && (x == MAGIC_NUMBER)) {
+		r = 1;
+	}
+	cfs_close(fd);
+	return r;
+}
+
+/* used to write down the fact hat the flash is formatted */
+static void
+mark_as_formatted()
+{
+	int fd =  cfs_open(FLASH_FORMATTED, CFS_WRITE);
+	uint32_t x = MAGIC_NUMBER;
+	cfs_write(fd, &x, sizeof(uint32_t));
+	cfs_close(fd);
+}
+
+const char* new_model_const = "{\"eClass\": \"org.kevoree.ContainerRoot\",\"generated_KMF_ID\": \"CtHbJw37\",\"nodes\": [{\"eClass\": \"org.kevoree.ContainerNode\",\"name\": \"node0\",\"started\": \"false\",\"metaData\": \"{\\\"x\\\":296,\\\"y\\\":167}\",\"typeDefinition\": [\"typeDefinitions[ContikiNode/0.0.1]\"],\"hosts\": [],\"host\": [],\"groups\": [\"groups[group0]\"],\"dictionary\": [],\"fragmentDictionary\": [],\"components\": [{\"eClass\": \"org.kevoree.ComponentInstance\",\"name\": \"comp457\",\"started\": \"true\",\"metaData\": \"{\\\"x\\\":408,\\\"y\\\":239}\",\"typeDefinition\": [\"typeDefinitions[hello_world/0.0.1]\"],\"namespace\": [],\"dictionary\": [{\"eClass\": \"org.kevoree.Dictionary\",\"generated_KMF_ID\": \"0.68263587262481451424775426644\",\"values\": [{\"eClass\": \"org.kevoree.DictionaryValue\",\"name\": \"time\",\"value\": \"6\"}]}],\"fragmentDictionary\": [],\"provided\": [],\"required\": []}],\"networkInformation\": [{\"eClass\": \"org.kevoree.NetworkInfo\",\"name\": \"ip\",\"values\": [{\"eClass\": \"org.kevoree.NetworkProperty\",\"name\": \"local\",\"value\": \"aaaa::0:0:5\"},{\"eClass\": \"org.kevoree.NetworkProperty\",\"name\": \"front\",\"value\": \"m3-XX.lille.iotlab.info\"}]}]}],\"typeDefinitions\": [{\"eClass\": \"org.kevoree.NodeType\",\"abstract\": \"false\",\"bean\": \"\",\"name\": \"ContikiNode\",\"factoryBean\": \"\",\"version\": \"0.0.1\",\"deployUnit\": [\"deployUnits[org.kevoree.library.c//kevoree-contiki-node/0.0.1]\"],\"superTypes\": [],\"dictionaryType\": [{\"eClass\": \"org.kevoree.DictionaryType\",\"generated_KMF_ID\": \"9o86ZdvQ\",\"attributes\": []}]},{\"eClass\": \"org.kevoree.GroupType\",\"abstract\": \"false\",\"bean\": \"\",\"name\": \"CoAPGroup\",\"factoryBean\": \"\",\"version\": \"0.0.1\",\"deployUnit\": [\"deployUnits[//kevoree-group-coap/0.0.1]\"],\"superTypes\": [],\"dictionaryType\": [{\"eClass\": \"org.kevoree.DictionaryType\",\"generated_KMF_ID\": \"hytCmvXU\",\"attributes\": [{\"eClass\": \"org.kevoree.DictionaryAttribute\",\"fragmentDependant\": \"false\",\"optional\": \"false\",\"name\": \"path\",\"state\": \"false\",\"datatype\": \"string\",\"defaultValue\": \"\",\"genericTypes\": []},{\"eClass\": \"org.kevoree.DictionaryAttribute\",\"fragmentDependant\": \"false\",\"optional\": \"false\",\"name\": \"port\",\"state\": \"false\",\"datatype\": \"number\",\"defaultValue\": \"\",\"genericTypes\": []},{\"eClass\": \"org.kevoree.DictionaryAttribute\",\"fragmentDependant\": \"false\",\"optional\": \"false\",\"name\": \"proxy_port\",\"state\": \"false\",\"datatype\": \"int\",\"defaultValue\": \"20000\",\"genericTypes\": []}]}]},{\"eClass\": \"org.kevoree.ComponentType\",\"abstract\": \"false\",\"bean\": \"\",\"name\": \"hello_world\",\"factoryBean\": \"\",\"version\": \"0.0.1\",\"deployUnit\": [\"deployUnits[kev_contiki//hello_world/0.0.1]\"],\"superTypes\": [],\"dictionaryType\": [{\"eClass\": \"org.kevoree.DictionaryType\",\"generated_KMF_ID\": \"3dddTFpd\",\"attributes\": [{\"eClass\": \"org.kevoree.DictionaryAttribute\",\"fragmentDependant\": \"false\",\"optional\": \"false\",\"name\": \"time\",\"state\": \"false\",\"datatype\": \"int\",\"defaultValue\": \"5\",\"genericTypes\": []}]}],\"required\": [],\"provided\": []}],\"repositories\": [{\"eClass\": \"org.kevoree.Repository\",\"url\": \"coap://[bbbb::1]:5683/libraries\"}],\"dataTypes\": [],\"libraries\": [{\"eClass\": \"org.kevoree.TypeLibrary\",\"name\": \"ContikiLib\",\"subTypes\": [\"typeDefinitions[ContikiNode/0.0.1]\",\"typeDefinitions[CoAPGroup/0.0.1]\"]},{\"eClass\": \"org.kevoree.TypeLibrary\",\"name\": \"Default\",\"subTypes\": [\"typeDefinitions[hello_world/0.0.1]\"]}],\"hubs\": [],\"mBindings\": [],\"deployUnits\": [{\"eClass\": \"org.kevoree.DeployUnit\",\"groupName\": \"\",\"name\": \"kevoree-group-coap\",\"hashcode\": \"\",\"type\": \"ce\",\"url\": \"\",\"version\": \"0.0.1\",\"requiredLibs\": []},{\"eClass\": \"org.kevoree.DeployUnit\",\"groupName\": \"org.kevoree.library.c\",\"name\": \"kevoree-contiki-node\",\"hashcode\": \"\",\"type\": \"ce\",\"url\": \"\",\"version\": \"0.0.1\",\"requiredLibs\": []},{\"eClass\": \"org.kevoree.DeployUnit\",\"groupName\": \"kev_contiki\",\"name\": \"hello_world\",\"hashcode\": \"\",\"type\": \"ce\",\"url\": \"\",\"version\": \"0.0.1\",\"requiredLibs\": []}],\"nodeNetworks\": [],\"groups\": [{\"eClass\": \"org.kevoree.Group\",\"name\": \"group0\",\"started\": \"false\",\"metaData\": \"{\\\"x\\\":504,\\\"y\\\":259}\",\"typeDefinition\": [\"typeDefinitions[CoAPGroup/0.0.1]\"],\"subNodes\": [\"nodes[node0]\"],\"dictionary\": [],\"fragmentDictionary\": [{\"eClass\": \"org.kevoree.FragmentDictionary\",\"name\": \"contiki-node\",\"generated_KMF_ID\": \"QoMNUckL\",\"values\": []}]}]}";
 
 /* built-in kevoree types */
 extern const GroupInterface ShellGroupInterface;
@@ -77,6 +118,28 @@ static const struct Built_In_Instance built_in_instances [] ={
 	}
 };
 
+
+static char*
+get_local_address(void)
+{
+	int i;
+	uint8_t state;
+	char* r = (char*)malloc(sizeof(char)*10);
+	
+	for(i = 0; i < UIP_DS6_ADDR_NB; i++) {
+		state = uip_ds6_if.addr_list[i].state;
+		if(uip_ds6_if.addr_list[i].isused &&
+				(state == ADDR_TENTATIVE || state == ADDR_PREFERRED)) {
+			uip_ipaddr_t *ip_addr = &uip_ds6_if.addr_list[i].ipaddr;
+			uint16_t a = (ip_addr->u8[14] << 8) + ip_addr->u8[15];
+			sprintf(r, "%x", a);
+			return r; // please, just one address, I don't care if the interface has more than one address
+		}
+	}
+	
+	return  NULL;
+}
+
 PROCESS(kevRuntime, "KevRuntime");
 AUTOSTART_PROCESSES(&kevRuntime);
 PROCESS_THREAD(kevRuntime, ev, data)
@@ -95,19 +158,49 @@ PROCESS_THREAD(kevRuntime, ev, data)
 	int result;
 
 	PROCESS_BEGIN();
+	
+	NETSTACK_MAC.off(1);
 
 	/* definitively we want to dynamically load modules */
 	elfloader_init();
 	
+	/* ensure that the flash is formatted */
+	if (!isFormatted()) {
+		printf("Formating the flash ... this may take a while, so go for a coffee ... around three minutes\n");
+		int r_format = cfs_coffee_format();
+		printf("Formatting result is %d\n", r_format);
+		if (r_format) {
+			printf("Some error formatting ... Kevoree cannot run\n");
+			PROCESS_EXIT();
+		}
+		else {
+			mark_as_formatted();
+		}
+	}
+	
+	/* create model from constant */
+	fdFile = cfs_open("new_model-compact.json", CFS_WRITE);
+	cfs_write(fdFile, new_model_const, strlen(new_model_const));
+	cfs_close(fdFile);
+	printf("File with new model was created 000\n");
+	
+	/* get local address */
+	char* local_address = get_local_address();
+	
 	/* initialize Kevoree Runtime */
 	result = 1;
 #if DEPLOY_UNIT_RETRIEVER_STRATEGY == NAIVE_UDP_BASED_RETRIEVER
-	result = initKevRuntime(&naive_udp_retriever);
+	result = initKevRuntime(local_address, &naive_udp_retriever);
 #elif DEPLOY_UNIT_RETRIEVER_STRATEGY == SMART_UDP_BASED_RETRIEVER
 
 #elif DEPLOY_UNIT_RETRIEVER_STRATEGY == SHELL_BASED_RETRIEVER
-	result = initKevRuntime(&shellBasedRetriever);
+	result = initKevRuntime(local_address, &shellBasedRetriever);
 #endif
+
+	/* free some memory */
+	free(local_address);
+	
+	/* is everything ok? */
 	if (result != 0) {
 		printf("Runtime initialization error\n");
 		PROCESS_EXIT();
@@ -252,7 +345,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				cfs_write(fdFile, buf, r);
 			}
 			else  {
-				printf("%s (%lu bytes received)\n", (char*)data, received);
+				printf("Unknown commnad => %s\n", (char*)data);
 			}
 		}
 	}

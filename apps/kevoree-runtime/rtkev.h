@@ -73,7 +73,7 @@ const char* getDictionaryAttributeValue(KevContext* context, const char* att);
 #define ERR_KEV_INSTANCE_CREATION_FAIL ((int) -4)
 
 /* init runtime */
-int initKevRuntime(const DeployUnitRetriver* retriever);
+int initKevRuntime(const char* nodeName, const DeployUnitRetriver* retriever);
 
 /* register component type */
 int registerComponent(int count, ... );

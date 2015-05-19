@@ -40,11 +40,11 @@
 
 #include <stdarg.h>
 
-#define DEBUG
-#ifdef DEBUG
-#define PRINTF printf
+#define DEBUG 0
+#if DEBUG
+#define PRINTF(...)	printf(__VA_ARGS__)
 #else
-#define PRINTF(S, ...)
+#define PRINTF(...)
 #endif
 
 
@@ -91,6 +91,8 @@ struct DictionaryPair {
 };
 
 static struct Runtime {
+	/* node name */
+	char node_name[20];
 	/* the current model */
 	ContainerRoot *currentModel;
 	/* hash_map from type name to type definition */
@@ -285,7 +287,7 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 
 	/* register new event type */
 	NEW_MODEL = process_alloc_event();
-	printf("INFO: NEW_MODEL event was allocated %d\n", NEW_MODEL);
+	PRINTF("INFO: NEW_MODEL event was allocated %d\n", NEW_MODEL);
 
 	while (1) {
 		ContainerRoot *newModel = NULL;
@@ -346,12 +348,16 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 }
 
 /* init runtime */
-int initKevRuntime(const DeployUnitRetriver* retriever)
+int initKevRuntime(const char* nodeName, const DeployUnitRetriver* retriever)
 {
 	LIST_STRUCT_INIT(&runtime, types);
 	LIST_STRUCT_INIT(&runtime, instances);
 	LIST_STRUCT_INIT(&runtime, deployUnits);	
+	
+	if (nodeName == NULL) return -1;
 
+	sprintf(runtime.node_name, "n%s", nodeName);
+	
 	runtime.deployUnitRetriever = (DeployUnitRetriver*)retriever;
 	runtime.tmp_newModel = NULL;
 
@@ -373,6 +379,8 @@ int initKevRuntime(const DeployUnitRetriver* retriever)
 	/* start support protothreads */
 	process_start(&kev_model_listener, NULL);
 	process_start(&kev_model_installer, NULL);
+	
+	printf("Node Runtime %s initialized\n", runtime.node_name);
 
 	return 0;
 }
