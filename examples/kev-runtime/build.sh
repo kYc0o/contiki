@@ -15,4 +15,6 @@ make components
 make client
 
 # compile the server implementing the software repository
-make repository-server
+#make repository-server
+
+make server.x

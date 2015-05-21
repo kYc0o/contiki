@@ -5,7 +5,8 @@ CONTIKI_SOURCEFILES += kev-runtime.c \
 	ShellBasedDeployUnitRetriever.c \
 	udpComponent.c \
 	deluge_group.c \
-	NaiveUDPBasedDeployUnitRetriever.c
+	NaiveUDPBasedDeployUnitRetriever.c \
+	requests.c
 
 ELF_LOADER=1
 TARGET=iotlab-m3
@@ -37,8 +38,16 @@ client: $(CONSOLE_CLIENT_SRCS)
 
 repository-server: $(REPOSITORY_SERVER)
 
+server.x:
+	cp requests.h server
+	cp requests.c server
+	cd server && $(MAKE)
+	cp server/server server.x
+
 $(REPOSITORY_SERVER): $(REPOSITORY_SERVER_SRC)
 	javac $(REPOSITORY_SERVER_SRC)
+	
+.PHONY: server.x
 
 CONTIKI = ../..
 include $(CONTIKI)/Makefile.include
