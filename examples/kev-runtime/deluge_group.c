@@ -174,7 +174,10 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 			uip_create_linklocal_allnodes_mcast(&addr);
   			simple_udp_sendto(&deluge_group_broadcast, &instance->info, sizeof(struct ModelInfo), &addr);
   			
-			etimer_restart(&et);
+  			
+  			etimer_set(&et, CLOCK_SECOND * 4);
+  			
+			//etimer_restart(&et);
 		}
 		else if (ev == NEW_AVAILABLE_OA_MODEL){
 			/* receive the new over the air model */
