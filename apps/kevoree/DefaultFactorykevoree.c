@@ -93,9 +93,7 @@ ContainerNode *createContainerNode(struct jsonparse_state *jsonState, char jsonT
 					{
 					case JSON_TYPE_STRING:
 						jsonparse_copy_value(jsonState, strJson, MAX_STRJSON_SIZE);
-						if (!strcmp("0", strJson)) {
-							obj->started = false;
-						} else if (!strcmp("1", strJson)) {
+						if (!strcmp("1", strJson) || !strcmp("true", strJson)) {
 							obj->started = true;
 						} else {
 							obj->started = false;
@@ -807,9 +805,7 @@ ComponentInstance *createComponentInstance(struct jsonparse_state *jsonState, ch
 					{
 					case JSON_TYPE_STRING:
 						jsonparse_copy_value(jsonState, strJson, MAX_STRJSON_SIZE);
-						if (!strcmp("0", strJson)) {
-							obj->started = false;
-						} else if (!strcmp("1", strJson)) {
+						if (!strcmp("1", strJson) || !strcmp("true", strJson)) {
 							obj->started = true;
 						} else {
 							obj->started = false;
@@ -924,9 +920,9 @@ ComponentInstance *createComponentInstance(struct jsonparse_state *jsonState, ch
 													}
 													Dictionary *dic = createDictionary(jsonState, jsonType, strJson, (Instance*)obj);
 													if (dic != NULL) {
-														if ((obj->VT->findByPath(obj, dic->path)) == NULL) {
-															obj->VT->addDictionary(obj, dic);
-														}
+														/*if ((root->VT->findByPath(root, dic->path)) == NULL) {*/
+														obj->VT->addDictionary(obj, dic);
+														/*}*/
 													}
 												}
 												break;
@@ -1189,7 +1185,9 @@ Dictionary *createDictionary(struct jsonparse_state *jsonState, char jsonType, c
 														inst->VT->addDictionary(inst, obj);
 													}
 													DictionaryValue *dicval = createDictionaryValue(jsonState, jsonType, strJson);
-													obj->VT->addValues(obj, dicval);
+													if (dicval != NULL) {
+														obj->VT->addValues(obj, dicval);
+													}
 												}
 												break;
 											}
@@ -1276,7 +1274,11 @@ Group *createGroup(struct jsonparse_state *jsonState, char jsonType, char *strJs
 					{
 					case JSON_TYPE_STRING:
 						jsonparse_copy_value(jsonState, strJson, MAX_STRJSON_SIZE);
-						obj->started = atoi(strJson);
+						if (!strcmp("1", strJson) || !strcmp("true", strJson)) {
+							obj->started = true;
+						} else {
+							obj->started = false;
+						}
 						PRINTF("%s -> %d\n", strJson, obj->started);
 						break;
 					}
@@ -1464,9 +1466,9 @@ Group *createGroup(struct jsonparse_state *jsonState, char jsonType, char *strJs
 													}
 													Dictionary *dic = createDictionary(jsonState, jsonType, strJson, (Instance*)obj);
 													if (dic != NULL) {
-														if ((obj->VT->findByPath(obj, dic->path)) == NULL) {
-															obj->VT->addDictionary(obj, dic);
-														}
+														/*if ((root->VT->findByPath(root, dic->path)) == NULL) {*/
+														obj->VT->addDictionary(obj, dic);
+														/*}*/
 													}
 												}
 												break;
@@ -1871,7 +1873,11 @@ TypeDefinition *createTypeDefinition(struct jsonparse_state *jsonState, char jso
 					{
 					case JSON_TYPE_STRING:
 						jsonparse_copy_value(jsonState, strJson, MAX_STRJSON_SIZE);
-						obj->abstract = atoi(strJson);
+						if (!strcmp("1", strJson) || !strcmp("true", strJson)) {
+							obj->abstract = true;
+						} else {
+							obj->abstract = false;
+						}
 						PRINTF("%s -> %d\n", strJson, obj->abstract);
 						break;
 					}
@@ -2283,7 +2289,11 @@ DictionaryAttribute *createDictionaryAttribute(struct jsonparse_state *jsonState
 					{
 					case JSON_TYPE_STRING:
 						jsonparse_copy_value(jsonState, strJson, MAX_STRJSON_SIZE);
-						obj->optional = atoi(strJson);
+						if (!strcmp("1", strJson) || !strcmp("true", strJson)) {
+							obj->optional = true;
+						} else {
+							obj->optional = false;
+						}
 						PRINTF("%s -> %d\n", strJson, obj->optional);
 						break;
 					}
@@ -2301,7 +2311,11 @@ DictionaryAttribute *createDictionaryAttribute(struct jsonparse_state *jsonState
 					{
 					case JSON_TYPE_STRING:
 						jsonparse_copy_value(jsonState, strJson, MAX_STRJSON_SIZE);
-						obj->state = atoi(strJson);
+						if (!strcmp("1", strJson) || !strcmp("true", strJson)) {
+							obj->state = true;
+						} else {
+							obj->state = false;
+						}
 						PRINTF("%s -> %d\n", strJson, obj->state);
 						break;
 					}
@@ -2338,7 +2352,11 @@ DictionaryAttribute *createDictionaryAttribute(struct jsonparse_state *jsonState
 					{
 					case JSON_TYPE_STRING:
 						jsonparse_copy_value(jsonState, strJson, MAX_STRJSON_SIZE);
-						obj->fragmentDependant = atoi(strJson);
+						if (!strcmp("1", strJson) || !strcmp("true", strJson)) {
+							obj->fragmentDependant = true;
+						} else {
+							obj->fragmentDependant = false;
+						}
 						PRINTF("%s -> %d\n", strJson, obj->fragmentDependant);
 						break;
 					}
