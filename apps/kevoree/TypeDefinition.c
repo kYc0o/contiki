@@ -333,7 +333,11 @@ void
 			if(nextAttribute == NULL) {
 				return this->deployUnits;
 			} else {
-				return this->deployUnits->VT->findByPath(this->deployUnits, nextPath);
+				if (this->deployUnits != NULL) {
+					return this->deployUnits->VT->findByPath(this->deployUnits, nextPath);
+				} else {
+					return NULL;
+				}
 			}
 		} else if(!strcmp("dictionaryType", obj)) {
 			free(obj);

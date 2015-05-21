@@ -552,7 +552,11 @@ void
 		if(nextAttribute == NULL) {
 			return this->host;
 		} else {
-			return this->host->VT->findByPath(this->host, nextPath);
+			if (this->host != NULL) {
+				return this->host->VT->findByPath(this->host, nextPath);
+			} else {
+				return NULL;
+			}
 		}
 	} else if(!strcmp("networkInformation", obj)) {
 		free(obj);

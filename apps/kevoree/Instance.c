@@ -64,8 +64,6 @@ Instance_addDictionary(Instance * const this, Dictionary *ptr)
 		this->VT->removeDictionary(this, ptr);
 	}
 	this->dictionary = ptr;
-	/* fot some reason, this method is being called more than one times for ptr. It is up to you and Eclipse to discover why
-	if (ptr->eContainer) { printf("Muy mal, the previous value was %s. Next is %s. Detectect at %s:%d\n", ptr->eContainer, this->path, __FILE__, __LINE__); free(ptr->eContainer); }*/
 	ptr->eContainer = strdup(this->path);
 	ptr->path = malloc(sizeof(char) * (strlen(this->path) + strlen("/dictionary[]") + strlen(ptr->VT->internalGetKey(ptr))) + 1);
 	sprintf(ptr->path, "%s/dictionary[%s]", this->path, ptr->VT->internalGetKey(ptr));
@@ -313,14 +311,22 @@ static void
 			if(nextAttribute == NULL) {
 				return this->typeDefinition;
 			} else {
-				return this->typeDefinition->VT->findByPath(this->typeDefinition, nextPath);
+				if (this->typeDefinition != NULL) {
+					return this->typeDefinition->VT->findByPath(this->typeDefinition, nextPath);
+				} else {
+					return NULL;
+				}
 			}
 		} else if(!strcmp("dictionary", obj)) {
 			free(obj);
 			if(nextAttribute == NULL) {
 				return this->dictionary;
 			} else {
-				return this->dictionary->VT->findByPath(this->dictionary, nextPath);
+				if (this->dictionary != NULL) {
+					return this->dictionary->VT->findByPath(this->dictionary, nextPath);
+				} else {
+					return NULL;
+				}
 			}
 		} else if(!strcmp("fragmentDictionary", obj)) {
 			free(obj);
