@@ -360,6 +360,8 @@ int initKevRuntime(const char* nodeName, const DeployUnitRetriver* retriever)
 	
 	runtime.deployUnitRetriever = (DeployUnitRetriver*)retriever;
 	runtime.tmp_newModel = NULL;
+	
+	retriever->init();
 
 	/* let's assign the empty model as the current model */
 	struct jsonparse_state jsonState;

@@ -49,6 +49,7 @@ typedef struct {
 } GroupInterface;
 
 typedef struct {
+	int (*init)(void);
 	int (*getDeployUnit)(const char *);
 } DeployUnitRetriver;
 

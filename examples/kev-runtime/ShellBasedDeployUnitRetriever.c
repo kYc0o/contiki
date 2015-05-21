@@ -11,6 +11,13 @@ getDeployUnit00(const char* deployUnitName)
 	return 0;
 }
 
+static int
+my_init()
+{
+	return 0;
+}
+
 const DeployUnitRetriver shellBasedRetriever = {
+	.init = my_init,
 	.getDeployUnit = getDeployUnit00
 }; 
