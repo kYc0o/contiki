@@ -2,43 +2,49 @@
 #define H_NetworkProperty
 
 #include <stdbool.h>
-#include "KMF4C.h"
+#include "KMFContainer.h"
+#include "NamedElement.h"
 
 typedef struct _NetworkProperty NetworkProperty;
-typedef struct _NamedElement NamedElement;
-typedef struct _Visitor Visitor;
 
-typedef char* (*fptrNetPropMetaClassName)(NetworkProperty*);
-typedef char* (*fptrNetPropInternalGetKey)(NetworkProperty*);
-typedef void (*fptrDeleteNetworkProperty)(NetworkProperty*);
-typedef void (*fptrVisitAttrNetworkProperty)(void*, char*, Visitor*);
-typedef void* (*fptrFindByPathNetworkProperty)(char*, NetworkProperty*);
-
-typedef struct _NetworkProperty {
-	void *pDerivedObj;
-	char *eContainer;
-	char *path;
-	map_t refs;
+typedef struct _NetworkProperty_VT {
+	NamedElement_VT *super;
+	/*
+	 * KMFContainer
+	 * NamedElement
+	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
-	fptrVisitAttr VisitAttributes;
-	fptrVisitAttr VisitPathAttributes;
-	fptrVisitRefs VisitReferences;
-	fptrVisitRefs VisitPathReferences;
-	fptrFindByPath FindByPath;
-	fptrDelete Delete;
-	NamedElement *super;
+	fptrVisit visit;
+	fptrFindByPath findByPath;
+	fptrDelete delete;
+	/*
+	 * NetworkProperty
+	 */
+
+} NetworkProperty_VT;
+
+typedef struct _NetworkProperty {
+	NetworkProperty *next;
+	NetworkProperty_VT *VT;
+	/*
+	 * KMFContainer
+	 */
+	char *eContainer;
+	char *path;
+	/*
+	 * NamedElement
+	 */
+	char *name;
+	/*
+	 * NetworkProperty
+	 */
 	char *value;
 } NetworkProperty;
 
-NamedElement* newPoly_NetworkProperty(void);
-NetworkProperty* new_NetworkProperty(void);
-char* NetworkProperty_metaClassName(void * const this);
-char* NetworkProperty_internalGetKey(void * const this);
-void deletePoly_NetworkProperty(void * const this);
-void delete_NetworkProperty(void * const this);
-void NetworkProperty_VisitAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void NetworkProperty_VisitPathAttributes(void *const this, char *parent, Visitor *visitor, bool recursive);
-void* NetworkProperty_FindByPath(char* attribute, void * const this);
+NetworkProperty *new_NetworkProperty(void);
+void initNetworkProperty(NetworkProperty * const this);
+
+extern const NetworkProperty_VT networkProperty_VT;
 
 #endif /* H_NetworkProperty */

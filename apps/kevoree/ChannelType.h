@@ -1,49 +1,73 @@
 #ifndef __ChannelType_H
 #define __ChannelType_H
 
+#include "KMFContainer.h"
 #include <stdbool.h>
-#include "KMF4C.h"
+
+#include "hashmap.h"
+
 typedef struct _ChannelType ChannelType;
 typedef struct _TypeDefinition TypeDefinition;
-typedef struct _Visitor Visitor;
+typedef struct _DeployUnit DeployUnit;
+typedef struct _DictionaryType DictionaryType;
 
-typedef char* (*fptrChanTypeMetaClassName)(ChannelType*);
-typedef char* (*fptrChanTypeInternalGetKey)(void*);
-typedef void (*fptrDeleteChannelType)(void*);
-typedef void (*fptrVisitAttrChanType)(void*, char*, Visitor*, bool);
-typedef void (*fptrVisitRefsChanType)(void*, char*, Visitor*);
-typedef void* (*fptrFindByPathChanType)(char*, TypeDefinition*);
-
-typedef struct _ChannelType {
-	void *pDerivedObj;
-	char *eContainer;
-	char *path;
-	map_t refs;
+typedef struct _ChannelType_VT {
+	TypeDefinition_VT *super;
+	/*
+	 * KMFContainer
+	 * NamedElement
+	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
-	fptrVisitAttr VisitAttributes;
-	fptrVisitAttr VisitPathAttributes;
-	fptrVisitRefs VisitReferences;
-	fptrVisitRefs VisitPathReferences;
-	fptrFindByPath FindByPath;
-	fptrDelete Delete;
-	TypeDefinition* super;
+	fptrVisit visit;
+	fptrFindByPath findByPath;
+	fptrDelete delete;
+	/*
+	 * TypeDefinition
+	 */
+	fptrTypeDefAddDeployUnit addDeployUnit;
+	fptrTypeDefAddDictionaryType addDictionaryType;
+	fptrTypeDefAddSuperTypes addSuperTypes;
+	fptrTypeDefRemoveDeployUnit removeDeployUnit;
+	fptrTypeDefRemoveDictionaryType removeDictionaryType;
+	fptrTypeDefRemoveSuperTypes removeSuperTypes;
+} ChannelType_VT;
+
+typedef struct _ChannelType {
+	ChannelType *next;
+	ChannelType_VT *VT;
+	/*
+	 * KMFContainer
+	 */
+	char *eContainer;
+	char *path;
+	/*
+	 * NamedElement
+	 */
+	char *name;
+	/*
+	 * TypeDefinition
+	 */
+	char *version;
+	char *factoryBean;
+	char *bean;
+	bool abstract;
+	char *internalKey;
+	DeployUnit *deployUnits;
+	DictionaryType *dictionaryType;
+	map_t superTypes;
+	/*
+	 * ChannelType
+	 */
 	int lowerBindings;
 	int upperBindings;
 	int lowerFragments;
 	int upperFragments;
 } ChannelType;
 
-TypeDefinition* newPoly_ChannelType(void);
 ChannelType* new_ChannelType(void);
-void deletePoly_ChannelType(void* const this);
-void delete_ChannelType(void* const this);
-char* ChannelType_internalGetKey(void* const this);
-char* ChannelType_metaClassName(void* const this);
-void ChannelType_VisitAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void ChannelType_VisitPathAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void ChannelType_VisitPathReferences(void* const this, char* parent, Visitor* visitor, bool recursive);
-void ChannelType_VisitReferences(void* const this, char* parent, Visitor* visitor, bool recursive);
-void* ChannelType_FindByPath(char* attribute, void* const this);
+void initChannelType(ChannelType * const this);
+
+extern const ChannelType_VT channelType_VT;
 
 #endif /* __ChannelType_H */

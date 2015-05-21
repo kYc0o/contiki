@@ -2,33 +2,55 @@
 #define __DictionaryAttribute_H
 
 #include <stdbool.h>
-#include "KMF4C.h"
+
+#include "hashmap.h"
+#include "KMFContainer.h"
+#include "NamedElement.h"
+#include "TypedElement.h"
 
 typedef struct _DictionaryAttribute DictionaryAttribute;
-typedef struct _TypedElement TypedElement;
-typedef struct _Visitor Visitor;
 
-typedef char* (*fptrDicAttrMetaClassName)(DictionaryAttribute*);
-typedef char* (*fptrDicAttrInternalGetKey)(DictionaryAttribute*);
-typedef void (*fptrDeleteDicAttr)(void*);
-typedef void (*fptrVisitAttrDicAttr)(void*, char*, Visitor*);
-typedef void (*fptrVisitRefsDicAttr)(void*, char*, Visitor*);
-typedef void* (*fptrFindByPathDicAttr)(char*, DictionaryAttribute*);
-
-typedef struct _DictionaryAttribute {
-	void *pDerivedObj;
-	char *eContainer;
-	char *path;
-	map_t refs;
+typedef struct _DictionaryAttribute_VT {
+	TypedElement_VT *super;
+	/*
+	 * KMFContainer
+	 * NamedElement
+	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
-	fptrVisitAttr VisitAttributes;
-	fptrVisitAttr VisitPathAttributes;
-	fptrVisitRefs VisitReferences;
-	fptrVisitRefs VisitPathReferences;
-	fptrFindByPath FindByPath;
-	fptrDelete Delete;
-	TypedElement* super;
+	fptrVisit visit;
+	fptrFindByPath findByPath;
+	fptrDelete delete;
+	/*
+	 * TypedElement
+	 */
+	fptrTypElemFindGenericTypesByID findGenericTypesByID;
+	fptrTypElemAddGenericTypes addGenericTypes;
+	fptrTypElemRemoveGenericTypes removeGenericTypes;
+	/*
+	 * DictionaryAttribute
+	 */
+} DictionaryAttribute_VT;
+
+typedef struct _DictionaryAttribute {
+	DictionaryAttribute *next;
+	DictionaryAttribute_VT *VT;
+	/*
+	 * KMFContainer
+	 */
+	char *eContainer;
+	char *path;
+	/*
+	 * NamedElement
+	 */
+	char *name;
+	/*
+	 * TypedElement
+	 */
+	map_t genericTypes;
+	/*
+	 * DictionaryAttribute
+	 */
 	bool optional;
 	bool state;
 	char *datatype;
@@ -36,16 +58,9 @@ typedef struct _DictionaryAttribute {
 	char *defaultValue;
 } DictionaryAttribute;
 
-TypedElement* newPoly_DictionaryAttribute(void);
 DictionaryAttribute* new_DictionaryAttribute(void);
-void deletePoly_DictionaryAttribute(void* const this);
-void delete_DictionaryAttribute(void* const this);
-char* DictionaryAttribute_internalGetKey(void* const this);
-char* DictionaryAttribute_metaClassName(void* const this);
-void DictionaryAttribute_VisitAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void DictionaryAttribute_VisitPathAttributes(void* const this, char* parent, Visitor* visitor, bool recursive);
-void DictionaryAttribute_VisitReferences(void* const this, char* parent, Visitor* visitor, bool recursive);
-void DictionaryAttribute_VisitPathReferences(void* const this, char* parent, Visitor* visitor, bool recursive);
-void* DictionaryAttribute_FindByPath(char* attribute, void* const this);
+void initDictionaryAttribute(DictionaryAttribute * const this);
+
+extern const DictionaryAttribute_VT dictionaryAttribute_VT;
 
 #endif /* __DictionaryAttribute_H */

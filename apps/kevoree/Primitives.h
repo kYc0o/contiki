@@ -46,7 +46,6 @@ static const int Priority_Primitives(Primitives e)
 	case RemoveInstance: return 2;
 	case RemoveBinding : return 1;
 	case StopInstance: return 0;
-	default: return -1;
 	}
 }
 

@@ -1,3 +1,8 @@
+#include <stddef.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "Repository.h"
 #include "Visitor.h"
 
@@ -8,107 +13,111 @@
 #define PRINTF(...)
 #endif
 
-Repository* new_Repository()
+void initRepository(Repository * const this)
 {
-	Repository* pObj;
-	/* Allocating memory */
-	pObj = (Repository*)malloc(sizeof(Repository));
+	/*
+	 * Initialize parent
+	 */
+	initKMFContainer((KMFContainer*)this);
 
-	if (pObj == NULL)
-	{
-		return NULL;
-	}
-	
-	pObj->url = NULL;
-	pObj->eContainer = NULL;
-	
-	pObj->internalGetKey = Repository_internalGetKey;
-	pObj->metaClassName = Repository_metaClassName;
-	pObj->Delete = delete_Repository;
-	pObj->VisitAttributes = Repository_VisitAttributes;
-	pObj->VisitPathAttributes = Repository_VisitPathAttributes;
-	pObj->FindByPath = Repository_FindByPath;
-	
-	return pObj;
+	/*
+	 * Initialize itself
+	 */
+	this->url = NULL;
 }
 
-char* Repository_metaClassName(void * const this)
+static char
+*Repository_metaClassName(Repository * const this)
 {
-	/*char *name;
-
-	name = malloc(sizeof(char) * (strlen("Repository")) + 1);
-	if(name != NULL)
-		strcpy(name, "Repository");
-	else
-		return NULL;
-	
-	return name;
-	*/
 	return "Repository";
 }
 
-char* Repository_internalGetKey(void * const this)
+static char
+*Repository_internalGetKey(Repository * const this)
 {
-	Repository *pObj = (Repository*)this;
-	return pObj->url;
+	return this->url;
 }
 
-void delete_Repository(void * const this)
+static void
+delete_Repository(Repository * const this)
 {
-	/* destroy data memebers */
-	if(this != NULL)
-	{
-		Repository *pObj = (Repository*)this;
-		free(pObj->url);
-		free(pObj->eContainer);
-		free(pObj);
-		/*this = NULL;*/
+	/* destroy base object */
+	KMF_VT.delete((KMFContainer*)this);
+	/* destroy data members */
+	free(this->url);
+}
+
+static void
+Repository_visit(Repository * const this, char *parent, fptrVisitAction action, fptrVisitActionRef secondAction, bool visitPaths)
+{
+	char path[256];
+	memset(&path[0], 0, sizeof(path));
+
+	if (visitPaths) {
+		sprintf(path, "%s\\url", parent);
+		action(path, STRING, this->url);
+	} else {
+		/*
+		 * Visit parent
+		 */
+		KMF_VT.visit((KMFContainer*)this, parent, action, secondAction, visitPaths);
+		action("url", STRING, this->url);
+		action(NULL, RETURN, NULL);
 	}
+
 }
 
-void Repository_VisitAttributes(void* const this, char* parent, Visitor* visitor, bool recursive)
+static void
+*Repository_findByPath(Repository * const this, char *attribute)
 {
-	char path[256];
-	char *cClass = NULL;
-	memset(&path[0], 0, sizeof(path));
-
-	cClass = malloc(sizeof(char) * (strlen("org.kevoree.") + strlen(((Repository*)this)->metaClassName((Repository*)this))) + 1);
-	sprintf(cClass, "org.kevoree.%s", ((Repository*)this)->metaClassName((Repository*)this));
-	sprintf(path,"eClass");
-	visitor->action(path, STRING, cClass);
-	visitor->action(NULL, COLON, NULL);
-	free(cClass);
-
-	sprintf(path, "url");
-	visitor->action(path, STRING, ((Repository*)(this))->url);
-	visitor->action(NULL, RETURN, NULL);
-}
-
-void Repository_VisitPathAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	char path[256];
-	char *cClass = NULL;
-	memset(&path[0], 0, sizeof(path));
-
-	/*sprintf(path,"%s\\cClass", parent);
-	cClass = ((Repository*)this)->metaClassName((Repository*)this);
-	visitor->action(path, STRING, cClass);
-	free(cClass);*/
-
-	sprintf(path,"%s\\url",parent);
-	visitor->action(path, STRING, ((Repository*)(this))->url);
-}
-
-void* Repository_FindByPath(char* attribute, void * const this)
-{
-	Repository *pObj = (Repository*)this;
 	if(!strcmp("url", attribute))
 	{
-		return pObj->url;
+		return this->url;
 	}
 	else
 	{
-		PRINTF("Wrong path\n");
+		PRINTF("WARNING: Object not found %s\n", attribute);
 		return NULL;
 	}
+}
+
+const Repository_VT repository_VT = {
+		.super = &KMF_VT,
+		/*
+		 * KMFContainer
+		 */
+		.metaClassName = Repository_metaClassName,
+		.internalGetKey = Repository_internalGetKey,
+		.visit = Repository_visit,
+		.findByPath = Repository_findByPath,
+		.delete = delete_Repository
+		/*
+		 * Repository
+		 */
+};
+
+Repository
+*new_Repository()
+{
+	Repository* pObj = NULL;
+
+	/* Allocating memory */
+	pObj = malloc(sizeof(Repository));
+
+	if (pObj == NULL) {
+		PRINTF("ERROR: Cannot create Repository!\n");
+		return NULL;
+	}
+
+	/*
+	 * Virtual Table
+	 */
+	pObj->VT = &repository_VT;
+
+	/*
+	 * Repository
+	 */
+	initRepository(pObj);
+
+	return pObj;
 }

@@ -18,29 +18,27 @@
 #define PRINTF(...)
 #endif
 
-
-static void
-delete_AdaptationPrimitive(AdaptationPrimitive * const this)
-{
-	if (this->targetNodeName != NULL) {
-		free(this->targetNodeName);
-	}
-	free(this);
-}
-
 AdaptationPrimitive *new_AdaptationPrimitive()
 {
 	AdaptationPrimitive *pObj = malloc(sizeof(AdaptationPrimitive));
 
 	if (pObj == NULL) {
 		PRINTF("ERROR: Cannot create AdaptationPrimitive!\n");
-		return NULL;
 	}
 
 	pObj->primitiveType = -1;
+	pObj->priority = -1;
 	pObj->ref = NULL;
 	pObj->targetNodeName = NULL;
 	pObj->delete = delete_AdaptationPrimitive;
 
 	return pObj;
+}
+
+void delete_AdaptationPrimitive(AdaptationPrimitive * const this)
+{
+	if (this->targetNodeName != NULL) {
+		free(this->targetNodeName);
+	}
+	free(this);
 }

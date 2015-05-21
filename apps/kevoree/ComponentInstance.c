@@ -1,4 +1,7 @@
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "NamedElement.h"
 #include "Instance.h"
 #include "Port.h"
@@ -14,575 +17,395 @@
 #define PRINTF(...)
 #endif
 
-Instance* newPoly_ComponentInstance()
-{
-	ComponentInstance* pCompInstanceObj = NULL;
-	Instance* pObj = new_Instance();
-
-	/* Allocating memory */
-	pCompInstanceObj = (ComponentInstance*)malloc(sizeof(ComponentInstance));
-
-	if (pCompInstanceObj == NULL)
-	{
-		pObj->Delete(pObj);
-		return NULL;
-	}
-
-	pObj->pDerivedObj = pCompInstanceObj; /* Pointing to derived object */
-	pObj->VisitAttributes = ComponentInstance_VisitAttributes;
-	pObj->VisitPathAttributes = ComponentInstance_VisitPathAttributes;
-	pObj->VisitReferences = ComponentInstance_VisitReferences;
-	pObj->VisitPathReferences = ComponentInstance_VisitPathReferences;
-
-	pCompInstanceObj->eContainer = NULL;
-	pCompInstanceObj->path = NULL;
-	pCompInstanceObj->refs = NULL;
-	pCompInstanceObj->provided = NULL;
-	pCompInstanceObj->required = NULL;
-
-	pCompInstanceObj->AddProvided = ComponentInstance_AddProvided;
-	pCompInstanceObj->AddRequired = ComponentInstance_AddRequired;
-	pCompInstanceObj->RemoveProvided = ComponentInstance_RemoveProvided;
-	pCompInstanceObj->RemoveRequired = ComponentInstance_RemoveRequired;
-
-	pObj->metaClassName = ComponentInstance_metaClassName;
-	pObj->internalGetKey = ComponentInstance_internalGetKey;
-	pObj->FindByPath = ComponentInstance_FindByPath;
-
-	pObj->Delete = deletePoly_ComponentInstance;
-
-	return pObj;
-}
-
-ComponentInstance* new_ComponentInstance()
-{
-	ComponentInstance* pCompInstanceObj = NULL;
-	Instance* pObj = new_Instance();
-
-	if(pObj == NULL)
-		return NULL;
-
-	/* Allocating memory */
-	pCompInstanceObj = (ComponentInstance*)malloc(sizeof(ComponentInstance));
-
-	if (pCompInstanceObj == NULL)
-	{
-		return NULL;
-	}
-
-	/*((Instance*)(pObj->pDerivedObj))->pDerivedObj = pCompInstanceObj; Pointing to derived object */
-	pCompInstanceObj->super = pObj;
-
-	pCompInstanceObj->eContainer = NULL;
-	pCompInstanceObj->path = NULL;
-	pCompInstanceObj->refs = NULL;
-	pCompInstanceObj->provided = NULL;
-	pCompInstanceObj->required = NULL;
-
-	pCompInstanceObj->AddProvided = ComponentInstance_AddProvided;
-	pCompInstanceObj->AddRequired = ComponentInstance_AddRequired;
-	pCompInstanceObj->RemoveProvided = ComponentInstance_RemoveProvided;
-	pCompInstanceObj->RemoveRequired = ComponentInstance_RemoveRequired;
-
-	pCompInstanceObj->VisitAttributes = ComponentInstance_VisitAttributes;
-	pCompInstanceObj->VisitPathAttributes = ComponentInstance_VisitPathAttributes;
-	pCompInstanceObj->VisitReferences = ComponentInstance_VisitReferences;
-	pCompInstanceObj->VisitPathReferences = ComponentInstance_VisitPathReferences;
-	pCompInstanceObj->metaClassName = ComponentInstance_metaClassName;
-	pCompInstanceObj->internalGetKey = ComponentInstance_internalGetKey;
-	pCompInstanceObj->FindByPath = ComponentInstance_FindByPath;
-
-	pObj->super->metaClassName = ComponentInstance_metaClassName;
-	pCompInstanceObj->Delete = delete_ComponentInstance;
-
-	return pCompInstanceObj;
-}
-
-char* ComponentInstance_internalGetKey(void* const this)
-{
-	ComponentInstance *pObj = (ComponentInstance*)this;
-	return pObj->super->internalGetKey(pObj->super);
-}
-
-char* ComponentInstance_metaClassName(void* const this)
+void initComponentInstance(ComponentInstance * const this)
 {
 	/*
-	ComponentInstance *pObj = (ComponentInstance*)this;
-	char *name = NULL;
+	 * Initialize parent
+	 */
+	initInstance((Instance*)this);
 
-	name = malloc(sizeof(char) * (strlen("ComponentInstance")) + 1);
-	if(name != NULL)
-		strcpy(name, "ComponentInstance");
-	else
-		return NULL;
+	/*
+	 * Initialize itself
+	 */
+	this->provided = NULL;
+	this->required = NULL;
+}
 
-	return name;
-	*/
+static char
+*ComponentInstance_internalGetKey(ComponentInstance * const this)
+{
+	return instance_VT.internalGetKey((Instance*)this);
+}
+
+static char
+*ComponentInstance_metaClassName(ComponentInstance * const this)
+{
 	return "ComponentInstance";
 }
 
-void deletePoly_ComponentInstance(void* const this)
+static void
+delete_ComponentInstance(ComponentInstance * const this)
 {
-	Instance *pObj = (Instance*)this;
-	ComponentInstance* pCompInstanceObj;
-	pCompInstanceObj = pObj->pDerivedObj;
-	/*destroy derived obj*/
-	free(pCompInstanceObj);
-	/*destroy base Obj*/
-	delete_Instance(pObj);
-}
-
-void delete_ComponentInstance(void* const this)
-{
-	ComponentInstance *pObj = (ComponentInstance*)this;
 	/* destroy base object */
-	delete_Instance(pObj->super);
-	/* destroy data memebers */
-	free(pObj);
+	instance_VT.delete((Instance*)this);
+	/* destroy data members */
+	if (this->required != NULL) {
+		deleteContainerContents(this->required);
+		hashmap_free(this->required);
+	}
 
+	if (this->provided != NULL) {
+		deleteContainerContents(this->provided);
+		hashmap_free(this->provided);
+	}
 }
 
-Port* ComponentInstance_FindProvidedByID(ComponentInstance* const this, char* id)
+static Port
+*ComponentInstance_findProvidedByID(ComponentInstance * const this, char *id)
 {
-	Port* value = NULL;
+	Port *value = NULL;
 
-	if(this->provided != NULL)
-	{
-		if(hashmap_get(this->provided, id, (void**)(&value)) == MAP_OK)
+	if(this->provided != NULL) {
+		if(hashmap_get(this->provided, id, (void**)(&value)) == MAP_OK) {
 			return value;
-		else
+		} else {
+			PRINTF("ERROR: Port %s not found!\n", id);
 			return NULL;
-	}
-	else
-	{
+		}
+	} else {
+		PRINTF("ERROR: There are no provided in ComponentInstance!\n");
 		return NULL;
 	}
 }
 
-Port* ComponentInstance_FindRequiredByID(ComponentInstance* const this, char* id)
+static Port
+*ComponentInstance_findRequiredByID(ComponentInstance * const this, char *id)
 {
-	Port* value = NULL;
+	Port *value = NULL;
 
-	if(this->required != NULL)
-	{
-		if(hashmap_get(this->required, id, (void**)(&value)) == MAP_OK)
+	if(this->required != NULL) {
+		if(hashmap_get(this->required, id, (void**)(&value)) == MAP_OK) {
 			return value;
-		else
+		} else {
+			PRINTF("ERROR: Port %s not found!\n", id);
 			return NULL;
-	}
-	else
-	{
+		}
+	} else {
+		PRINTF("ERROR: There are no required in ComponentInstance!\n");
 		return NULL;
 	}
 }
 
-void ComponentInstance_AddProvided(ComponentInstance* const this, Port* ptr)
+static void
+ComponentInstance_addProvided(ComponentInstance * const this, Port *ptr)
 {
 	Port *container = NULL;
 
-	char *internalKey = ptr->internalGetKey(ptr);
+	char *internalKey = ptr->VT->internalGetKey(ptr);
 
-	if(internalKey == NULL)
-	{
-		PRINTF("The Port cannot be added in ComponentInstance because the key is not defined\n");
-	}
-	else
-	{
-		if(this->provided == NULL)
-		{
+	if(internalKey == NULL) {
+		PRINTF("ERROR: The Port cannot be added in ComponentInstance because the key is not defined\n");
+	} else {
+		if(this->provided == NULL) {
 			/*
 			 * TODO add if == NULL
 			 */
 			this->provided = hashmap_new();
 		}
-		if(hashmap_get(this->provided, internalKey, (void**)(&container)) == MAP_MISSING)
-		{
+		if(hashmap_get(this->provided, internalKey, (void**)(&container)) == MAP_MISSING) {
 			/*container = (MBinding*)ptr;*/
-			if(hashmap_put(this->provided, internalKey, ptr) == MAP_OK)
-			{
+			if(hashmap_put(this->provided, internalKey, ptr) == MAP_OK) {
 				/*
 				 * TODO add if == NULL
 				 */
-				ptr->eContainer = malloc(sizeof(char) * (strlen(this->path)) + 1);
-				strcpy(ptr->eContainer, this->path);
+				if (ptr->eContainer) {
+					free(ptr->eContainer);
+				}
+				ptr->eContainer = strdup(this->path);
 				ptr->path = malloc(sizeof(char) * (strlen(this->path) +	strlen("/provided[]") +	strlen(internalKey)) + 1);
 				sprintf(ptr->path, "%s/provided[%s]", this->path, internalKey);
+			} else {
+				PRINTF("ERROR: provided cannot be added!\n");
 			}
+		} else {
+			PRINTF("WARNING: id %s already exists in provided map\n", internalKey);
 		}
 	}
 }
 
-void ComponentInstance_AddRequired(ComponentInstance* const this, Port* ptr)
+static void
+ComponentInstance_addRequired(ComponentInstance * const this, Port *ptr)
 {
 	Port *container = NULL;
 
-	char *internalKey = ptr->internalGetKey(ptr);
+	char *internalKey = ptr->VT->internalGetKey(ptr);
 
-	if(internalKey == NULL)
-	{
-		PRINTF("The Port cannot be added in ComponentInstance because the key is not defined\n");
-	}
-	else
-	{
-		if(this->required == NULL)
-		{
+	if(internalKey == NULL) {
+		PRINTF("ERROR: The Port cannot be added in ComponentInstance because the key is not defined\n");
+	} else {
+		if(this->required == NULL) {
 			this->required = hashmap_new();
 		}
-		if(hashmap_get(this->required, internalKey, (void**)(&container)) == MAP_MISSING)
-		{
-			/*container = (MBinding*)ptr;*/
+		if(hashmap_get(this->required, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->required, internalKey, ptr) == MAP_OK)
 			{
-				ptr->eContainer = malloc(sizeof(char) * (strlen(this->path)) + 1);
-				strcpy(ptr->eContainer, this->path);
+				ptr->eContainer = strdup(this->path);
 				ptr->path = malloc(sizeof(char) * (strlen(this->path) +	strlen("/required[]") +	strlen(internalKey)) + 1);
 				sprintf(ptr->path, "%s/required[%s]", this->path, internalKey);
+			} else {
+				PRINTF("ERROR: required cannot be added!\n");
 			}
-			/*
-			 * TODO add else
-			 */
+		} else {
+			PRINTF("WARNING: id %s already exists in required map\n", internalKey);
 		}
 	}
 }
 
-void ComponentInstance_RemoveProvided(ComponentInstance* const this, Port* ptr)
+static void
+ComponentInstance_removeProvided(ComponentInstance * const this, Port *ptr)
 {
-	char *internalKey = ptr->internalGetKey(ptr);
+	char *internalKey = ptr->VT->internalGetKey(ptr);
 
-	if(internalKey == NULL)
-	{
-		PRINTF("The Port cannot be removed in ComponentInstance because the key is not defined\n");
-	}
-	else
-	{
-		if(hashmap_remove(this->provided, internalKey) == MAP_OK)
-		{
+	if(internalKey == NULL) {
+		PRINTF("ERROR: The Port cannot be removed in ComponentInstance because the key is not defined\n");
+	} else {
+		if(hashmap_remove(this->provided, internalKey) == MAP_OK) {
 			free(ptr->eContainer);
 			ptr->eContainer = NULL;
 			free(ptr->path);
 			ptr->path = NULL;
+		} else {
+			PRINTF("ERROR: provided %s cannot be removed!\n", internalKey);
 		}
 	}
 }
 
-void ComponentInstance_RemoveRequired(ComponentInstance* const this, Port* ptr)
+static void
+ComponentInstance_removeRequired(ComponentInstance * const this, Port *ptr)
 {
-	char *internalKey = ptr->internalGetKey(ptr);
+	char *internalKey = ptr->VT->internalGetKey(ptr);
 
-	if(internalKey == NULL)
-	{
-		PRINTF("The Port cannot be removed in ComponentInstance because the key is not defined\n");
-	}
-	else
-	{
-		if(hashmap_remove(this->required, internalKey) == MAP_OK)
-		{
+	if(internalKey == NULL) {
+		PRINTF("ERROR: The Port cannot be removed in ComponentInstance because the key is not defined\n");
+	} else {
+		if(hashmap_remove(this->required, internalKey) == MAP_OK) {
 			free(ptr->eContainer);
 			ptr->eContainer = NULL;
 			free(ptr->path);
 			ptr->path = NULL;
+		} else {
+			PRINTF("ERROR: required %s cannot be removed!\n", internalKey);
 		}
 	}
 }
 
-void ComponentInstance_VisitAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
+static void
+ComponentInstance_visit(ComponentInstance * const this, char *parent, fptrVisitAction action, fptrVisitActionRef secondAction, bool visitPaths)
 {
-	/*
-	 * TODO solve recursiveness from parent
-	 * TODO improve polymophism
-	 */
-	Instance_VisitAttributes(((ComponentInstance*)this)->super, parent, visitor, true);
-}
-
-void ComponentInstance_VisitPathAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	Instance_VisitPathAttributes(((ComponentInstance*)this)->super, parent, visitor, true);
-}
-
-void ComponentInstance_VisitReferences(void* const this, char* parent, Visitor* visitor, bool recursive)
-{
-	/*
-	 * TODO solve recursiveness from parent
-	 * TODO cast this to ComponentInstance in a single object
-	 */
 	char path[256];
 	memset(&path[0], 0, sizeof(path));
 
-	if(((ComponentInstance*)(this))->provided != NULL)
-	{
-		visitor->action("provided", SQBRACKET, NULL);
-		int i;
-		int length = hashmap_length(((ComponentInstance*)(this))->provided);
-
-		/* provided */
-		hashmap_map* m = ((ComponentInstance*)(this))->provided;
-
-		/* compare provided */
-		for(i = 0; i< m->table_size; i++)
-		{
-			if(m->data[i].in_use != 0)
-			{
-				visitor->action(NULL, BRACKET, NULL);
-				any_t data = (any_t) (m->data[i].data);
-				Port* n = data;
-				/*sprintf(path,"%s/provided[%s]", parent, n->internalGetKey(n));*/
-				sprintf(path, "provided");
-				n->VisitAttributes(n, path, visitor, true);
-				n->VisitReferences(n, path, visitor, true);
-				if(length > 1)
-				{
-					visitor->action(NULL, CLOSEBRACKETCOLON, NULL);
-					length--;
-				}
-				else
-					visitor->action(NULL, CLOSEBRACKET, NULL);
-			}
-		}
-		visitor->action(NULL, CLOSESQBRACKETCOLON, NULL);
-	}
-	else
-	{
-		visitor->action("provided", SQBRACKET, NULL);
-		visitor->action(NULL, CLOSESQBRACKETCOLON, NULL);
-	}
-
-	if(((ComponentInstance*)(this))->required != NULL)
-	{
-		visitor->action("required", SQBRACKET, NULL);
-		int i;
-		int length = hashmap_length(((ComponentInstance*)(this))->required);
-
-		/* required */
-		hashmap_map* m = ((ComponentInstance*)(this))->required;
-
-		/* compare required */
-		for(i = 0; i< m->table_size; i++)
-		{
-			if(m->data[i].in_use != 0)
-			{
-				visitor->action(NULL, BRACKET, NULL);
-				any_t data = (any_t) (m->data[i].data);
-				Port* n = data;
-				/*sprintf(path,"%s/required[%s]", parent, n->internalGetKey(n));*/
-				sprintf(path, "required");
-				n->VisitAttributes(n, path, visitor, true);
-				n->VisitReferences(n, path, visitor, true);
-				if(length > 1)
-				{
-					visitor->action(NULL, CLOSEBRACKETCOLON, NULL);
-					length--;
-				}
-				else
-					visitor->action(NULL, CLOSEBRACKET, NULL);
-			}
-		}
-		visitor->action(NULL, CLOSESQBRACKETCOLON, NULL);
-	}
-	else
-	{
-		visitor->action("required", SQBRACKET, NULL);
-		visitor->action(NULL, CLOSESQBRACKETCOLON, NULL);
-	}
-	/* Instance references */
-	Instance_VisitReferences(((ComponentInstance*)(this))->super, parent, visitor, false);
-
-}
-
-void ComponentInstance_VisitPathReferences(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
 	/*
-	 * TODO solve recursiveness from parent
-	 * TODO cast this to ComponentInstance in a single object
+	 * Visit parent
 	 */
-	char path[256];
-	memset(&path[0], 0, sizeof(path));
+	instance_VT.visit((Instance*)this, parent, action, secondAction, visitPaths);
 
-	/* Instance references */
-	Instance_VisitPathReferences(((ComponentInstance*)(this))->super, parent, visitor, false);
+	/*
+	 * Visit ComponentInstance
+	 */
+	hashmap_map* m = NULL;
 
-	if(((ComponentInstance*)(this))->provided != NULL)
-	{
-		int i;
+	int length;
 
-		/* provided */
-		hashmap_map* m = ((ComponentInstance*)(this))->provided;
-
-		/* compare provided */
-		for(i = 0; i< m->table_size; i++)
-		{
-			if(m->data[i].in_use != 0)
-			{
-				any_t data = (any_t) (m->data[i].data);
-				Port* n = data;
-				sprintf(path,"%s/provided[%s]", parent, n->internalGetKey(n));
-				if (visitor->secondAction != NULL) {
-					if (visitor->secondAction(path, "provided")) {
-						n->VisitPathAttributes(n, path, visitor, true);
-						n->VisitPathReferences(n, path, visitor, true);
-					}
-				} else {
-					n->VisitPathAttributes(n, path, visitor, true);
-					n->VisitPathReferences(n, path, visitor, true);
-				}
-			}
+	if((m = (hashmap_map*)this->provided) != NULL) {
+		length = hashmap_length(this->provided);
+		if (visitPaths) {
+			sprintf(path,"%s/provided", parent);
+			Visitor_visitPaths(m, "provided", path, action, secondAction);
+		} else {
+			action("provided", SQBRACKET, NULL);
+			Visitor_visitModelContainer(m, length, action);
+			action(NULL, CLOSESQBRACKETCOLON, NULL);
 		}
+	} else if (!visitPaths) {
+		action("provided", SQBRACKET, NULL);
+		action(NULL, CLOSESQBRACKETCOLON, NULL);
 	}
 
-	if(((ComponentInstance*)(this))->required != NULL)
-	{
-		int i;
-
-		/* required */
-		hashmap_map* m = ((ComponentInstance*)(this))->required;
-
-		/* compare required */
-		for(i = 0; i< m->table_size; i++)
-		{
-			if(m->data[i].in_use != 0)
-			{
-				any_t data = (any_t) (m->data[i].data);
-				Port* n = data;
-				sprintf(path,"%s/required[%s]", parent, n->internalGetKey(n));
-				if (visitor->secondAction != NULL) {
-					if (visitor->secondAction(path, "required")) {
-						n->VisitPathAttributes(n, path, visitor, true);
-						n->VisitPathReferences(n, path, visitor, true);
-					}
-				} else {
-					n->VisitPathAttributes(n, path, visitor, true);
-					n->VisitPathReferences(n, path, visitor, true);
-				}
-			}
+	if((m = (hashmap_map*)this->required) != NULL) {
+		length = hashmap_length(this->required);
+		if (visitPaths) {
+			sprintf(path,"%s/required", parent);
+			Visitor_visitPaths(m, "required", path, action, secondAction);
+		} else {
+			action("required", SQBRACKET, NULL);
+			Visitor_visitModelContainer(m, length, action);
+			action(NULL, CLOSESQBRACKET, NULL);
 		}
+	} else if (!visitPaths) {
+		action("required", SQBRACKET, NULL);
+		action(NULL, CLOSESQBRACKET, NULL);
 	}
 }
 
-void *ComponentInstance_FindByPath(char* attribute, void* const this)
+static void
+*ComponentInstance_findByPath(ComponentInstance * const this, char *attribute)
 {
-	ComponentInstance *pObj = (ComponentInstance*)this;
 	/* There is no local attributes */
 
-	/* Instance attributes */
-	if(!strcmp("name", attribute) ||  !strcmp("metaData", attribute) || !strcmp("started", attribute) /*|| !strcmp("typeDefinition", attribute)*/)
-	{
-		return Instance_FindByPath(attribute, pObj->super);
-	}
+	/* Instance */
 	/* Local references */
-	else
-	{
-		char path[250];
-		memset(&path[0], 0, sizeof(path));
-		char token[100];
-		memset(&token[0], 0, sizeof(token));
-		char *obj = NULL;
-		char key[50];
-		memset(&key[0], 0, sizeof(key));
-		char nextPath[150];
-		memset(&nextPath[0], 0, sizeof(nextPath));
-		char *nextAttribute = NULL;
+	char path[250];
+	memset(&path[0], 0, sizeof(path));
+	char token[100];
+	memset(&token[0], 0, sizeof(token));
+	char *obj = NULL;
+	char key[50];
+	memset(&key[0], 0, sizeof(key));
+	char nextPath[150];
+	memset(&nextPath[0], 0, sizeof(nextPath));
+	char *nextAttribute = NULL;
 
+	strcpy(path, attribute);
+
+	if(strchr(path, '[') != NULL) {
+		obj = strdup(strtok(path, "["));
 		strcpy(path, attribute);
+		PRINTF("Object: %s\n", obj);
+		strcpy(token, strtok(path, "]"));
+		strcpy(path, attribute);
+		sprintf(token, "%s]", token);
+		PRINTF("Token: %s\n", token);
+		sscanf(token, "%*[^[][%[^]]", key);
+		PRINTF("Key: %s\n", key);
 
-		if(strchr(path, '[') != NULL)
-		{
-			obj = strdup(strtok(path, "["));
-			strcpy(path, attribute);
-			PRINTF("Object: %s\n", obj);
-			strcpy(token, strtok(path, "]"));
-			strcpy(path, attribute);
-			sprintf(token, "%s]", token);
-			PRINTF("Token: %s\n", token);
-			sscanf(token, "%*[^[][%[^]]", key);
-			PRINTF("Key: %s\n", key);
+		if((strchr(path, '\\')) != NULL) {
+			nextAttribute = strtok(NULL, "\\");
+			PRINTF("Attribute: %s\n", nextAttribute);
 
-			if((strchr(path, '\\')) != NULL)
-			{
-				nextAttribute = strtok(NULL, "\\");
-				PRINTF("Attribute: %s\n", nextAttribute);
-
-				if(strchr(nextAttribute, '['))
-				{
-					sprintf(nextPath, "%s\\%s", ++nextAttribute, strtok(NULL, "\\"));
-					PRINTF("Next Path: %s\n", nextPath);
-				}
-				else
-				{
-					strcpy(nextPath, nextAttribute);
-					PRINTF("Next Path: %s\n", nextPath);
-				}
+			if(strchr(nextAttribute, '[')) {
+				sprintf(nextPath, "%s\\%s", ++nextAttribute, strtok(NULL, "\\"));
+				PRINTF("Next Path: %s\n", nextPath);
+			} else {
+				strcpy(nextPath, nextAttribute);
+				PRINTF("Next Path: %s\n", nextPath);
 			}
-			else
-			{
-				nextAttribute = strtok(path, "]");
-				bool isFirst = true;
-				char *fragPath = NULL;
-				while ((fragPath = strtok(NULL, "]")) != NULL) {
-					PRINTF("Attribute: %s]\n", fragPath);
-					if (isFirst) {
-						sprintf(nextPath, "%s]", ++fragPath);
-						isFirst = false;
-					} else {
-						sprintf(nextPath, "%s/%s]", nextPath, ++fragPath);
-					}
-					PRINTF("Next Path: %s\n", nextPath);
-				}
-				if (strlen(nextPath) == 0) {
-					PRINTF("Attribute: NULL\n");
-					PRINTF("Next Path: NULL\n");
-					nextAttribute = NULL;
-				}
-			}
-		}
-		else
-		{
-			if ((nextAttribute = strtok(path, "\\")) != NULL) {
-				if ((nextAttribute = strtok(NULL, "\\")) != NULL) {
-					PRINTF("Attribute: %s\n", nextAttribute);
+		} else {
+			nextAttribute = strtok(path, "]");
+			bool isFirst = true;
+			char *fragPath = NULL;
+			while ((fragPath = strtok(NULL, "]")) != NULL) {
+				PRINTF("Attribute: %s]\n", fragPath);
+				if (isFirst) {
+					sprintf(nextPath, "%s]", ++fragPath);
+					isFirst = false;
 				} else {
-					nextAttribute = strtok(path, "\\");
-					PRINTF("Attribute: %s\n", nextAttribute);
+					sprintf(nextPath, "%s/%s]", nextPath, ++fragPath);
 				}
+				PRINTF("Next Path: %s\n", nextPath);
+			}
+			if (strlen(nextPath) == 0) {
+				PRINTF("Attribute: NULL\n");
+				PRINTF("Next Path: NULL\n");
+				nextAttribute = NULL;
 			}
 		}
-
-		if(!strcmp("provided", obj))
-		{
-			free(obj);
-			if(nextAttribute == NULL)
-			{
-
-				return pObj->FindProvidedByID(pObj, key);
+	} else {
+		obj = strdup(attribute);
+		if ((nextAttribute = strtok(path, "\\")) != NULL) {
+			if ((nextAttribute = strtok(NULL, "\\")) != NULL) {
+				PRINTF("Attribute: %s\n", nextAttribute);
+			} else {
+				nextAttribute = strtok(path, "\\");
+				PRINTF("Attribute: %s\n", nextAttribute);
 			}
-			else
-			{
-				Port* port = pObj->FindProvidedByID(pObj, key);
-				if(port != NULL)
-					return port->FindByPath(nextPath, port);
-				else
-					return NULL;
-			}
-		}
-		else if(!strcmp("required", obj))
-		{
-			free(obj);
-			if(nextAttribute == NULL)
-			{
-				return pObj->FindRequiredByID(pObj, key);
-			}
-			else
-			{
-				Port* port = pObj->FindRequiredByID(pObj, key);
-				if(port != NULL)
-					return port->FindByPath(nextPath, port);
-				else
-					return NULL;
-			}
-		}
-		/* Instance references */
-		else
-		{
-			free(obj);
-			return Instance_FindByPath(attribute, pObj->super);
 		}
 	}
+
+	if(!strcmp("provided", obj)) {
+		free(obj);
+		if(nextAttribute == NULL) {
+			return this->VT->findProvidedByID(this, key);
+		} else {
+			Port* port = this->VT->findProvidedByID(this, key);
+			if(port != NULL) {
+				return port->VT->findByPath(port, nextPath);
+			} else {
+				PRINTF("ERROR: Cannot retrieve provided %s\n", key);
+				return NULL;
+			}
+		}
+	} else if(!strcmp("required", obj)) {
+		free(obj);
+		if(nextAttribute == NULL) {
+			return this->VT->findRequiredByID(this, key);
+		} else {
+			Port* port = this->VT->findRequiredByID(this, key);
+			if(port != NULL)
+				return port->VT->findByPath(port, nextPath);
+			else
+				return NULL;
+		}
+	} else {
+		free(obj);
+		return instance_VT.findByPath((Instance*)this, attribute);
+	}
+}
+
+const ComponentInstance_VT componentInstance_VT = {
+		/*
+		 * KMFContainer_VT
+		 * NamedElement_VT
+		 */
+		.super = &instance_VT,
+		.metaClassName = ComponentInstance_metaClassName,
+		.internalGetKey = ComponentInstance_internalGetKey,
+		.visit = ComponentInstance_visit,
+		.findByPath = ComponentInstance_findByPath,
+		.delete = delete_ComponentInstance,
+		/*
+		 * Instance_VT
+		 */
+		.findFragmentDictionaryByID = Instance_findFragmentDictionaryByID,
+		.addTypeDefinition = Instance_addTypeDefinition,
+		.addDictionary = Instance_addDictionary,
+		.addFragmentDictionary = Instance_addFragmentDictionary,
+		.removeTypeDefinition = Instance_removeTypeDefinition,
+		.removeDictionary = Instance_removeDictionary,
+		.removeFragmentDictionary = Instance_removeFragmentDictionary,
+		/*
+		 * ComponentInstance_VT
+		 */
+		.findProvidedByID = ComponentInstance_findProvidedByID,
+		.findRequiredByID = ComponentInstance_findRequiredByID,
+		.addProvided = ComponentInstance_addProvided,
+		.addRequired = ComponentInstance_addRequired,
+		.removeProvided = ComponentInstance_removeProvided,
+		.removeRequired = ComponentInstance_removeRequired
+};
+
+ComponentInstance
+*new_ComponentInstance()
+{
+	ComponentInstance* pCompInstanceObj = NULL;
+
+	/* Allocating memory */
+	pCompInstanceObj = malloc(sizeof(ComponentInstance));
+
+	if (pCompInstanceObj == NULL) {
+		PRINTF("ERROR: Cannot create ComponentInstance!\n");
+		return NULL;
+	}
+
+	/*
+	 * Virtual Table
+	 */
+	pCompInstanceObj->VT = &componentInstance_VT;
+
+	/*
+	 * ComponentInstance
+	 */
+	initComponentInstance(pCompInstanceObj);
+
+	return pCompInstanceObj;
 }

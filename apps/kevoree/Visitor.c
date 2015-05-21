@@ -1,258 +1,116 @@
+/**
+ * Author: fco.ja.ac@gmail.com
+ * Date: 10/05/2015
+ * Time: 19:25
+ */
+
+#include "KMFContainer.h"
 #include "Visitor.h"
-#include "ContainerRoot.h"
-#include "ModelTrace.h"
-#include "list.h"
 
-char buffer[250];
+#include <stddef.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
-Visitor *new_Visitor(ContainerRoot *new_model, ContainerRoot *current_model)
+void Visitor_visitModelContainer(hashmap_map *m, int length, fptrVisitAction action)
 {
-	Visitor *pVisitObj = malloc(sizeof(Visitor));
-
-	if(pVisitObj == NULL)
-	{
-		return NULL;
-	}
-
-	pVisitObj->new_model = new_model;
-	pVisitObj->current_model = current_model;
-	pVisitObj->visit_list_list = NULL;
-	pVisitObj->visit_list = (list_t)&(pVisitObj->visit_list_list);
-	list_init(pVisitObj->visit_list);
-
-	pVisitObj->store = Visitor_store;
-	pVisitObj->printPaths = Visitor_printPaths;
-	pVisitObj->print = Visitor_print;
-	pVisitObj->diff = Visitor_diff;
-	pVisitObj->delete = delete_Visitor;
-
-	return pVisitObj;
-}
-
-void delete_Visitor(void *const this)
-{
-	if(this != NULL)
-	{
-		Visitor *v = this;
-		int length = list_length(v->visit_list);
-		int i;
-
-		for (i = 0; i < length; ++i) {
-			list_chop(v->visit_list);
+	int i;
+	for(i = 0; i< m->table_size; i++) {
+		if(m->data[i].in_use != 0) {
+			action(NULL, BRACKET, NULL);
+			any_t data = (any_t) (m->data[i].data);
+			KMFContainer *n = data;
+			n->VT->visit(n, NULL, action, NULL, false);
+			if(length > 1) {
+				action(NULL, CLOSEBRACKETCOLON, NULL);
+				length--;
+			} else {
+				action(NULL, CLOSEBRACKET, NULL);
+			}
 		}
+	}
+	/*action(NULL, CLOSESQBRACKETCOLON, NULL);*/
+}
 
-		free(this);
+void Visitor_visitPaths(hashmap_map *m, char *container, char *path, fptrVisitAction action, fptrVisitActionRef secondAction)
+{
+	int i;
+	char *originalPath = strdup(path);
+
+	for(i = 0; i< m->table_size; i++) {
+		if(m->data[i].in_use != 0) {
+			any_t data = (any_t) (m->data[i].data);
+			KMFContainer *n = data;
+			sprintf(path, "%s[%s]", originalPath, n->VT->internalGetKey(n));
+			if (secondAction != NULL) {
+				if (secondAction(path, container)) {
+					n->VT->visit(n, path, action, secondAction, true);
+				}
+			} else {
+				n->VT->visit(n, path, action, secondAction, true);
+			}
+		}
+	}
+	free(originalPath);
+}
+
+void Visitor_visitModelRefs(hashmap_map *m, int length, char* ref, char *path, fptrVisitAction action)
+{
+	int i;
+	for(i = 0; i< m->table_size; i++) {
+		if(m->data[i].in_use != 0) {
+			any_t data = (any_t) (m->data[i].data);
+			KMFContainer *n = data;
+			sprintf(path, "%s[%s]", ref, n->VT->internalGetKey(n));
+			action(path, STRREF, NULL);
+			/*action(NULL, RETURN, NULL);*/
+			if(length > 1) {
+				action(NULL, COLON, NULL);
+				length--;
+			} else {
+				action(NULL, RETURN, NULL);
+			}
+		}
+	}
+	/*action(NULL, CLOSESQBRACKETCOLON, NULL);*/
+}
+
+void Visitor_visitPathRefs(hashmap_map *m, char *container, char *path, fptrVisitAction action, fptrVisitActionRef secondAction, char *parent)
+{
+	int i;
+
+	for(i = 0; i< m->table_size; i++) {
+		if(m->data[i].in_use != 0) {
+			any_t data = (any_t) (m->data[i].data);
+			KMFContainer* n = data;
+			sprintf(path, "%s/%s\\%s", parent, n->path, container);
+			action(path, REFERENCE, parent);
+		}
 	}
 }
 
-
-void Visitor_store(char *path, Type type, void *value)
+void Visitor_visitContainer(map_t container, char *containerName, char *parent, fptrVisitAction action, fptrVisitActionRef secondAction, bool visitPaths)
 {
-	/*switch(type)
-	{
-	case STRING:
-		sprintf(buffer, "\"%s\" : \"%s\"", path, (char*)value);
-		write_to_file(buffer);
-		break;
+	char path[256];
+	memset(&path[0], 0, sizeof(path));
 
-	case STRREF:
-		sprintf(buffer, "\"%s\"", path);
-		write_to_file(buffer);
-		break;
+	hashmap_map *m;
+	int length;
 
-	case BOOL:
-		sprintf(buffer, "\"%s\" : \"%d\"", path, (bool)value);
-		write_to_file(buffer);
-		break;
-
-	case INTEGER:
-		sprintf(buffer, "\"%s\" : \"%d\"", path, (int)value);
-		write_to_file(buffer);
-		break;
-
-	case BRACKET:
-		sprintf(buffer, "{\n");
-		write_to_file(buffer);
-		break;
-
-	case SQBRACKET:
-		sprintf(buffer, "\"%s\" : [\n", path);
-		write_to_file(buffer);
-		break;
-
-	case CLOSEBRACKET:
-		sprintf(buffer, "}\n");
-		write_to_file(buffer);
-		break;
-
-	case CLOSESQBRACKET:
-		sprintf(buffer, "]\n");
-		write_to_file(buffer);
-		break;
-
-	case CLOSEBRACKETCOLON:
-		sprintf(buffer, "},\n");
-		write_to_file(buffer);
-		break;
-
-	case CLOSESQBRACKETCOLON:
-		sprintf(buffer, "],\n");
-		write_to_file(buffer);
-		break;
-
-	case COLON:
-		sprintf(buffer, ",\n");
-		write_to_file(buffer);
-		break;
-
-	case RETURN:
-		sprintf(buffer, "\n");
-		write_to_file(buffer);
-		break;
-	}*/
-}
-
-void Visitor_printPaths(char *path, Type type, void *value)
-{
-	/*switch(type)
-	{
-	case STRING:
-		printf("path = %s  value = %s\n",path,(char*)value);
-		break;
-
-	case BOOL:
-	case INTEGER:
-		printf("path = %s  value = %d\n", path, (int)value);
-		break;
-
-	case STRREF:
-	case BRACKET:
-	case SQBRACKET:
-	case CLOSEBRACKET:
-	case CLOSESQBRACKET:
-	case CLOSEBRACKETCOLON:
-	case CLOSESQBRACKETCOLON:
-	case COLON:
-	case RETURN:
-		printf("Type non valid!\n");
-		break;
-	}*/
-}
-
-void Visitor_print(char *path, Type type, void *value)
-{
-	/*switch(type)
-	{
-	case STRING:
-		printf("\"%s\" : \"%s\"", path, (char*)value);
-		break;
-
-	case STRREF:
-		printf("\"%s\"", path);
-		break;
-
-	case BOOL:
-	case INTEGER:
-		printf("\"%s\" : \"%d\"", path, (int)value);
-		break;
-
-	case BRACKET:
-		printf("{\n");
-		break;
-
-	case SQBRACKET:
-		printf("\"%s\" : [\n", path);
-		break;
-
-	case CLOSEBRACKET:
-		printf("}\n");
-		break;
-
-	case CLOSESQBRACKET:
-		printf("]\n");
-		break;
-
-	case CLOSEBRACKETCOLON:
-		printf("},\n");
-		break;
-
-	case CLOSESQBRACKETCOLON:
-		printf("],\n");
-		break;
-
-	case COLON:
-		printf(",\n");
-		break;
-
-	case RETURN:
-		printf("\n");
-		break;
-	}*/
-}
-
-/*
-ModelTrace *Visitor_diff(Visitor *const this, char *path, Type type, void *value);
-
-char* buffer = NULL;
-
-
-void actionprintf(char *path, Type type, void* value)
-{
-	switch(type)
-	{
-	case STRING:
-		printf("\"%s\" : \"%s\"", path, (char*)value);
-		break;
-
-	case INTEGER:
-		printf("\"%s\" : \"%d\"", path, (int)value);
-		break;
-
-	case STRREF:
-		printf("\"%s\"", path);
-		break;
-
-	case BOOL:
-		if((int)value)
-			printf("\"%s\" : \"%s\"", path, "true");
-		else
-			printf("\"%s\" : \"%s\"", path, "false");
-		break;
-
-	case BRACKET:
-		printf("{\n");
-		break;
-
-	case SQBRACKET:
-		printf("\"%s\" : [\n", path);
-		break;
-
-	case CLOSEBRACKET:
-		printf("}\n");
-		break;
-
-	case CLOSESQBRACKET:
-		printf("]\n");
-		break;
-
-	case CLOSEBRACKETCOLON:
-		printf("},\n");
-		break;
-
-	case CLOSESQBRACKETCOLON:
-		printf("],\n");
-		break;
-
-	case COLON:
-		printf(",\n");
-		break;
-
-	case RETURN:
-		printf("\n");
+	if((m = (hashmap_map*)container) != NULL) {
+		length = hashmap_length(container);
+		if (visitPaths) {
+			sprintf(path,"%s/%s", parent, containerName);
+			Visitor_visitPaths(m, containerName, path, action, secondAction);
+		} else {
+			action(containerName, SQBRACKET, NULL);
+			Visitor_visitModelContainer(m, length, action);
+			action(NULL, CLOSESQBRACKETCOLON, NULL);
+		}
+	} else if (!visitPaths) {
+		action(containerName, SQBRACKET, NULL);
+		action(NULL, CLOSESQBRACKETCOLON, NULL);
 	}
-}
-*/
-void Visitor_diff(Visitor *const this, char *path, Type type, void *value)
-{
 
 }

@@ -1,13 +1,14 @@
-#include <string.h>
-
-#include "ModelTrace.h"
-#include "ActionType.h"
-
 /**
  * Author: fco.ja.ac@gmail.com
  * Date: 21/07/2014
  * Time: 17:55
  */
+
+#include <string.h>
+#include <stdlib.h>
+
+#include "ModelTrace.h"
+#include "ActionType.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -66,7 +67,7 @@ static const
 ModelTrace_VT modelSetTrace_VT = {
 		.ToString = ModelSetTrace_ToString,
 		.Delete = deletePoly_ModelSetTrace,
-		.getType = ModelSetTrace_getType
+		.getType = ModelSetTrace_getType,
 };
 
 ModelTrace* newPoly_ModelSetTrace(char* _srcPath, char* _refName, /*char* _objPath,*/ char* _content/*, char* _typeName*/)

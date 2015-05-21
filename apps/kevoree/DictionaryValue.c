@@ -1,4 +1,9 @@
-#include "Visitor.h"
+#include <stddef.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
 #include "Dictionary.h"
 #include "DictionaryValue.h"
 
@@ -9,122 +14,117 @@
 #define PRINTF(...)
 #endif
 
-DictionaryValue* new_DictionaryValue(void)
-{
-	DictionaryValue* pObj = NULL;
-	/* Allocating memory */
-	pObj = (DictionaryValue*)malloc(sizeof(DictionaryValue));
-
-	if (pObj == NULL)
-	{
-		return NULL;
-	}
-	
-	pObj->name = NULL;
-	pObj->value = NULL;
-	pObj->eContainer = NULL;
-
-	pObj->internalGetKey = DictionaryValue_internalGetKey;
-	pObj->metaClassName = DictionaryValue_metaClassName;
-	pObj->Delete = delete_DictionaryValue;
-	pObj->VisitAttributes = DictionaryValue_VisitAttributes;
-	pObj->VisitPathAttributes = DictionaryValue_VisitPathAttributes;
-	pObj->FindByPath = DictionaryValue_FindByPath;
-	
-	return pObj;
-}
-
-void delete_DictionaryValue(void* const this)
-{
-	if(this != NULL)
-	{
-		DictionaryValue *pObj = (DictionaryValue*)this;
-		free(pObj->name);
-		free(pObj->value);
-		free(pObj->eContainer);
-		free(pObj);
-		/*this = NULL;*/
-	}
-}
-
-char *DictionaryValue_internalGetKey(void* const this)
-{
-	DictionaryValue *pObj = (DictionaryValue*)this;
-	return pObj->name;
-}
-
-char* DictionaryValue_metaClassName(void* const this)
+void initDictionaryValue(DictionaryValue * const this)
 {
 	/*
-	char *name;
+	 * Initialize parent
+	 */
+	initKMFContainer((KMFContainer*)this);
 
-	name = malloc(sizeof(char) * (strlen("DictionaryValue")) + 1);
-	if(name != NULL)
-		strcpy(name, "DictionaryValue");
-	else
-		return NULL;
-	
-	return name;
-	*/
+	/*
+	 * Initialize itself
+	 */
+	this->name = NULL;
+	this->value = NULL;
+}
+
+static void
+delete_DictionaryValue(DictionaryValue * const this)
+{
+	/* delete base object */
+	KMF_VT.delete((KMFContainer*)this);
+	/* delete data members */
+	free(this->name);
+	free(this->value);
+}
+
+static char
+*DictionaryValue_internalGetKey(DictionaryValue * const this)
+{
+	return this->name;
+}
+
+static char
+*DictionaryValue_metaClassName(DictionaryValue * const this)
+{
 	return "DictionaryValue";
 }
 
-void DictionaryValue_VisitAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
+static void
+DictionaryValue_visit(DictionaryValue * const this, char *parent, fptrVisitAction action, fptrVisitActionRef secondAction, bool visitPaths)
 {
 	char path[256];
-	char *cClass = NULL;
 	memset(&path[0], 0, sizeof(path));
 
-	cClass = malloc(sizeof(char) * (strlen("org.kevoree.") + strlen(((DictionaryValue*)this)->metaClassName((DictionaryValue*)this))) + 1);
-	sprintf(cClass, "org.kevoree.%s", ((DictionaryValue*)this)->metaClassName((DictionaryValue*)this));
-	sprintf(path,"eClass");
-	visitor->action(path, STRING, cClass);
-	visitor->action(NULL, COLON, NULL);
-	free(cClass);
+	if (visitPaths) {
+		sprintf(path, "%s\\name", parent);
+		action(path, STRING, this->name);
 
-	sprintf(path, "name");
-	visitor->action(path, STRING, ((DictionaryValue*)(this))->name);
-	visitor->action(NULL, COLON, NULL);
-	
-	sprintf(path, "value");
-	visitor->action(path, STRING, ((DictionaryValue*)(this))->value);
-	visitor->action(NULL, RETURN, NULL);
-}
-
-void DictionaryValue_VisitPathAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	char path[256];
-	char *cClass = NULL;
-	memset(&path[0], 0, sizeof(path));
-
-	/*sprintf(path,"%s\\cClass", parent);
-	cClass = ((DictionaryValue*)this)->metaClassName((DictionaryValue*)this);
-	visitor->action(path, STRING, cClass);
-	free(cClass);*/
-
-	sprintf(path, "%s\\name", parent);
-	visitor->action(path, STRING, ((DictionaryValue*)(this))->name);
-
-	sprintf(path, "%s\\value", parent);
-	visitor->action(path, STRING, ((DictionaryValue*)(this))->value);
-}
-
-void* DictionaryValue_FindByPath(char* attribute, void* const this)
-{
-	DictionaryValue *pObj = (DictionaryValue*)this;
-	/* Local attributes */
-	if(!strcmp("name", attribute))
-	{
-		return pObj->name;
+		sprintf(path, "%s\\value", parent);
+		action(path, STRING, this->value);
+	} else {
+		/*
+		 * Visit parent
+		 */
+		KMF_VT.visit((KMFContainer*)this, parent, action, secondAction, visitPaths);
+		action("name", STRING, this->name);
+		action(NULL, COLON, NULL);
+		action("value", STRING, this->value);
+		action(NULL, RETURN, NULL);
 	}
-	else if(!strcmp("value", attribute))
-	{
-		return pObj->value;
+}
+
+void
+*DictionaryValue_findByPath(DictionaryValue * const this, char *attribute)
+{
+	/* Local attributes */
+
+	if(!strcmp("name", attribute)) {
+		return this->name;
+	} else if(!strcmp("value", attribute)) {
+		return this->value;
 	}
 	/* There is no local references */
-	else
-	{
-		PRINTF("Wrong attribute or reference\n");
+	else {
+		PRINTF("WARNING: Wrong attribute or reference %s\n", attribute);
 		return NULL;
 	}
+}
+
+const DictionaryValue_VT dictionaryValue_VT = {
+		.super = &KMF_VT,
+		/*
+		 * KMFContainer
+		 */
+		.metaClassName = DictionaryValue_metaClassName,
+		.internalGetKey = DictionaryValue_internalGetKey,
+		.visit = DictionaryValue_visit,
+		.findByPath = DictionaryValue_findByPath,
+		.delete = delete_DictionaryValue
+};
+
+DictionaryValue
+*new_DictionaryValue(void)
+{
+	DictionaryValue *pObj = NULL;
+
+	/* Allocating memory */
+	pObj = malloc(sizeof(DictionaryValue));
+
+	if (pObj == NULL) {
+		PRINTF("ERROR: Cannot create DictionaryValue!\n");
+		return NULL;
+	}
+
+	/*
+	 * Virtual Table
+	 */
+	pObj->VT = &dictionaryValue_VT;
+
+	/*
+	 * DictionaryValue
+	 */
+	initDictionaryValue(pObj);
+
+	return pObj;
 }

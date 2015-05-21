@@ -3,9 +3,8 @@
 
 /*#include <list>
 #include <iostream>*/
+#include "KMFContainer.h"
 #include "lib/list.h"
-#include "KMF4C.h"
-/*#include <microframework/api/trace/ModelTrace.h>*/
 #include "ModelTrace.h"
 /*#include <microframework/api/KMFFactory.h>
 #include <microframework/api/utils/KevoreeException.h>*/

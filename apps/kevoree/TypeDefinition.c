@@ -14,187 +14,71 @@
 #define PRINTF(...)
 #endif
 
-NamedElement* newPoly_TypeDefinition()
+void initTypeDefinition(TypeDefinition * const this)
 {
-	TypeDefinition* pTypeDefObj = NULL;
-	NamedElement* pObj = new_NamedElement();
-
-	/* Allocating memory */
-	pTypeDefObj = (TypeDefinition*)malloc(sizeof(TypeDefinition));
-
-	if (pTypeDefObj == NULL)
-	{
-		pObj->Delete(pObj);
-		return NULL;
-	}
-
-	pObj->pDerivedObj = pTypeDefObj; /* Pointing to derived object */
-
-	pTypeDefObj->version = NULL;
-	pTypeDefObj->factoryBean = NULL;
-	pTypeDefObj->bean = NULL;
-	pTypeDefObj->abstract = -1;
-
-	pTypeDefObj->deployUnits = NULL;
-	pTypeDefObj->dictionaryType = NULL;
-	pTypeDefObj->superTypes = NULL;
-	pTypeDefObj->eContainer = NULL;
-	pTypeDefObj->internalKey = NULL;
-
-	pTypeDefObj->AddDeployUnit = TypeDefinition_AddDeployUnit;
-	pTypeDefObj->AddDictionaryType = TypeDefinition_AddDictionaryType;
-	pTypeDefObj->AddSuperTypes = TypeDefinition_AddSuperTypes;
-	pTypeDefObj->RemoveDeployUnit = TypeDefinition_RemoveDeployUnit;
-	pTypeDefObj->RemoveDictionaryType = TypeDefinition_RemoveDictionaryType;
-	pTypeDefObj->RemoveSuperTypes = TypeDefinition_RemoveSuperTypes;
-	pTypeDefObj->FindByPath = TypeDefinition_FindByPath;
-
-	pObj->metaClassName = TypeDefinition_metaClassName;
-	pObj->internalGetKey = TypeDefinition_internalGetKey;
-	pObj->Delete = deletePoly_TypeDefinition;
-	pObj->VisitAttributes = TypeDefinition_VisitAttributes;
-	pObj->VisitPathAttributes = TypeDefinition_VisitPathAttributes;
-	pObj->VisitReferences = TypeDefinition_VisitReferences;
-	pObj->VisitPathReferences = TypeDefinition_VisitPathReferences;
-
-	return pObj;
+	initNamedElement((NamedElement*)this);
+	this->version = NULL;
+	this->factoryBean = NULL;
+	this->bean = NULL;
+	this->abstract = -1;
+	this->internalKey = NULL;
+	this->deployUnits = NULL;
+	this->dictionaryType = NULL;
+	this->superTypes = NULL;
 }
 
-TypeDefinition* new_TypeDefinition()
+char
+*TypeDefinition_internalGetKey(TypeDefinition * const this)
 {
-	TypeDefinition* pTypeDefObj = NULL;
-	NamedElement* pObj = new_NamedElement();
-
-	if(pObj == NULL)
-		return NULL;
-
-	/* Allocating memory */
-	pTypeDefObj = (TypeDefinition*)malloc(sizeof(TypeDefinition));
-
-	if (pTypeDefObj == NULL)
-	{
-		return NULL;
-	}
-
-	pTypeDefObj->super = pObj; /* Pointing to base object */
-	pTypeDefObj->eContainer = NULL;
-	pTypeDefObj->path = NULL;
-
-	pTypeDefObj->version = NULL;
-	pTypeDefObj->factoryBean = NULL;
-	pTypeDefObj->bean = NULL;
-	pTypeDefObj->abstract = -1;
-
-	pTypeDefObj->deployUnits = NULL;
-	pTypeDefObj->dictionaryType = NULL;
-	pTypeDefObj->superTypes = NULL;
-	pTypeDefObj->eContainer = NULL;
-	pTypeDefObj->internalKey = NULL;
-
-	pTypeDefObj->AddDeployUnit = TypeDefinition_AddDeployUnit;
-	pTypeDefObj->AddDictionaryType = TypeDefinition_AddDictionaryType;
-	pTypeDefObj->AddSuperTypes = TypeDefinition_AddSuperTypes;
-	pTypeDefObj->RemoveDeployUnit = TypeDefinition_RemoveDeployUnit;
-	pTypeDefObj->RemoveDictionaryType = TypeDefinition_RemoveDictionaryType;
-	pTypeDefObj->RemoveSuperTypes = TypeDefinition_RemoveSuperTypes;
-	pTypeDefObj->metaClassName = TypeDefinition_metaClassName;
-	pObj->metaClassName = pTypeDefObj->metaClassName;
-	pTypeDefObj->internalGetKey = TypeDefinition_internalGetKey;
-	pTypeDefObj->Delete = delete_TypeDefinition;
-	pTypeDefObj->VisitAttributes = TypeDefinition_VisitAttributes;
-	pTypeDefObj->VisitPathAttributes = TypeDefinition_VisitPathAttributes;
-	pTypeDefObj->VisitReferences = TypeDefinition_VisitReferences;
-	pTypeDefObj->VisitPathReferences = TypeDefinition_VisitPathReferences;
-	pTypeDefObj->FindByPath = TypeDefinition_FindByPath;
-
-	return pTypeDefObj;
-}
-
-char* TypeDefinition_internalGetKey(void * const this)
-{
-	TypeDefinition *pObj = (TypeDefinition*)this;
 	char* internalKey = NULL;
 
-	if (this == NULL)
-		return NULL;
-
-	if (pObj->internalKey == NULL) {
-		internalKey = malloc(sizeof(char) * (strlen(pObj->super->name) + strlen("/") + strlen(pObj->version)) + 1);
+	if (this->internalKey == NULL) {
+		internalKey = malloc(sizeof(char) * (strlen(this->name) + strlen("/") + strlen(this->version)) + 1);
 
 		if (internalKey == NULL)
 			return NULL;
 
-		sprintf(internalKey, "%s/%s", pObj->super->name, pObj->version);
+		sprintf(internalKey, "%s/%s", this->name, this->version);
 
-		pObj->internalKey = internalKey;
+		this->internalKey = internalKey;
 		return internalKey;
 	} else {
-		return pObj->internalKey;
+		return this->internalKey;
 	}
 }
 
-char* TypeDefinition_metaClassName(void * const this)
+static char
+*TypeDefinition_metaClassName(TypeDefinition * const this)
 {
-	/*char *name;
-
-	name = malloc(sizeof(char) * (strlen("TypeDefinition")) + 1);
-	if(name != NULL)
-		strcpy(name, "TypeDefinition");
-	else
-		return NULL;
-	
-
-	return name;*/
 	return "TypeDefinition";
 }
 
-void TypeDefinition_AddDeployUnit(TypeDefinition* const this, DeployUnit* ptr)
+void
+TypeDefinition_addDeployUnit(TypeDefinition * const this, DeployUnit *ptr)
 {
-	if(ptr != NULL)
-	{
-		this->deployUnits = ptr;
-		/*if (ptr->refs == NULL) {
-			if((ptr->refs = hashmap_new()) == MAP_OK) {
-				PRINTF("INFO: deployUnit refs created!\n");
-			} else {
-				PRINTF("ERROR: deployUnit refs cannot be created!\n");
-			}
-		}
-		if (ptr->refs != NULL) {
-			char *value = malloc(sizeof(char) * (strlen("typeDefinitions[]") + strlen(this->internalGetKey(this))) + 1);
-			sprintf(value, "typeDefinitions[%s]", this->internalGetKey(this));
-			if ((hashmap_put(ptr->refs, this->path, (void**)&value)) == MAP_OK) {
-				PRINTF("INFO: deployUnit reference added!\n");
-			} else {
-				PRINTF("ERROR: deployUnit reference cannot be added\n");
-			}
-		}*/
-	}
+	this->deployUnits = ptr;
 }
 
-void TypeDefinition_AddDictionaryType(TypeDefinition* const this, DictionaryType *ptr)
+void
+TypeDefinition_addDictionaryType(TypeDefinition * const this, DictionaryType *ptr)
 {
-	if(ptr != NULL)
-	{
-		this->dictionaryType = ptr;
-		ptr->eContainer = malloc(sizeof(char) * (strlen(this->path)) + 1);
-		strcpy(ptr->eContainer, this->path);
-		ptr->path = malloc(sizeof(char) * (strlen(this->path) + strlen("/dictionaryType[]") + strlen(ptr->internalGetKey(ptr))) + 1);
-		sprintf(ptr->path, "%s/dictionaryType[%s]", this->path, ptr->internalGetKey(ptr));
+	if (this->dictionaryType != NULL) {
+		this->VT->removeDictionaryType(this, ptr);
 	}
+	this->dictionaryType = ptr;
+	ptr->eContainer = strdup(this->path);
+	ptr->path = malloc(sizeof(char) * (strlen(this->path) + strlen("/dictionaryType[]") + strlen(ptr->VT->internalGetKey(ptr))) + 1);
+	sprintf(ptr->path, "%s/dictionaryType[%s]", this->path, ptr->VT->internalGetKey(ptr));
 }
 
-void TypeDefinition_RemoveDeployUnit(TypeDefinition* const this, DeployUnit* ptr)
+void
+TypeDefinition_removeDeployUnit(TypeDefinition * const this, DeployUnit *ptr)
 {
 	this->deployUnits = NULL;
-	/*if ((hashmap_remove(ptr->refs, this->path)) == MAP_OK) {
-		PRINTF("INFO: deployUnit reference removed!\n");
-	} else {
-		PRINTF("INFO: cannot remove deployUnit reference\n");
-	}*/
 }
 
-void TypeDefinition_RemoveDictionaryType(TypeDefinition* const this, DictionaryType *ptr)
+void
+TypeDefinition_removeDictionaryType(TypeDefinition * const this, DictionaryType *ptr)
 {
 	this->dictionaryType = NULL;
 	free(ptr->eContainer);
@@ -203,43 +87,22 @@ void TypeDefinition_RemoveDictionaryType(TypeDefinition* const this, DictionaryT
 	ptr->path = NULL;
 }
 
-void TypeDefinition_AddSuperTypes(TypeDefinition* const this, TypeDefinition* ptr)
+void
+TypeDefinition_addSuperTypes(TypeDefinition * const this, TypeDefinition *ptr)
 {
 	TypeDefinition* container = NULL;
 
-	char *internalKey = ptr->internalGetKey(ptr);
+	char *internalKey = ptr->VT->internalGetKey(ptr);
 
-	if(internalKey == NULL)
-	{
-		PRINTF("The TypeDefinition cannot be added in TypeDefinition because the key is not defined\n");
-	}
-	else
-	{
-		if(this->superTypes == NULL)
-		{
+	if(internalKey == NULL) {
+		PRINTF("ERROR: The TypeDefinition cannot be added in TypeDefinition because the key is not defined\n");
+	} else {
+		if(this->superTypes == NULL) {
 			this->superTypes = hashmap_new();
 		}
-		if(hashmap_get(this->superTypes, internalKey, (void**)(&container)) == MAP_MISSING)
-		{
-			/*container = (TypeDefinition*)ptr;*/
+		if(hashmap_get(this->superTypes, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if ((hashmap_put(this->superTypes, internalKey, ptr)) == MAP_OK) {
-				/*if (ptr->refs == NULL) {
-					if((ptr->refs = hashmap_new()) == MAP_OK) {
-						PRINTF("INFO: superType refs created!\n");
-					} else {
-						PRINTF("ERROR: superType refs cannot be created!\n");
-					}
-				}
-				if (ptr->refs != NULL) {
-					char *value = malloc(sizeof(char) * (strlen("typeDefinitions[]") + strlen(this->internalGetKey(this))) + 1);
-					sprintf(value, "typeDefinitions[%s]", this->internalGetKey(this));
-					if ((hashmap_put(ptr->refs, this->path, (void**)&value)) == MAP_OK) {
-						PRINTF("INFO: superType reference added!\n");
-					} else {
-						PRINTF("ERROR: superType reference cannot be added\n");
-					}
-				}*/
-				PRINTF("DEBUG: superType successfully added!\n");
+
 			} else {
 				PRINTF("ERROR: superType can't be added!\n");
 			}
@@ -247,274 +110,157 @@ void TypeDefinition_AddSuperTypes(TypeDefinition* const this, TypeDefinition* pt
 	}
 }
 
-void TypeDefinition_RemoveSuperTypes(TypeDefinition* const this, TypeDefinition* ptr)
+void
+TypeDefinition_removeSuperTypes(TypeDefinition * const this, TypeDefinition *ptr)
 {
-	char *internalKey = ptr->internalGetKey(ptr);
+	char *internalKey = ptr->VT->internalGetKey(ptr);
 
-	if(internalKey == NULL)
-	{
-		PRINTF("The TypeDefinition cannot be removed in TypeDefinition because the key is not defined\n");
-	}
-	else
-	{
+	if(internalKey == NULL) {
+		PRINTF("ERROR: The TypeDefinition cannot be removed in TypeDefinition because the key is not defined\n");
+	} else {
 		if ((hashmap_remove(this->superTypes, internalKey)) == MAP_OK) {
-			/*if ((hashmap_remove(ptr->refs, this->path)) == MAP_OK) {
-				PRINTF("INFO: superType reference removed!\n");
-			} else {
-				PRINTF("INFO: cannot remove superType reference\n");
-			}*/
-			PRINTF("DEBUG: superType successfully removed!\n");
+
 		} else {
-			PRINTF("ERROR: superType can't be removed!\n");
+			PRINTF("ERROR: superType %s cannot be removed!\n", internalKey);
 		}
 	}
 }
 
-void deletePoly_TypeDefinition(void * const this)
+void delete_TypeDefinition(TypeDefinition * const this)
 {
-	if(this != NULL)
-	{
-		NamedElement *pObj = (NamedElement*)this;
-		TypeDefinition* pTypeDefObj;
-		pTypeDefObj = pObj->pDerivedObj;
-		/*destroy derived obj*/
-		free(pTypeDefObj->version);
-		hashmap_free(pTypeDefObj->superTypes);
-		free(pTypeDefObj->eContainer);
-		free(pTypeDefObj);
-		/*destroy base Obj*/
-		delete_NamedElement(pObj);
+	/* destroy base object */
+	namedElement_VT.delete((NamedElement*)this);
+
+	/* destroy data members */
+	if (this->version != NULL) {
+		free(this->version);
+	}
+
+	if (this->factoryBean != NULL) {
+		free(this->factoryBean);
+	}
+
+	if (this->bean != NULL) {
+		free(this->bean);
+	}
+
+	if (this->internalKey != NULL) {
+		free(this->internalKey);
+	}
+
+	if (this->superTypes != NULL) {
+		deleteContainerContents(this->superTypes);
+		hashmap_free(this->superTypes);
+	}
+
+	if (this->dictionaryType != NULL) {
+		delete((KMFContainer*)this->dictionaryType);
 	}
 }
 
-void delete_TypeDefinition(void * const this)
-{
-	if(this != NULL)
-	{
-		TypeDefinition *pObj = (TypeDefinition*)this;
-		/* destroy base object */
-		delete_NamedElement(pObj->super);
-		/* destroy data memebers */
-		free(pObj->version);
-		hashmap_free(pObj->superTypes);
-		free(pObj->eContainer);
-		free(pObj);
-	}
-
-}
-
-void TypeDefinition_VisitAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	if(recursive)
-	{
-		char path[256];
-		memset(&path[0], 0, sizeof(path));
-
-		NamedElement_VisitAttributes(((TypeDefinition*)(this))->super, parent, visitor, recursive);
-
-		sprintf(path, "version");
-		visitor->action(path, STRING, ((TypeDefinition*)(this))->version);
-		visitor->action(NULL, COLON, NULL);
-
-		sprintf(path, "factoryBean");
-		visitor->action(path, STRING, ((TypeDefinition*)(this))->factoryBean);
-		visitor->action(NULL, COLON, NULL);
-
-		sprintf(path, "bean");
-		visitor->action(path, STRING, ((TypeDefinition*)(this))->bean);
-		visitor->action(NULL, COLON, NULL);
-
-		sprintf(path, "abstract");
-		visitor->action(path, BOOL, (void*)((TypeDefinition*)(this))->abstract);
-		visitor->action(NULL, COLON, NULL);
-	}
-	else
-	{
-		NamedElement_VisitAttributes(((TypeDefinition*)(this))->super, parent, visitor, recursive);
-	}
-}
-
-void TypeDefinition_VisitPathAttributes(void *const this, char *parent, Visitor *visitor, bool recursive)
+void TypeDefinition_visit(TypeDefinition * const this, char *parent, fptrVisitAction action, fptrVisitActionRef secondAction, bool visitPaths)
 {
 	char path[256];
 	memset(&path[0], 0, sizeof(path));
 
-	if(recursive)
-	{
-		NamedElement_VisitPathAttributes(((TypeDefinition*)(this))->super, parent, visitor, recursive);
+	/*namedElement_VT.visit((NamedElement*)this, parent, action, secondAction, visitPaths);*/
+	namedElement_VT.visit((NamedElement*)this, parent, action, secondAction, visitPaths);
 
+	if (visitPaths) {
 		sprintf(path, "%s\\version", parent);
-		visitor->action(path, STRING, ((TypeDefinition*)(this))->version);
-
+		action(path, STRING, this->version);
 		sprintf(path,"%s\\factoryBean",parent);
-		visitor->action(path, STRING, ((TypeDefinition*)(this))->factoryBean);
-
+		action(path, STRING, this->factoryBean);
 		sprintf(path,"%s\\bean",parent);
-		visitor->action(path, STRING, ((TypeDefinition*)(this))->bean);
-
+		action(path, STRING, this->bean);
 		sprintf(path, "%s\\abstract", parent);
-		visitor->action(path, BOOL, (void*)((TypeDefinition*)(this))->abstract);
-	}
-	else
-	{
-		/*
-		NamedElement_VisitPathAttributes(((TypeDefinition*)(this))->super, parent, visitor, recursive);
-		*/
-		sprintf(path, "%s\\typeDefinition", parent);
-		visitor->action(path, BOOL, (void*)((TypeDefinition*)(this))->abstract);
-	}
-}
-
-void TypeDefinition_VisitReferences(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	char path[256];
-	memset(&path[0], 0, sizeof(path));
-
-	if(((TypeDefinition*)(this))->deployUnits != NULL)
-	{
-		visitor->action("deployUnit", SQBRACKET, NULL);
-		sprintf(path, "deployUnits[%s]", ((TypeDefinition*)(this))->deployUnits->internalGetKey(((TypeDefinition*)(this))->deployUnits));
-		visitor->action(path, STRREF, NULL);
-		visitor->action(NULL, RETURN, NULL);
-		visitor->action(NULL, CLOSESQBRACKETCOLON, NULL);
-	}
-	else
-	{
-		visitor->action("deployUnit", SQBRACKET, NULL);
-		visitor->action(NULL, CLOSESQBRACKETCOLON, NULL);
+		action(path, BOOL, (void*)this->abstract);
+	} else {
+		sprintf(path, "version");
+		action(path, STRING, this->version);
+		action(NULL, COLON, NULL);
+		sprintf(path, "factoryBean");
+		action(path, STRING, this->factoryBean);
+		action(NULL, COLON, NULL);
+		sprintf(path, "bean");
+		action(path, STRING, this->bean);
+		action(NULL, COLON, NULL);
+		sprintf(path, "abstract");
+		action(path, BOOL, (void*)this->abstract);
+		action(NULL, COLON, NULL);
 	}
 
-	if(((TypeDefinition*)(this))->dictionaryType != NULL)
-	{
-		visitor->action("dictionaryType", SQBRACKET, NULL);
-		sprintf(path, "dictionaryType[%s]", ((TypeDefinition*)(this))->dictionaryType->internalGetKey(((TypeDefinition*)(this))->dictionaryType));
-		DictionaryType* n = ((TypeDefinition*)(this))->dictionaryType;
-		visitor->action(NULL, BRACKET, NULL);
-		n->VisitAttributes(n, path, visitor, recursive);
-		n->VisitReferences(n, path, visitor, recursive);
-		visitor->action(NULL, CLOSEBRACKET, NULL);
-		visitor->action(NULL, CLOSESQBRACKETCOLON, NULL);
-	}
-	else
-	{
-		visitor->action("dictionaryType", SQBRACKET, NULL);
-		visitor->action(NULL, CLOSESQBRACKETCOLON, NULL);
-	}
-
-	if(((TypeDefinition*)(this))->superTypes != NULL)
-	{
-		visitor->action("superTypes", SQBRACKET, NULL);
-		int i;
-
-		/* superTypes */
-		hashmap_map* m = ((TypeDefinition*)(this))->superTypes;
-
-		/* compare superTypes */
-		for(i = 0; i< m->table_size; i++)
-		{
-			if(m->data[i].in_use != 0)
-			{
-				any_t data = (any_t) (m->data[i].data);
-				TypeDefinition* n = data;
-				sprintf(path,"superTypes[%s]", n->internalGetKey(n));
-				visitor->action(path, STRREF, NULL);
-				visitor->action(NULL, COLON, NULL);
-			}
-		}
-		visitor->action(NULL, CLOSESQBRACKET, NULL);
-	}
-	else
-	{
-		visitor->action("superTypes", SQBRACKET, NULL);
-		visitor->action(NULL, CLOSESQBRACKET, NULL);
-	}
-}
-
-void TypeDefinition_VisitPathReferences(void *const this, char *parent, Visitor *visitor, bool recursive)
-{
-	char path[256];
-	memset(&path[0], 0, sizeof(path));
-
-	if(((TypeDefinition*)(this))->deployUnits != NULL)
-	{
-		sprintf(path, "%s/%s\\deployUnit", parent, ((TypeDefinition*)(this))->deployUnits->path);
-		/*DeployUnit* n = ((TypeDefinition*)(this))->deployUnits;
-		n->VisitPathAttributes(n, path, visitor, false);*/
-		visitor->action(path, REFERENCE, parent);
-	}
-
-	if(((TypeDefinition*)(this))->dictionaryType != NULL)
-	{
-		DictionaryType* n = ((TypeDefinition*)(this))->dictionaryType;
-		sprintf(path, "%s/dictionaryType[%s]", parent, ((TypeDefinition*)(this))->dictionaryType->internalGetKey(((TypeDefinition*)(this))->dictionaryType));
-		if (visitor->secondAction != NULL) {
-			if (visitor->secondAction(path, "dictionaryType")) {
-				n->VisitPathAttributes(n, path, visitor, recursive);
-				n->VisitPathReferences(n, path, visitor, recursive);
-			}
+	if(this->deployUnits != NULL) {
+		if (visitPaths) {
+			sprintf(path, "%s/%s\\typeDefinition", parent, this->deployUnits->path);
+			action(path, REFERENCE, parent);
 		} else {
-			n->VisitPathAttributes(n, path, visitor, recursive);
-			n->VisitPathReferences(n, path, visitor, recursive);
+			action("deployUnit", SQBRACKET, NULL);
+			sprintf(path, "deployUnits[%s]", this->deployUnits->VT->internalGetKey(this->deployUnits));
+			action(path, STRREF, NULL);
+			action(NULL, RETURN, NULL);
+			action(NULL, CLOSESQBRACKETCOLON, NULL);
 		}
+	} else if (!visitPaths) {
+		action("deployUnit", SQBRACKET, NULL);
+		action(NULL, CLOSESQBRACKETCOLON, NULL);
 	}
 
-	if(((TypeDefinition*)(this))->superTypes != NULL)
-	{
-		int i;
-
-		/* superTypes */
-		hashmap_map* m = ((TypeDefinition*)(this))->superTypes;
-
-		/* compare superTypes */
-		for(i = 0; i< m->table_size; i++)
-		{
-			if(m->data[i].in_use != 0)
-			{
-				any_t data = (any_t) (m->data[i].data);
-				TypeDefinition* n = data;
-				sprintf(path,"%s/superTypes[%s]", parent, n->internalGetKey(n));
-				if (visitor->secondAction != NULL) {
-					if (visitor->secondAction(path, "dictionaryType")) {
-						n->VisitPathAttributes(n, path, visitor, false);
-					}
+	if(this->dictionaryType != NULL) {
+		if (visitPaths) {
+			sprintf(path, "%s/dictionaryType[%s]", parent, this->dictionaryType->VT->internalGetKey(this->dictionaryType));
+			if (secondAction != NULL) {
+				if (secondAction(path, "dictionaryType")) {
+					this->dictionaryType->VT->visit(this->dictionaryType, path, action, secondAction, visitPaths);
 				} else {
-					n->VisitPathAttributes(n, path, visitor, false);
+					this->dictionaryType->VT->visit(this->dictionaryType, path, action, secondAction, visitPaths);
 				}
 			}
+		} else {
+			action("dictionaryType", SQBRACKET, NULL);
+			action(NULL, BRACKET, NULL);
+			this->dictionaryType->VT->visit(this->dictionaryType, parent, action, secondAction, visitPaths);
+			action(NULL, CLOSEBRACKET, NULL);
+			action(NULL, CLOSESQBRACKETCOLON, NULL);
 		}
+	} else if (!visitPaths) {
+		action("dictionaryType", SQBRACKET, NULL);
+		action(NULL, CLOSESQBRACKETCOLON, NULL);
+	}
+
+	hashmap_map* m = NULL;
+
+	int length;
+
+	if((m = (hashmap_map*)this->superTypes) != NULL) {
+		length = hashmap_length(this->superTypes);
+		if (visitPaths) {
+			Visitor_visitPathRefs(m, "superTypes", path, action, secondAction, parent);
+		} else {
+			action("superTypes", SQBRACKET, NULL);
+			Visitor_visitModelRefs(m, length, "superTypes", path, action);
+			action(NULL, CLOSESQBRACKET, NULL);
+		}
+	} else if (!visitPaths) {
+		action("superTypes", SQBRACKET, NULL);
+		action(NULL, CLOSESQBRACKET, NULL);
 	}
 }
 
-void* TypeDefinition_FindByPath(char* attribute, void * const this)
+void
+*TypeDefinition_findByPath(TypeDefinition * const this, char *attribute)
 {
-	/*
-	 * TODO fix polymorphism
-	 */
-	TypeDefinition *pObj = (TypeDefinition*)this;
 	/* NamedElement attributes */
-	if(!strcmp("name",attribute))
-	{
-		return pObj->super->FindByPath(attribute, pObj->super);
-	}
 	/* Local attributes */
-	else if(!strcmp("version",attribute))
-	{
-		return pObj->version;
-	}
-	else if(!strcmp("factoryBean",attribute))
-	{
-		return pObj->factoryBean;
-	}
-	else if(!strcmp("bean",attribute))
-	{
-		return pObj->bean;
-	}
-	else if(!strcmp("abstract",attribute))
-	{
-		return (void*)pObj->abstract;
-	}
-	else
-	{
+	if(!strcmp("version",attribute)) {
+		return this->version;
+	} else if(!strcmp("factoryBean",attribute)) {
+		return this->factoryBean;
+	} else if(!strcmp("bean",attribute)) {
+		return this->bean;
+	} else if(!strcmp("abstract",attribute)) {
+		return (void*)this->abstract;
+	} else {
 		char path[250];
 		memset(&path[0], 0, sizeof(path));
 		char token[100];
@@ -528,8 +274,7 @@ void* TypeDefinition_FindByPath(char* attribute, void * const this)
 
 		strcpy(path, attribute);
 
-		if(strchr(path, '[') != NULL)
-		{
+		if(strchr(path, '[') != NULL) {
 			obj = strdup(strtok(path, "["));
 			strcpy(path, attribute);
 			PRINTF("Object: %s\n", obj);
@@ -540,24 +285,18 @@ void* TypeDefinition_FindByPath(char* attribute, void * const this)
 			sscanf(token, "%*[^[][%[^]]", key);
 			PRINTF("Key: %s\n", key);
 
-			if((strchr(path, '\\')) != NULL)
-			{
+			if((strchr(path, '\\')) != NULL) {
 				nextAttribute = strtok(NULL, "\\");
 				PRINTF("Attribute: %s\n", nextAttribute);
 
-				if(strchr(nextAttribute, '['))
-				{
+				if(strchr(nextAttribute, '[')) {
 					sprintf(nextPath, "%s\\%s", ++nextAttribute, strtok(NULL, "\\"));
 					PRINTF("Next Path: %s\n", nextPath);
-				}
-				else
-				{
+				} else {
 					strcpy(nextPath, nextAttribute);
 					PRINTF("Next Path: %s\n", nextPath);
 				}
-			}
-			else
-			{
+			} else {
 				nextAttribute = strtok(path, "]");
 				bool isFirst = true;
 				char *fragPath = NULL;
@@ -577,9 +316,8 @@ void* TypeDefinition_FindByPath(char* attribute, void * const this)
 					nextAttribute = NULL;
 				}
 			}
-		}
-		else
-		{
+		} else {
+			obj = strdup(attribute);
 			if ((nextAttribute = strtok(path, "\\")) != NULL) {
 				if ((nextAttribute = strtok(NULL, "\\")) != NULL) {
 					PRINTF("Attribute: %s\n", nextAttribute);
@@ -590,36 +328,50 @@ void* TypeDefinition_FindByPath(char* attribute, void * const this)
 			}
 		}
 
-		if(!strcmp("deployUnits", obj))
-		{
+		if(!strcmp("deployUnits", obj)) {
 			free(obj);
-			if(nextAttribute == NULL)
-			{
-				return pObj->deployUnits;
+			if(nextAttribute == NULL) {
+				return this->deployUnits;
+			} else {
+				if (this->deployUnits != NULL) {
+					return this->deployUnits->VT->findByPath(this->deployUnits, nextPath);
+				} else {
+					return NULL;
+				}
 			}
-			else
-			{
-				return pObj->deployUnits->FindByPath(nextPath, pObj->deployUnits);
-			}
-		}
-		else if(!strcmp("dictionaryType", obj))
-		{
+		} else if(!strcmp("dictionaryType", obj)) {
 			free(obj);
-			if(nextAttribute == NULL)
-			{
-				return pObj->dictionaryType;
+			if(nextAttribute == NULL) {
+				return this->dictionaryType;
+			} else {
+				DictionaryType *dictype = this->dictionaryType;
+				return dictype->VT->findByPath(dictype, nextPath);
 			}
-			else
-			{
-				DictionaryType *dictype = pObj->dictionaryType;
-				return dictype->FindByPath(nextPath, dictype);
-			}
-		}
-		else
-		{
+		} else {
 			free(obj);
-			PRINTF("Wrong attribute or reference\n");
-			return NULL;
+			return namedElement_VT.findByPath((NamedElement*)this, attribute);
 		}
 	}
 }
+
+const TypeDefinition_VT typeDefinition_VT = {
+		.super = &namedElement_VT,
+		/*
+		 * KMFContainer
+		 * NamedElement
+		 */
+		.metaClassName = TypeDefinition_metaClassName,
+		.internalGetKey = TypeDefinition_internalGetKey,
+		.visit = TypeDefinition_visit,
+		.findByPath = TypeDefinition_findByPath,
+		.delete = delete_TypeDefinition,
+		/*
+		 * TypeDefinition
+		 */
+		.addDeployUnit = TypeDefinition_addDeployUnit,
+		.addDictionaryType = TypeDefinition_addDictionaryType,
+		.addSuperTypes = TypeDefinition_addSuperTypes,
+		.removeDeployUnit = TypeDefinition_removeDeployUnit,
+		.removeDictionaryType = TypeDefinition_removeDictionaryType,
+		.removeSuperTypes = TypeDefinition_removeSuperTypes
+};
