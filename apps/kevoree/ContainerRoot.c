@@ -945,7 +945,7 @@ static void
 	/*ContainerRoot *pObj = (ContainerRoot*)this;*/
 	/* ContainerRoot attributes */
 
-	if(!strcmp(strdup(""), _path)) {
+	if(!strcmp("", _path)) {
 		return this;
 		/*return this;*/
 	} else if (!strcmp("\\generated_KMF_ID", _path)) {
