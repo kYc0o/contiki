@@ -1,0 +1,4 @@
+kev_contiki//hello_world/0.0.1 helloWorldComponent/helloWorldComponent.ce
+blinkComponent blinkComponent/blinkComponent.ce
+sensingComponent sensingComponent/sensingComponent.ce
+SieveofEratosthenes SieveofEratosthenes/SieveofEratosthenes.ce
