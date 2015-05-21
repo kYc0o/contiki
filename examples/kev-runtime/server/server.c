@@ -199,7 +199,7 @@ main (int argc, char *argv[])
 	
 	list_init(requests_as_server);
 
-	printf("Server started\n");
+	printf("Server started with size: %d\n", sizeof(struct KevoreePacket));
 	
 	int n;
 	struct sockaddr_in6 servaddr;
