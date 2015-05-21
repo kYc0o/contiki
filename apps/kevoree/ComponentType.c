@@ -279,6 +279,7 @@ static void
 			}
 		}
 	} else {
+		obj = strdup(attribute);
 		if ((nextAttribute = strtok(path, "\\")) != NULL) {
 			if ((nextAttribute = strtok(NULL, "\\")) != NULL) {
 				PRINTF("Attribute: %s\n", nextAttribute);
