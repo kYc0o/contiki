@@ -470,9 +470,11 @@ PROCESS_THREAD(artifact_resolver, ev, data)
 static int
 my_init()
 {
+	printf("Initializing artifact resolver\n");
 	process_start(&udp_retriever_p, NULL);
 	process_start(&artifact_resolver, NULL);
 	active_request = NULL;
+	printf("Initialized at: %p\n", &artifact_resolver);
 	return 0;
 }
 
@@ -491,6 +493,7 @@ getDeployUnit00(const char* deployUnitName)
 	r->artifact = strdup(deployUnitName);
 	r->user_data = NULL;
 	r->notification_routine = local_artifact_request;
+	printf("Requesting artifact %s to %p\n", r->artifact, &artifact_resolver);
 	process_post(&artifact_resolver, ARTIFACT_REQUESTED, r);
 	return 0;
 }
