@@ -5,6 +5,9 @@
 
 #include "lib/list.h"
 
+
+#define PORT 1234
+
 /* mapping from artifact name to file name*/
 struct MapEntry {
 	struct MapEntry* next;
