@@ -30,6 +30,8 @@
 #include "net/uip-ds6.h"
 #include "net/rpl/rpl.h"
 
+#include "lib/random.h"
+
 #include "simple-udp.h"
 #include "net/netstack.h"
 #include "dev/button-sensor.h"
@@ -63,8 +65,6 @@ const DeployUnitRetriver naive_udp_retriever = {
 	.getDeployUnit = getDeployUnit00
 }; 
 
-#define PORT 1234
-
 static struct DeployUnitRequest* active_request = NULL;
 
 static void kevoree_onNewSummary(uint16_t session_id, uint16_t nr_chunks);
@@ -80,8 +80,6 @@ static const struct RequestProcessingCallback kevoree_runtime_request_callbacks 
 	.onArtifactRequest = kevoree_onArtifactRequest,
 	.onChunkRequest = kevoree_onChunkRequest
 };
-
-LIST(requests_as_server);
 
 static void
 receiver(struct simple_udp_connection *c,
@@ -105,6 +103,12 @@ receiver(struct simple_udp_connection *c,
 		PRINTF("Wow, a wrong command\n");
 	}
 }
+
+
+/*=====================================================================================
+ * Server process: other motes request artifacts to this server
+ *=====================================================================================*/
+LIST(requests_as_server);
 
 /* 
 	Executed when the server already knows that you are requesting an artifact but it doesn't habe it available yet.
@@ -140,6 +144,8 @@ kevoree_onArtifactRequest(const char* source_address, const char* artifact)
 {
 	struct KevoreePacket pkt;
 	struct DeployUnitRequest* req = find_request_by_source(requests_as_server, source_address, artifact);
+	
+	printf("======================================== We shouldn't be executing this ============ \n");
 	
 	int is_new = req == NULL;
 	
@@ -199,7 +205,7 @@ kevoree_onChunkRequest(uint16_t session_id, uint16_t chunk_id)
 /*=====================================================================================
  * Client process to download artifacts from a remote server
  *=====================================================================================*/
-
+ 
 static uint16_t last_filename_suffix;
 
 LIST(requests_as_client);
@@ -290,7 +296,7 @@ PROCESS_THREAD(udp_retriever_p, ev, data)
 	NEW_DEPLOY_UNIT_REQUEST = process_alloc_event();
 	SUMMARY_DOWNLADED = process_alloc_event();
 	
-	/* confire server address */
+	/* configure server address */
 	uip_ip6addr(&addr, 0xaaaa, 0, 0, 0, 0, 0, 0, 1);
 
 	/* initialize the UDP stuff */
@@ -305,13 +311,14 @@ PROCESS_THREAD(udp_retriever_p, ev, data)
 		PROCESS_WAIT_EVENT();
 		//printf("Event %d %d\n", ev, SUMMARY_DOWNLADED);
 		if (ev == PROCESS_EVENT_TIMER) {
+			unsigned interval = 2 + ((unsigned)random_rand() % 5);
 			if (active_request == NULL) {
-				etimer_set(&timer, CLOCK_SECOND * (2));
+				etimer_set(&timer, CLOCK_SECOND * interval);
 			}
 			else if (active_request == 0x3a7b5b3a) {
 				printf("Look at the bad address %p\n", active_request);
 				active_request = NULL;
-				etimer_set(&timer, CLOCK_SECOND * (2));
+				etimer_set(&timer, CLOCK_SECOND * interval);
 				continue;
 			}
 			if (active_request && active_request->state == WAITING_FOR_SUMMARY) {
@@ -319,10 +326,11 @@ PROCESS_THREAD(udp_retriever_p, ev, data)
 				
 				//PRINTF("Sending message of length %d with crc %d to ", len, pkt.crc);
 				
-				uip_debug_ipaddr_print(&addr);
-				printf("\n");
+				//uip_debug_ipaddr_print(&addr);
+				//printf("\n");
 				
 				/*TODO: send message to the server */
+				//printf("Que mierda pasa ahora?\n");
 				simple_udp_sendto(&unicast_connection, &pkt, total_len(&pkt), &addr);
 			}
 			else if (active_request && active_request->state == RECEIVING_CHUNKS) {
@@ -340,11 +348,13 @@ PROCESS_THREAD(udp_retriever_p, ev, data)
 				dispose_request(active_request);
 				if (list_length(requests_as_client) > 0)
 					active_request = list_pop(requests_as_client);
+				else
+					active_request = NULL;
 			}
 			
 			if (active_request) {
 				/* timer once again */
-				etimer_set(&timer, CLOCK_SECOND * (2));
+				etimer_set(&timer, CLOCK_SECOND * interval);
 			}
 			
 		} else if (ev == NEW_DEPLOY_UNIT_REQUEST) {
@@ -390,7 +400,6 @@ PROCESS_THREAD(udp_retriever_p, ev, data)
 /*============================================================================
   Process to deal with artifacts
  ============================================================================*/
- 
 LIST(known_artifacts);
 LIST(artifact_requests);
 
