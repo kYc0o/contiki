@@ -25,6 +25,7 @@
 #include "json.h"
 #include "jsonparse.h"
 #include "net/uip.h"
+#include "lib/random.h"
 #include "simple-udp.h"
 
 
@@ -174,8 +175,9 @@ PROCESS_THREAD(delugeGroupP, ev, data)
 			uip_create_linklocal_allnodes_mcast(&addr);
   			simple_udp_sendto(&deluge_group_broadcast, &instance->info, sizeof(struct ModelInfo), &addr);
   			
+  			unsigned interval = 5 + ((unsigned)random_rand() % (3));
   			
-  			etimer_set(&et, CLOCK_SECOND * 4);
+  			etimer_set(&et, CLOCK_SECOND * interval);
   			
 			//etimer_restart(&et);
 		}
