@@ -145,14 +145,11 @@ server_onArtifactRequest(const char* source_address, const char* artifact)
 			struct KevoreePacket pkt;
 			build_summary_packet(&pkt, req->session_id, req->nr_packets);
 			
-			/* modifying the state */
-			req->state = SENDING_CHUNKS;
-			
 			/* send response back */
 			struct sockaddr_in6 cliaddr;
 			cliaddr.sin6_family = AF_INET6;
 			inet_pton(AF_INET6, source_address, &cliaddr.sin6_addr);
-			cliaddr.sin6_port=htons(1234);
+			cliaddr.sin6_port=htons(PORT);
 			sendto(sockfd, &pkt, total_len(&pkt), 0, (struct sockaddr *)&cliaddr,sizeof(cliaddr));
 		}
 		else {
@@ -168,9 +165,14 @@ server_onChunkRequest(uint16_t session_id, uint16_t chunk_id)
 {
 	struct DeployUnitRequest* req = find_request_by_session(requests_as_server, session_id);
 	
-	if (req != NULL && req->state == SENDING_CHUNKS && req->current_packet <= chunk_id) {
+	if (req != NULL && 
+			((req->state == SENDING_CHUNKS && req->current_packet <= chunk_id) ||
+			(req->state == SENDING_SUMMARY && req->current_packet == 0 && chunk_id == 0))  ) {
 	
 		req->current_packet = chunk_id;
+		
+		/* modifying the state */
+		req->state = SENDING_CHUNKS;
 	
 		printf("Session Id '%d', Chunk Id: '%d'. %d %d '%s'\n", session_id, chunk_id, req->state, req->current_packet, req->source_address);
 		/* read from the file */
@@ -186,7 +188,7 @@ server_onChunkRequest(uint16_t session_id, uint16_t chunk_id)
 		struct sockaddr_in6 cliaddr;
 		cliaddr.sin6_family = AF_INET6;
 		inet_pton(AF_INET6, req->source_address, &cliaddr.sin6_addr);
-		cliaddr.sin6_port=htons(1234);
+		cliaddr.sin6_port=htons(PORT);
 		sendto(sockfd, &pkt, total_len(&pkt), 0, (struct sockaddr *)&cliaddr,sizeof(cliaddr));
 	}
 }
@@ -218,7 +220,7 @@ main (int argc, char *argv[])
 	bzero(&servaddr,sizeof(servaddr));
 	servaddr.sin6_family = AF_INET6;
 	servaddr.sin6_addr=in6addr_any; //IN6ADDR_ANY_INIT;//htonl(IN6ADDR_ANY_INIT);
-	servaddr.sin6_port=htons(1234);
+	servaddr.sin6_port=htons(PORT);
 	if (bind(sockfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) != 0) {
 		printf("ERROR: no binding available %d:%s\n", errno, strerror(errno));
 		return -1;
