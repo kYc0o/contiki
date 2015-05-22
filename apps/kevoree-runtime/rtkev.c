@@ -300,7 +300,7 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 		PRINTF("Here a new model is coming\n");
 		if (newModel != NULL && runtime.currentModel != NULL) {
 			// char *traces;
-			TraceSequence *ts = ModelCompare(newModel, runtime.currentModel);
+			TraceSequence *ts = ModelCompare(newModel, runtime.currentModel, "n1759");
 
 			list_init(plannedAdaptations);
 

@@ -15,7 +15,7 @@ typedef struct _TraceSequence TraceSequence;
 typedef struct _ContainerRoot ContainerRoot;
 typedef enum _Type Type;
 
-TraceSequence *ModelCompare(ContainerRoot *_newModel, ContainerRoot *_currentModel);
+TraceSequence *ModelCompare(ContainerRoot *_newModel, ContainerRoot *_currentModel, char *nodeName);
 void *actionRemove(char *_path, void *value);
 void *actionAdd(char* _path, void *value);
 void actionUpdate(char* _path, Type type, void* value);
