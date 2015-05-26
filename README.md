@@ -1,7 +1,7 @@
 The Contiki Operating System
 ============================
 
-[![Build Status](https://secure.travis-ci.org/contiki-os/contiki.png)](http://travis-ci.org/contiki-os/contiki)
+[![Build Status](https://api.travis-ci.org/kYc0o/contiki.svg)](https://travis-ci.org/kYc0o/contiki)
 
 Contiki is an open source operating system that runs on tiny low-power
 microcontrollers and makes it possible to develop applications that
