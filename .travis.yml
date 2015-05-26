@@ -36,7 +36,7 @@ before_script:
 
 script:
   ## regression-tests/Makefile handles most of generic logic
-  - "make examples/kev-runtime"
+  - "make -C examples/kev-runtime"
 
 env:
   - BUILD_TYPE='compile-arm-ports' BUILD_CATEGORY='compile' BUILD_ARCH='arm'
