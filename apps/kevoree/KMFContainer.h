@@ -37,7 +37,6 @@ typedef struct _KMFContainer {
 	char *path;
 } KMFContainer;
 
-static void delete_KMFContainer(KMFContainer * const this);
 void delete(KMFContainer *object);
 void deleteContainerContents(map_t container);
 void initKMFContainer(KMFContainer * const this);
