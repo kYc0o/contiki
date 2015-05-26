@@ -12,6 +12,7 @@
 #include "ActionType.h"
 #include "TraceSequence.h"
 #include "ModelTrace.h"
+#include "ContainerNode.h"
 
 #include "lib/list.h"
 
@@ -179,22 +180,37 @@ void *actionRemove(char *_path, void *value)
 		return (void*)true;
 	} else if ((container = (KMFContainer*)current_model->VT->findByPath(current_model, _path)) != NULL) {
 		if ((src = strdup(container->eContainer)) != NULL) {
-			ModelTrace *mt = newPoly_ModelRemoveTrace(src, value, _path);
-			if (mt != NULL)	{
-				list_add(model_traces, mt);
-				free(src);
-				return (void*)false;
+			char *src2 = NULL;
+			char *metaClassName = container->VT->metaClassName(container);
+			if (!strcmp(metaClassName, "DictionaryValue")) {
+				KMFContainer *elem = current_model->VT->findByPath(current_model, src);
+				src2 = elem->eContainer;
+				KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
+				src2 = elem2->eContainer;
+			}
+			if (!strcmp(metaClassName, "ComponentInstance") ||
+					!strcmp(metaClassName, "DictionaryValue") ||
+					!strcmp(src, myself->path)) {
+				if ((src2 == NULL ||
+						!strcmp(src2, myself->path))
+						&& !strcmp(src, myself->path)) {
+					ModelTrace *mt = newPoly_ModelRemoveTrace(src, value, _path);
+					if (mt != NULL)	{
+						list_add(model_traces, mt);
+						free(src);
+						return (void*)false;
+					} else {
+						printf("ERROR: ModelTrace cannot be added!\n");
+						printf("path = %s  value = %s\n", _path, value);
+						return (void*)true;
+					}
+				}
 			} else {
-				printf("ERROR: ModelTrace cannot be added!\n");
-				printf("path = %s  value = %s\n", _path, value);
+				PRINTF("ERROR: not enough memory for src!\n");
 				return (void*)true;
 			}
-		} else {
-			PRINTF("ERROR: not enough memory for src!\n");
-			return (void*)true;
 		}
 	}
-
 	return (void*)true;
 }
 
@@ -208,15 +224,31 @@ void *actionAdd(char* _path, void *value)
 		return (void*)true;
 	} else if ((container = (KMFContainer*)new_model->VT->findByPath(new_model, _path)) != NULL) {
 		if ((src = strdup(container->eContainer)) != NULL) {
-			ModelTrace *mt = newPoly_ModelAddTrace(src, value, _path, container->VT->metaClassName(container));
-			if (mt != NULL)	{
-				list_add(model_traces, mt);
-				free(src);
-				return (void*)true;
-			} else {
-				printf("ERROR: ModelTrace cannot be added!\n");
-				printf("path = %s  value = %s\n", _path, (char*)value);
-				return (void*)true;
+			char *src2 = NULL;
+			char *metaClassName = container->VT->metaClassName(container);
+			if (!strcmp(metaClassName, "DictionaryValue")) {
+				KMFContainer *elem = new_model->VT->findByPath(new_model, src);
+				src2 = elem->eContainer;
+				KMFContainer *elem2 = new_model->VT->findByPath(new_model, src2);
+				src2 = elem2->eContainer;
+			}
+			if (!strcmp(metaClassName, "ComponentInstance") ||
+					!strcmp(metaClassName, "DictionaryValue") ||
+					!strcmp(src, myself->path)) {
+				if ((src2 == NULL ||
+						!strcmp(src2, myself->path))
+						&& !strcmp(src, myself->path)) {
+					ModelTrace *mt = newPoly_ModelAddTrace(src, value, _path, metaClassName);
+					if (mt != NULL)	{
+						list_add(model_traces, mt);
+						free(src);
+						return (void*)true;
+					} else {
+						printf("ERROR: ModelTrace cannot be added!\n");
+						printf("path = %s  value = %s\n", _path, (char*)value);
+						return (void*)true;
+					}
+				}
 			}
 		} else {
 			PRINTF("ERROR: not enough memory for src!\n");
@@ -271,24 +303,62 @@ void actionUpdate(char* _path, Type type, void* value)
 				strcpy(src, "");
 			}
 
-			ModelTrace *mt = newPoly_ModelRemoveTrace(src, refname, path);
-
-			if (mt != NULL)	{
-				list_add(model_traces, mt);
-			} else {
-				printf("ERROR: ModelTrace cannot be added!\n");
-				printf("path = %s  value = %s\n", path, (char*)value);
+			char *src2 = NULL;
+			char *metaClassName = container->VT->metaClassName(container);
+			if (!strcmp(metaClassName, "DictionaryValue")) {
+				KMFContainer *elem = current_model->VT->findByPath(current_model, src);
+				src2 = elem->eContainer;
+				KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
+				src2 = elem2->eContainer;
+			}
+			if (!strcmp(metaClassName, "ComponentInstance") ||
+					!strcmp(metaClassName, "DictionaryValue") ||
+					!strcmp(src, myself->path)) {
+				if ((src2 == NULL ||
+						!strcmp(src2, myself->path))
+						&& !strcmp(src, myself->path)) {
+					ModelTrace *mt = newPoly_ModelRemoveTrace(src, refname, path);
+					if (mt != NULL)	{
+						list_add(model_traces, mt);
+					} else {
+						printf("ERROR: ModelTrace cannot be added!\n");
+						printf("path = %s  value = %s\n", path, (char*)value);
+					}
+				}
 			}
 		}
 		break;
 
 	case STRING:
 		if (container == NULL) {
-			/*
+			/*25 Mai
 			 * TODO check NULL
 			 */
 			if ((container = (KMFContainer*)current_model->VT->findByPath(current_model, path)) != NULL) {
 				if ((src = strdup(container->eContainer)) != NULL) {
+					char *src2 = NULL;
+					char *metaClassName = container->VT->metaClassName(container);
+					if (!strcmp(metaClassName, "DictionaryValue")) {
+						KMFContainer *elem = current_model->VT->findByPath(current_model, src);
+						src2 = elem->eContainer;
+						KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
+						src2 = elem2->eContainer;
+					}
+					if (!strcmp(metaClassName, "ComponentInstance") ||
+							!strcmp(metaClassName, "DictionaryValue") ||
+							!strcmp(src, myself->path)) {
+						if ((src2 == NULL ||
+								!strcmp(src2, myself->path))
+								&& !strcmp(src, myself->path)) {
+							ModelTrace *mt = newPoly_ModelRemoveTrace(src, refname, path);
+							if (mt != NULL)	{
+								list_add(model_traces, mt);
+							} else {
+								printf("ERROR: ModelTrace cannot be added!\n");
+								printf("path = %s  value = %s\n", path, (char*)value);
+							}
+						}
+					}
 				} else {
 					PRINTF("ERROR: not enough memory for src!\n");
 				}
@@ -297,76 +367,56 @@ void actionUpdate(char* _path, Type type, void* value)
 				src = malloc(1);
 				strcpy(src, "");
 			}
-
-			ModelTrace *mt = newPoly_ModelRemoveTrace(src, refname, path);
-
-			if (mt != NULL)	{
-				list_add(model_traces, mt);
-			} else {
-				printf("ERROR: ModelTrace cannot be added!\n");
-				printf("path = %s  value = %s\n", path, (char*)value);
-			}
 		} else {
-			/*printf("path = %s  value = %s\n", _path, (char*)value);*/
-			char* string = current_model->VT->findByPath(current_model, _path);
-			char* string2 = new_model->VT->findByPath(new_model, _path);
-			/*printf("Current attribute value: %s\n", string);
-			printf("New attribute value: %s\n", string2);*/
-			if(string != NULL && string2 != NULL)
-			{
-				if(!strcmp(string2, string))
-				{
-					/*printf("Identical attributes, nothing to change...\n\n");*/
-				}
-				else
-				{
-					/*printf("Changing attribute to %s in current_model\n\n", string2);*/
-					ModelTrace *mt = newPoly_ModelSetTrace(src, refname, string2);
-					/*char *strTrace = mt->ToString(mt->pDerivedObj);
+			char *src2 = NULL;
+			char *metaClassName = container->VT->metaClassName(container);
+			if (!strcmp(metaClassName, "DictionaryValue")) {
+				KMFContainer *elem = current_model->VT->findByPath(current_model, src);
+				src2 = elem->eContainer;
+				KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
+				src2 = elem2->eContainer;
+			}
+			if (!strcmp(metaClassName, "ComponentInstance") ||
+					!strcmp(metaClassName, "DictionaryValue") ||
+					!strcmp(src, myself->path)) {
+				if ((src2 == NULL ||
+						!strcmp(src2, myself->path))
+						&& !strcmp(src, myself->path)) {
+					char* string = current_model->VT->findByPath(current_model, _path);
+					char* string2 = new_model->VT->findByPath(new_model, _path);
+					if(string != NULL && string2 != NULL) {
+						if(!strcmp(string2, string)) {
+
+						} else {
+							ModelTrace *mt = newPoly_ModelSetTrace(src, refname, string2);
+							/*char *strTrace = mt->ToString(mt->pDerivedObj);
 						PRINTF(strTrace);
 						free(strTrace);*/
-					if(mt != NULL)
-					{
-						list_add(model_traces, mt);
+							if(mt != NULL) {
+								list_add(model_traces, mt);
+							}
+							else {
+								printf("ERROR: ModelTrace cannot be added!\n");
+								printf("path = %s  value = %s\n", path, (char*)value);
+							}
+						}
+					} else if(string == NULL && string2 != NULL) {
+						ModelTrace *mt = newPoly_ModelSetTrace(src, refname, string2);
+						if(mt != NULL) {
+							list_add(model_traces, mt);
+						} else {
+							printf("ERROR: ModelTrace cannot be added!\n");
+							printf("path = %s  value = %s\n", path, (char*)value);
+						}
+					} else if(string != NULL && string2 == NULL) {
+						ModelTrace *mt = newPoly_ModelSetTrace(src, refname, "");
+						if(mt != NULL) {
+							list_add(model_traces, mt);
+						} else {
+							printf("ERROR: ModelTrace cannot be added!\n");
+							printf("path = %s  value = %s\n", path, (char*)value);
+						}
 					}
-					else {
-						printf("ERROR: ModelTrace cannot be added!\n");
-						printf("path = %s  value = %s\n", path, (char*)value);
-					}
-				}
-			}
-			else if(string == NULL && string2 != NULL)
-			{
-				/*printf("Current attribute is NULL, changing to new attribute '%s'\n\n", string2);*/
-				ModelTrace *mt = newPoly_ModelSetTrace(src, refname, string2);
-				/*
-					char *strTrace = mt->ToString(mt->pDerivedObj);
-					PRINTF(strTrace);
-					free(strTrace);
-				 */
-				if(mt != NULL)
-				{
-					list_add(model_traces, mt);
-				}
-				else {
-					printf("ERROR: ModelTrace cannot be added!\n");
-					printf("path = %s  value = %s\n", path, (char*)value);
-				}
-			}
-			else if(string != NULL && string2 == NULL)
-			{
-				/*printf("Changing attribute to NULL\n\n");*/
-				ModelTrace *mt = newPoly_ModelSetTrace(src, refname, "");
-				/*char *strTrace = mt->ToString(mt->pDerivedObj);
-					PRINTF(strTrace);
-					free(strTrace);*/
-				if(mt != NULL)
-				{
-					list_add(model_traces, mt);
-				}
-				else {
-					printf("ERROR: ModelTrace cannot be added!\n");
-					printf("path = %s  value = %s\n", path, (char*)value);
 				}
 			}
 		}
@@ -380,34 +430,66 @@ void actionUpdate(char* _path, Type type, void* value)
 			container = (KMFContainer*)current_model->VT->findByPath(current_model, path);
 			src = strdup(container->eContainer);
 			PRINTF("src: %s\n", src);
-			ModelTrace *mt = newPoly_ModelRemoveTrace(src, refname, path);
-			/*char *strTrace = mt->ToString(mt->pDerivedObj);
+			char *src2 = NULL;
+			char *metaClassName = container->VT->metaClassName(container);
+			if (!strcmp(metaClassName, "DictionaryValue")) {
+				KMFContainer *elem = current_model->VT->findByPath(current_model, src);
+				src2 = elem->eContainer;
+				KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
+				src2 = elem2->eContainer;
+			}
+			if (!strcmp(metaClassName, "ComponentInstance") ||
+					!strcmp(metaClassName, "DictionaryValue") ||
+					!strcmp(src, myself->path)) {
+				if ((src2 == NULL ||
+						!strcmp(src2, myself->path))
+						&& !strcmp(src, myself->path)) {
+					ModelTrace *mt = newPoly_ModelRemoveTrace(src, refname, path);
+					/*char *strTrace = mt->ToString(mt->pDerivedObj);
 						PRINTF(strTrace);
 						free(strTrace);*/
-			if(mt != NULL) {
-				list_add(model_traces, mt);
-			} else {
-				printf("ERROR: ModelTrace cannot be added!\n");
-				printf("path = %s  value = %s\n", path, (char*)value);
+					if(mt != NULL) {
+						list_add(model_traces, mt);
+					} else {
+						printf("ERROR: ModelTrace cannot be added!\n");
+						printf("path = %s  value = %s\n", path, (char*)value);
+					}
+				}
 			}
 		} else {
-			bool v = (bool)(current_model->VT->findByPath(current_model, _path));
-			bool v2 = (bool)(new_model->VT->findByPath(new_model, _path));
-			char v2str[MAX_NUMBER] = {0};
-			if(v == v2) {
-				/*printf("Identical attributes, nothing to change...\n\n");*/
-			} else {
-				if (v2 == 1) {
-					sprintf(v2str, "%s", "true");
-				} else {
-					sprintf(v2str, "%s", "false");
-				}
-				ModelTrace *mt = newPoly_ModelSetTrace(src, refname, v2str);
-				if(mt != NULL) {
-					list_add(model_traces, mt);
-				} else {
-					printf("ERROR: ModelTrace cannot be added!\n");
-					printf("path = %s  value = %s\n", path, (char*)value);
+			char *src2 = NULL;
+			char *metaClassName = container->VT->metaClassName(container);
+			if (!strcmp(metaClassName, "DictionaryValue")) {
+				KMFContainer *elem = current_model->VT->findByPath(current_model, src);
+				src2 = elem->eContainer;
+				KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
+				src2 = elem2->eContainer;
+			}
+			if (!strcmp(metaClassName, "ComponentInstance") ||
+					!strcmp(metaClassName, "DictionaryValue") ||
+					!strcmp(src, myself->path)) {
+				if ((src2 == NULL ||
+						!strcmp(src2, myself->path))
+						&& !strcmp(src, myself->path)) {
+					bool v = (bool)(current_model->VT->findByPath(current_model, _path));
+					bool v2 = (bool)(new_model->VT->findByPath(new_model, _path));
+					char v2str[MAX_NUMBER] = {0};
+					if(v == v2) {
+						/*printf("Identical attributes, nothing to change...\n\n");*/
+					} else {
+						if (v2 == 1) {
+							sprintf(v2str, "%s", "true");
+						} else {
+							sprintf(v2str, "%s", "false");
+						}
+						ModelTrace *mt = newPoly_ModelSetTrace(src, refname, v2str);
+						if(mt != NULL) {
+							list_add(model_traces, mt);
+						} else {
+							printf("ERROR: ModelTrace cannot be added!\n");
+							printf("path = %s  value = %s\n", path, (char*)value);
+						}
+					}
 				}
 			}
 		}
@@ -417,33 +499,66 @@ void actionUpdate(char* _path, Type type, void* value)
 			/*
 			 * TODO check NULL
 			 */
-			container = (KMFContainer*)current_model->VT->findByPath(current_model, path);
-			src = strdup(container->eContainer);
-			PRINTF("src: %s\n", src);
-			ModelTrace *mt = newPoly_ModelRemoveTrace(src, refname, path);
-			/*char *strTrace = mt->ToString(mt->pDerivedObj);
+			if ((container = (KMFContainer*)current_model->VT->findByPath(current_model, path)) != NULL) {
+				src = strdup(container->eContainer);
+				PRINTF("src: %s\n", src);
+				char *src2 = NULL;
+				char *metaClassName = container->VT->metaClassName(container);
+				if (!strcmp(metaClassName, "DictionaryValue")) {
+					KMFContainer *elem = current_model->VT->findByPath(current_model, src);
+					src2 = elem->eContainer;
+					KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
+					src2 = elem2->eContainer;
+				}
+				if (!strcmp(metaClassName, "ComponentInstance") ||
+						!strcmp(metaClassName, "DictionaryValue") ||
+						!strcmp(src, myself->path)) {
+					if ((src2 == NULL ||
+							!strcmp(src2, myself->path))
+							&& !strcmp(src, myself->path)) {
+						ModelTrace *mt = newPoly_ModelRemoveTrace(src, refname, path);
+						/*char *strTrace = mt->ToString(mt->pDerivedObj);
 				PRINTF(strTrace);
 				free(strTrace);*/
-			if(mt != NULL) {
-				list_add(model_traces, mt);
-			} else {
-				printf("ERROR: ModelTrace cannot be added!\n");
-				printf("path = %s  value = %s\n", path, (char*)value);
+						if(mt != NULL) {
+							list_add(model_traces, mt);
+						} else {
+							printf("ERROR: ModelTrace cannot be added!\n");
+							printf("path = %s  value = %s\n", path, (char*)value);
+						}
+					}
+				}
 			}
 		} else {
-			int v = (int)(current_model->VT->findByPath(current_model, _path));
-			int v2 = (int)(new_model->VT->findByPath(new_model, _path));
-			char v2str[MAX_NUMBER] = {0};
-			if(v == v2) {
-				/*printf("Identical attributes, nothing to change...\n\n");*/
-			} else {
-				sprintf(v2str, "%d", v2);
-				ModelTrace *mt = newPoly_ModelSetTrace(src, refname, v2str);
-				if(mt != NULL) {
-					list_add(model_traces, mt);
-				} else {
-					printf("ERROR: ModelTrace cannot be added!\n");
-					printf("path = %s  value = %s\n", path, (char*)value);
+			char *src2 = NULL;
+			char *metaClassName = container->VT->metaClassName(container);
+			if (!strcmp(metaClassName, "DictionaryValue")) {
+				KMFContainer *elem = current_model->VT->findByPath(current_model, src);
+				src2 = elem->eContainer;
+				KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
+				src2 = elem2->eContainer;
+			}
+			if (!strcmp(metaClassName, "ComponentInstance") ||
+					!strcmp(metaClassName, "DictionaryValue") ||
+					!strcmp(src, myself->path)) {
+				if ((src2 == NULL ||
+						!strcmp(src2, myself->path))
+						&& !strcmp(src, myself->path)) {
+					int v = (int)(current_model->VT->findByPath(current_model, _path));
+					int v2 = (int)(new_model->VT->findByPath(new_model, _path));
+					char v2str[MAX_NUMBER] = {0};
+					if(v == v2) {
+
+					} else {
+						sprintf(v2str, "%d", v2);
+						ModelTrace *mt = newPoly_ModelSetTrace(src, refname, v2str);
+						if(mt != NULL) {
+							list_add(model_traces, mt);
+						} else {
+							printf("ERROR: ModelTrace cannot be added!\n");
+							printf("path = %s  value = %s\n", path, (char*)value);
+						}
+					}
 				}
 			}
 		}
@@ -478,6 +593,7 @@ void actionAddSet(char *_path, Type type, void *value)
 	char *src = NULL;
 	char *typename = NULL;
 	KMFContainer *container;
+	KMFContainer *container2;
 	/*
 	 * TODO return if memory is full
 	 */
@@ -496,11 +612,12 @@ void actionAddSet(char *_path, Type type, void *value)
 	switch(type)
 	{
 	case REFERENCE:
+		container2 = (KMFContainer*)new_model->VT->findByPath(new_model, (char*)value);
 		container = current_model->VT->findByPath(current_model, path);
-		if(container == NULL)
+		if(container == NULL && container2 != NULL)
 		{
 			if ((container = (KMFContainer*)new_model->VT->findByPath(new_model, path)) != NULL) {
-				if ((src = strdup(container->path)) != NULL) {
+				if ((src = strdup(container->path)) != NULL && container2 != NULL) {
 					typename = strdup(container->VT->metaClassName(container));
 				} else {
 					PRINTF("ERROR: not enough memory for src!\n");
@@ -508,59 +625,81 @@ void actionAddSet(char *_path, Type type, void *value)
 			} else {
 				PRINTF("ERROR: Cannot retrieve source!\n");
 			}
-			/*printf("Path %s does not exist in curent_model, adding...\n\n", path);*/
-			ModelTrace *mt = newPoly_ModelAddTrace((char*)value, refname, container->path, NULL);
-			/*char *strTrace = mt->ToString(mt->pDerivedObj);
+			if (!strcmp(src, myself->path) ||
+					(!strcmp(refname, "typeDefinition") &&
+							!strcmp(container2->eContainer, myself->path))) {
+				ModelTrace *mt = newPoly_ModelAddTrace((char*)value, refname, container->path, NULL);
+				/*char *strTrace = mt->ToString(mt->pDerivedObj);
 				PRINTF(strTrace);
 				free(strTrace);*/
-			if(mt != NULL)
-			{
-				list_add(model_traces, mt);
+				if(mt != NULL) {
+					list_add(model_traces, mt);
+				} else {
+					printf("ERROR: ModelTrace cannot be added!\n");
+					printf("path = %s  value = %s\n", path, (char*)value);
+				}
 			}
-			else {
-				printf("ERROR: ModelTrace cannot be added!\n");
-				printf("path = %s  value = %s\n", path, (char*)value);
-			}
-		}
-		else
-		{
-			/*printf("Path %s already exists...\n", path);*/
+		} else {
 		}
 		break;
 
 	case STRING:
-		/*printf("path = %s  value = %s\n", path, (char*)value);*/
-		/*path = strtok(path, "\\");*/
 		container = current_model->VT->findByPath(current_model, path);
 		if(container == NULL)
 		{
 			if ((container = (KMFContainer*)new_model->VT->findByPath(new_model, path)) != NULL) {
 				if ((src = strdup(container->path)) != NULL) {
-					typename = strdup(container->VT->metaClassName(container));
+					char *src2 = NULL;
+					char *metaClassName = container->VT->metaClassName(container);
+					if (!strcmp(metaClassName, "DictionaryValue")) {
+						KMFContainer *elem = new_model->VT->findByPath(new_model, src);
+						src2 = elem->eContainer;
+						KMFContainer *elem2 = new_model->VT->findByPath(new_model, src2);
+						src2 = elem2->eContainer;
+						KMFContainer *elem3 = new_model->VT->findByPath(new_model, src2);
+
+						if (!strcmp(myself->path, elem3->eContainer)) {
+							ModelTrace *mt = newPoly_ModelSetTrace(src, refname, (char*)value);
+							/*char *strTrace = mt->ToString(mt->pDerivedObj);
+																PRINTF(strTrace);
+																free(strTrace);*/
+							if(mt != NULL)
+							{
+								list_add(model_traces, mt);
+							}
+							else {
+								printf("ERROR: ModelTrace cannot be added!\n");
+								printf("path = %s  value = %s\n", path, (char*)value);
+							}
+						}
+
+					} else if (!strcmp(metaClassName, "ComponentInstance") ||
+							!strcmp(src, myself->path)) {
+						if ((src2 == NULL ||
+								!strcmp(src2, myself->path))
+								&& !strcmp(src, myself->path)) {
+							ModelTrace *mt = newPoly_ModelSetTrace(src, refname, (char*)value);
+							/*char *strTrace = mt->ToString(mt->pDerivedObj);
+									PRINTF(strTrace);
+									free(strTrace);*/
+							if(mt != NULL)
+							{
+								list_add(model_traces, mt);
+							}
+							else {
+								printf("ERROR: ModelTrace cannot be added!\n");
+								printf("path = %s  value = %s\n", path, (char*)value);
+							}
+						}
+					}
 				} else {
 					PRINTF("ERROR: not enough memory for src!\n");
 				}
 			} else {
 				PRINTF("ERROR: Cannot retrieve source!\n");
 			}
+		} else {
 
-			/*printf("Path %s does not exist in curent_model, adding...\n\n", path);*/
-			ModelTrace *mt = newPoly_ModelSetTrace(src, refname, (char*)value);
-			/*char *strTrace = mt->ToString(mt->pDerivedObj);
-				PRINTF(strTrace);
-				free(strTrace);*/
-			if(mt != NULL)
-			{
-				list_add(model_traces, mt);
-			}
-			else {
-				printf("ERROR: ModelTrace cannot be added!\n");
-				printf("path = %s  value = %s\n", path, (char*)value);
-			}
-		}
-		else
-		{
-			/*printf("Path %s already exists...\n", path);*/
 		}
 		break;
 
@@ -569,7 +708,24 @@ void actionAddSet(char *_path, Type type, void *value)
 		if (container == NULL) {
 			if ((container = (KMFContainer*)new_model->VT->findByPath(new_model, path)) != NULL) {
 				if ((src = strdup(container->path)) != NULL) {
-					typename = strdup(container->VT->metaClassName(container));
+					if (!strcmp(src, myself->path) ||
+							!strcmp(myself->path, container->eContainer)) {
+						char v2str[MAX_NUMBER] = {0};
+						if ((bool)value == 1) {
+							sprintf(v2str, "%s", "true");
+						} else {
+							sprintf(v2str, "%s", "false");
+						}
+
+						ModelTrace *mt = newPoly_ModelSetTrace(src, refname, v2str);
+
+						if(mt != NULL) {
+							list_add(model_traces, mt);
+						} else {
+							printf("ERROR: ModelTrace cannot be added!\n");
+							printf("path = %s  value = %s\n", path, (char*)value);
+						}
+					}
 				} else {
 					PRINTF("ERROR: not enough memory for src!\n");
 				}
@@ -577,23 +733,8 @@ void actionAddSet(char *_path, Type type, void *value)
 				PRINTF("ERROR: Cannot retrieve source!\n");
 			}
 
-			char v2str[MAX_NUMBER] = {0};
-			if ((bool)value == 1) {
-				sprintf(v2str, "%s", "true");
-			} else {
-				sprintf(v2str, "%s", "false");
-			}
-
-			ModelTrace *mt = newPoly_ModelSetTrace(src, refname, v2str);
-
-			if(mt != NULL) {
-				list_add(model_traces, mt);
-			} else {
-				printf("ERROR: ModelTrace cannot be added!\n");
-				printf("path = %s  value = %s\n", path, (char*)value);
-			}
 		} else {
-			/*printf("Path %s already exists...\n", path);*/
+
 		}
 		break;
 
@@ -610,20 +751,21 @@ void actionAddSet(char *_path, Type type, void *value)
 				PRINTF("ERROR: Cannot retrieve source!\n");
 			}
 
-			char v2str[MAX_NUMBER] = {0};
-			/*int v2 = (int)(new_model->VT->findByPath(_path, new_model));*/
-			sprintf(v2str, "%d", (int)value);
+			if (!strcmp(src, myself->path)) {
+				char v2str[MAX_NUMBER] = {0};
+				sprintf(v2str, "%d", (int)value);
 
-			ModelTrace *mt = newPoly_ModelSetTrace(src, refname, v2str);
+				ModelTrace *mt = newPoly_ModelSetTrace(src, refname, v2str);
 
-			if(mt != NULL) {
-				list_add(model_traces, mt);
-			} else {
-				printf("ERROR: ModelTrace cannot be added!\n");
-				printf("path = %s  value = %s\n", path, (char*)value);
+				if(mt != NULL) {
+					list_add(model_traces, mt);
+				} else {
+					printf("ERROR: ModelTrace cannot be added!\n");
+					printf("path = %s  value = %s\n", path, (char*)value);
+				}
 			}
 		} else {
-			/*printf("Path %s already exists...\n", path);*/
+
 		}
 		break;
 
