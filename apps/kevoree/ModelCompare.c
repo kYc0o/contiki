@@ -202,13 +202,18 @@ void *actionRemove(char *_path, void *value)
 					} else {
 						printf("ERROR: ModelTrace cannot be added!\n");
 						printf("path = %s  value = %s\n", _path, value);
+						free(src);
 						return (void*)true;
 					}
+				} else {
+					free(src);
 				}
 			} else {
-				PRINTF("ERROR: not enough memory for src!\n");
-				return (void*)true;
+				free(src);
 			}
+		} else {
+			PRINTF("ERROR: not enough memory for src!\n");
+			return (void*)true;
 		}
 	}
 	return (void*)true;
@@ -248,14 +253,17 @@ void *actionAdd(char* _path, void *value)
 						printf("path = %s  value = %s\n", _path, (char*)value);
 						return (void*)true;
 					}
+				} else {
+					free(src);
 				}
+			} else {
+				free(src);
 			}
 		} else {
 			PRINTF("ERROR: not enough memory for src!\n");
 			return (void*)true;
 		}
 	}
-
 	return (void*)true;
 }
 
@@ -281,7 +289,7 @@ void actionUpdate(char* _path, Type type, void* value)
 		strcpy(path, "");
 	}
 
-	if ((container = new_model->VT->findByPath(new_model,path)) != NULL) {
+	if ((container = new_model->VT->findByPath(new_model, path)) != NULL) {
 		if ((src = strdup(path)) != NULL) {
 		} else {
 			PRINTF("ERROR: not enough memory for src!\n");
@@ -618,7 +626,7 @@ void actionAddSet(char *_path, Type type, void *value)
 		{
 			if ((container = (KMFContainer*)new_model->VT->findByPath(new_model, path)) != NULL) {
 				if ((src = strdup(container->path)) != NULL && container2 != NULL) {
-					typename = strdup(container->VT->metaClassName(container));
+					/*typename = strdup(container->VT->metaClassName(container));*/
 				} else {
 					PRINTF("ERROR: not enough memory for src!\n");
 				}
@@ -743,7 +751,7 @@ void actionAddSet(char *_path, Type type, void *value)
 		if (container == NULL) {
 			if ((container = (KMFContainer*)new_model->VT->findByPath(new_model, path)) != NULL) {
 				if ((src = strdup(container->path)) != NULL) {
-					typename = strdup(container->VT->metaClassName(container));
+					/*typename = strdup(container->VT->metaClassName(container));*/
 				} else {
 					PRINTF("ERROR: not enough memory for src!\n");
 				}

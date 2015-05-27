@@ -143,6 +143,7 @@ int resolveReferences(any_t root, any_t objRef)
 					if ((srcObj2 = strdup(srcTmp)) != NULL) {
 						PRINTF("srcObj2: %s\n", srcObj2);
 						free(srcObj);
+						srcObj = NULL;
 					} else {
 						PRINTF("ERROR: cannot duplicate srcObj\n");
 					}
@@ -166,14 +167,17 @@ int resolveReferences(any_t root, any_t objRef)
 				memset(&srcId2[0], 0, sizeof(srcId2));
 				srcObjId2 = NULL;
 				free(srcObj);
+				srcObj = NULL;
 			}
 			obj->delete(obj);
-
+			obj = NULL;
 		}
 		else
 		{
 			obj->delete(obj);
+			obj = NULL;
 			free(srcObj);
+			srcObj = NULL;
 		}
 
 		if(!strcmp(srcObjId, "nodes"))
@@ -331,6 +335,13 @@ int resolveReferences(any_t root, any_t objRef)
 			free(srcObjId);
 			PRINTF("Source not found!\n");
 			return MAP_MISSING;
+		}
+		if (srcObj != NULL) {
+			free(srcObj);
+		}
+		if (obj != NULL) {
+			obj->delete(obj);
+			obj = NULL;
 		}
 	}
 	else
