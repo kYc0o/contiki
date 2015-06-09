@@ -16,10 +16,12 @@ APPS += json-from-file kevoree kevoree-runtime deluge-udp
 CONSOLE_CLIENT_SRCS = client.c myencode.c
 
 UIP_CONF_IPV6=1
-#CFLAGS+= -DUIP_CONF_IPV6_RPL
+CFLAGS+= -DUIP_CONF_IPV6_RPL
 
 #linker optimizations
 SMALL=1
+
+CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 
 # shell client
 CLIENT=client
