@@ -263,6 +263,8 @@ void substitutionCode(int in, int out, int mode)
   while ((n = cfs_read(in, buf, 60)) >0)
   {
     for (j=0; j<n; j++) {
+      printf("%c", buf[j]);
+
       // begining of an attribute name
       if (buf[j] =='"' && !in_attribute)
       {
@@ -276,22 +278,25 @@ void substitutionCode(int in, int out, int mode)
         attr_index = 0; //reset attribute attr_index
         const char* code;
         size_t size;
-        char tmp_buf[2 + size]; //not a pointer
+        //printf("%s", getSubsituteCode(attr));
         if (mode == COMPRESS) {
           code = getSubsituteCode(attr);
           size = strlen(code);
+          char tmp_buf[2 + size];
           sprintf(tmp_buf, "\"%s\"", code);
-          printf("attr: %s of size%d\n", tmp_buf, strlen(tmp_buf));
-          int atr_size = cfs_write(out, tmp_buf, strlen(tmp_buf));
-          printf("done writing %dbyte(s).\n", atr_size);
+          cfs_write(out, tmp_buf, strlen(tmp_buf));
+          //printf("attr: %s of size%d\n", tmp_buf, strlen(tmp_buf));
+          //int atr_size = cfs_write(out, tmp_buf, (2+size));
+          //printf("done writing %dbyte(s).\n", atr_size);
         }
-        else if (mode == DECOMPRESS) {
-          code = getSubsituteCode(attr);
-          size = strlen(code);
+        //else if (mode == DECOMPRESS) {
+        //  code = getSubsituteCode(attr);
+        //  size = strlen(code);
 
-          sprintf(tmp_buf, "\"%s\"", code);
-          //cfs_write(out, tmp_buf, sizeof(tmp_buf));
-        }
+        //  sprintf(tmp_buf, "\"%s\"", code);
+        //  printf("code: %s\n", tmp_buf);
+        //  //cfs_write(out, tmp_buf, sizeof(tmp_buf));
+        //}
       }
       // inside an attribute
       else if (buf[j] != '"' && in_attribute)
@@ -303,7 +308,7 @@ void substitutionCode(int in, int out, int mode)
       {
         char c[1];
         sprintf(c, "%c", buf[j]);
-        printf("char: %ssize: %d\n", c, sizeof(c));
+        //printf("char: %ssize: %d\n", c, sizeof(c));
         int c_size = cfs_write(out, c, sizeof(c));
         printf("done writing %dbyte(s).\n", c_size);
       }
@@ -312,6 +317,7 @@ void substitutionCode(int in, int out, int mode)
   }
 }
 
+//TODO refactor/merge the two following methods
 void compress(char* input, char* output)
 {
   int in_file = cfs_open(input, CFS_READ);
@@ -350,6 +356,8 @@ PROCESS_THREAD(compression, ev, data)
   static struct cfs_dir dir;
   static uint32_t fdFile;
   static char *filename;
+  char* in;
+  char* out;
   PROCESS_BEGIN();
 
   while(1) {
@@ -391,15 +399,18 @@ PROCESS_THREAD(compression, ev, data)
         cfs_close(fd_model);
       }
       else if (strstr(data, "compress") == data) {
-        char* in = "model.json";
-        char* out = "model.json-compressed";
+        in = "model.json";
+        out = "model.json-compressed";
         printf("Compressing '%s' to '%s'\n", in, out);
         compress(in, out);
         printf("Done compressing!\n");
       }
       else if (strstr(data, "decompress") == data) {
-        char* tmp = strstr(data, " ");
-        printf("Decompressing %s\n", tmp);
+        in = "model.json";
+        out = "model.json-compressed";
+        printf("Decompressing '%s' to '%s'\n", in, out);
+        decompress(in, out);
+        printf("Done decompressing!\n");
       }
       else
       {
