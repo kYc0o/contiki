@@ -13,7 +13,7 @@ static int updateBlink(void* instance);
 static
 const ComponentInterface BlinkInterface = {
 	.interfaceType = ComponentInstanceInterface,
-	.name = "BlinkComponentType", 
+	.name = "blink/0.0.1",
     .newInstance = newBlink,
     .start = startBlink,
     .stop = stopBlink,
