@@ -278,16 +278,12 @@ void substitutionCode(int in, int out, int mode)
         attr_index = 0; //reset attribute attr_index
         const char* code;
         size_t size;
-        //printf("%s", getSubsituteCode(attr));
         if (mode == COMPRESS) {
           code = getSubsituteCode(attr);
           size = strlen(code);
           char tmp_buf[2 + size];
           sprintf(tmp_buf, "\"%s\"", code);
           cfs_write(out, tmp_buf, strlen(tmp_buf));
-          //printf("attr: %s of size%d\n", tmp_buf, strlen(tmp_buf));
-          //int atr_size = cfs_write(out, tmp_buf, (2+size));
-          //printf("done writing %dbyte(s).\n", atr_size);
         }
         //else if (mode == DECOMPRESS) {
         //  code = getSubsituteCode(attr);
@@ -308,9 +304,7 @@ void substitutionCode(int in, int out, int mode)
       {
         char c[1];
         sprintf(c, "%c", buf[j]);
-        //printf("char: %ssize: %d\n", c, sizeof(c));
         int c_size = cfs_write(out, c, sizeof(c));
-        printf("done writing %dbyte(s).\n", c_size);
       }
 
     }
