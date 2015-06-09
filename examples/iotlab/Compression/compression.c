@@ -222,7 +222,6 @@ AUTOSTART_PROCESSES(&compression);
 
 const char* getSubsituteCode(char* code)
 {
-  printf("Getting subcode for %s\n", code);
   int i;
   for (i=0; i<ALPHABET_SIZE; i++)
   {
@@ -255,6 +254,8 @@ void substitutionCode(int in, int out, int mode)
   static uint8_t buf[100];
 
   int n, j; //buffer indexes
+  const char* code;
+  size_t size;
 
   char attr[100];
   int attr_index = 0;
@@ -268,57 +269,48 @@ void substitutionCode(int in, int out, int mode)
       // begining of an attribute name
       if (buf[j] =='"' && !in_attribute)
       {
-        in_attribute = true;
+	in_attribute = true;
       }
       // end of an attribute name
       else if (buf[j] == '"' && in_attribute)
       {
-        in_attribute = false;
-        attr[attr_index] = '\0';
-        attr_index = 0; //reset attribute attr_index
-        const char* code;
-        size_t size;
-        if (mode == COMPRESS) {
-          code = getSubsituteCode(attr);
-          size = strlen(code);
-          char tmp_buf[2 + size];
-          sprintf(tmp_buf, "\"%s\"", code);
-          cfs_write(out, tmp_buf, strlen(tmp_buf));
-        }
-        //else if (mode == DECOMPRESS) {
-        //  code = getSubsituteCode(attr);
-        //  size = strlen(code);
-
-        //  sprintf(tmp_buf, "\"%s\"", code);
-        //  printf("code: %s\n", tmp_buf);
-        //  //cfs_write(out, tmp_buf, sizeof(tmp_buf));
-        //}
+	in_attribute = false;
+	attr[attr_index] = '\0';
+	attr_index = 0; //reset attribute attr_index
+	if (mode == COMPRESS) {
+	  code = getSubsituteCode(attr);
+	}
+	else if (mode == DECOMPRESS) {
+	  code = getAttributeCode(attr);
+	}
+	size = strlen(code);
+	char tmp_buf[2 + size];
+	sprintf(tmp_buf, "\"%s\"", code);
+	cfs_write(out, tmp_buf, strlen(tmp_buf));
       }
       // inside an attribute
       else if (buf[j] != '"' && in_attribute)
       {
-        attr[attr_index] = buf[j];
-        attr_index++;
+	attr[attr_index] = buf[j];
+	attr_index++;
       }
       else
       {
-        char c[1];
-        sprintf(c, "%c", buf[j]);
-        int c_size = cfs_write(out, c, sizeof(c));
+	char c[1];
+	sprintf(c, "%c", buf[j]); //avoid encoding error
+	cfs_write(out, c, sizeof(c));
       }
 
     }
   }
 }
 
-//TODO refactor/merge the two following methods
 void compress(char* input, char* output)
 {
   int in_file = cfs_open(input, CFS_READ);
   int out_file = cfs_open(output, CFS_WRITE);
 
   if (in_file >= 0 && out_file >= 0) {
-    printf("compressing....\n");
     substitutionCode(in_file, out_file, COMPRESS);
   }
 
@@ -358,57 +350,57 @@ PROCESS_THREAD(compression, ev, data)
     PROCESS_YIELD();
     if (ev == serial_line_event_message) {
       if (!strcmp(data, "ls")) {
-        if(cfs_opendir(&dir, ".") == 0) {
-          while(cfs_readdir(&dir, &dirent) != -1) {
-            printf("File: %s (%ld bytes)\n",
-                dirent.name, (long)dirent.size);
-          }
-          cfs_closedir(&dir);
-        }
+	if(cfs_opendir(&dir, ".") == 0) {
+	  while(cfs_readdir(&dir, &dirent) != -1) {
+	    printf("File: %s (%ld bytes)\n",
+		dirent.name, (long)dirent.size);
+	  }
+	  cfs_closedir(&dir);
+	}
       }
       else if (strstr(data, "cat") == data) {
-        int n, jj;
-        char* tmp = strstr(data, " ");
-        tmp++;
-        fdFile = cfs_open(tmp, CFS_READ);
-        if (fdFile < 0) printf("error opening the file %s\n", tmp);
-        while ((n = cfs_read(fdFile, buf, 60)) > 0) {
-          for (jj = 0 ; jj < n ; jj++) printf("%c", (char)buf[jj]);
-        }
-        printf("\n");
-        cfs_close(fdFile);
-        if (n!=0)
-          printf("Some error reading the file\n");
+	int n, jj;
+	char* tmp = strstr(data, " ");
+	tmp++;
+	fdFile = cfs_open(tmp, CFS_READ);
+	if (fdFile < 0) printf("error opening the file %s\n", tmp);
+	while ((n = cfs_read(fdFile, buf, 60)) > 0) {
+	  for (jj = 0 ; jj < n ; jj++) printf("%c", (char)buf[jj]);
+	}
+	printf("\n");
+	cfs_close(fdFile);
+	if (n!=0)
+	  printf("Some error reading the file\n");
 
       }
       else if (strstr(data, "rm") == data) {
-        int n, jj;
-        char* tmp = strstr(data, " ");
-        tmp++;
-        cfs_remove(tmp);
+	int n, jj;
+	char* tmp = strstr(data, " ");
+	tmp++;
+	cfs_remove(tmp);
       }
       else if (!strcmp(data, "write")) {
-        int fd_model = cfs_open("model.json", CFS_WRITE);
-        cfs_write(fd_model, DEFAULTMODEL, strlen(DEFAULTMODEL));
-        cfs_close(fd_model);
+	int fd_model = cfs_open("model.json", CFS_WRITE);
+	cfs_write(fd_model, DEFAULTMODEL, strlen(DEFAULTMODEL));
+	cfs_close(fd_model);
       }
       else if (strstr(data, "compress") == data) {
-        in = "model.json";
-        out = "model.json-compressed";
-        printf("Compressing '%s' to '%s'\n", in, out);
-        compress(in, out);
-        printf("Done compressing!\n");
+	in = "model.json";
+	out = "model.json-compressed";
+	printf("Compressing '%s' to '%s'\n", in, out);
+	compress(in, out);
+	printf("Done compressing!\n");
       }
       else if (strstr(data, "decompress") == data) {
-        in = "model.json";
-        out = "model.json-compressed";
-        printf("Decompressing '%s' to '%s'\n", in, out);
-        decompress(in, out);
-        printf("Done decompressing!\n");
+	in = "model.json-compressed";
+	out = "model.json-decompressed";
+	printf("Decompressing '%s' to '%s'\n", in, out);
+	decompress(in, out);
+	printf("Done decompressing!\n");
       }
       else
       {
-        printf("Unknown command.\n");
+	printf("Unknown command.\n");
       }
     }
   }
