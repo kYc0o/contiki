@@ -2,9 +2,7 @@
 #include "rtkev.h"
 #include <stdio.h>
 
-#ifdef IOTLAB_M3
 #include "dev/light-sensor.h"
-#endif
 
 /* forward declaration */
 static void* newBlink(const char*);
@@ -89,18 +87,13 @@ PROCESS_THREAD(sensor_collection, ev, data)
   PROCESS_BEGIN();
   static struct etimer timer;
 
-#ifdef IOTLAB_M3
   config_light();
-#endif
   etimer_set(&timer, CLOCK_SECOND);
 
   while(1) {
     PROCESS_WAIT_EVENT();
     if (ev == PROCESS_EVENT_TIMER) {
-#ifdef IOTLAB_M3
       process_light();
-#endif
-
       etimer_restart(&timer);
     }
   }
