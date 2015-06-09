@@ -77,16 +77,19 @@ NodeNetwork_addLink(NodeNetwork * const this, NodeLink *ptr)
 	{
 		if(this->link == NULL)
 		{
-			this->link = hashmap_new();
+			this->link = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->link, internalKey, (void**)(&container)) == MAP_MISSING)
 		{
 			/*container = (NodeLink*)ptr;*/
 			if(hashmap_put(this->link, internalKey, ptr) == MAP_OK)
 			{
-				if (ptr->eContainer) { printf("muy mal in %s\n", __FILE__, __LINE__); free(ptr->eContainer); }
-				ptr->eContainer = malloc(sizeof(char) * (strlen("nodeNetwork[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->eContainer, "nodeNetwork[%s]", internalKey);
+				while (1) {
+					printf("where is this path coming from %s %s %d\n", "nodeNetwork[]", __FILE__, __LINE__);
+				}
+				//if (ptr->eContainer) { printf("muy mal in %s\n", __FILE__, __LINE__); free(ptr->eContainer); }
+				//ptr->eContainer = malloc(sizeof(char) * (strlen("nodeNetwork[]") + strlen(internalKey)) + 1);
+				//sprintf(ptr->eContainer, "nodeNetwork[%s]", internalKey);
 			}
 		}
 	}
@@ -173,7 +176,9 @@ NodeNetwork_visit(NodeNetwork * const this, char *parent, fptrVisitAction action
 
 	if(this->target != NULL) {
 		if (visitPaths) {
-			sprintf(path,"%s/%s\\target", parent, this->target->path);
+			char* tmp_path = this->target->VT->getPath(this->target);
+			sprintf(path,"%s/%s\\target", parent, tmp_path);
+			free(tmp_path);
 			action(path, REFERENCE, parent);
 		} else {
 			action("target", SQBRACKET, NULL);
@@ -190,7 +195,9 @@ NodeNetwork_visit(NodeNetwork * const this, char *parent, fptrVisitAction action
 
 	if(this->initBy != NULL) {
 		if (visitPaths) {
-			sprintf(path,"%s/%s\\initBy", parent, this->initBy->path);
+			char* tmp_path = this->initBy->VT->getPath(this->initBy);
+			sprintf(path,"%s/%s\\initBy", parent, tmp_path);
+			free(tmp_path);
 			action(path, REFERENCE, parent);
 		} else {
 			action("initBy", SQBRACKET, NULL);
@@ -233,7 +240,7 @@ static void
 	/* Local references */
 	else
 	{
-		char path[250];
+		char path[150];
 		memset(&path[0], 0, sizeof(path));
 		char token[100];
 		memset(&token[0], 0, sizeof(token));
@@ -357,6 +364,17 @@ static void
 	}
 }
 
+static char*
+NodeNetwork_getPath(KMFContainer* kmf)
+{
+	NodeNetwork* obj = (NodeNetwork*)kmf;
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("nodeNetworks[]") + strlen(obj->VT->internalGetKey(obj)) + 1);
+	sprintf(r, "nodeNetworks[%s]", obj->VT->internalGetKey(obj));
+	free(tmp);
+	return r;
+}
+
 const NodeNetwork_VT nodeNetwork_VT = {
 		.super = &KMF_VT,
 		/*
@@ -364,6 +382,7 @@ const NodeNetwork_VT nodeNetwork_VT = {
 		 */
 		.metaClassName = NodeNetwork_metaClassName,
 		.internalGetKey = NodeNetwork_internalGetKey,
+		.getPath = NodeNetwork_getPath,
 		.visit = NodeNetwork_visit,
 		.findByPath = NodeNetwork_findByPath,
 		.delete = delete_NodeNetwork,

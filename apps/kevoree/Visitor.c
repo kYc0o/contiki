@@ -17,17 +17,15 @@ void Visitor_visitModelContainer(hashmap_map *m, int length, fptrVisitAction act
 {
 	int i;
 	for(i = 0; i< m->table_size; i++) {
-		if(m->data[i].in_use != 0) {
-			action(NULL, BRACKET, NULL);
-			any_t data = (any_t) (m->data[i].data);
-			KMFContainer *n = data;
-			n->VT->visit(n, NULL, action, NULL, false);
-			if(length > 1) {
-				action(NULL, CLOSEBRACKETCOLON, NULL);
-				length--;
-			} else {
-				action(NULL, CLOSEBRACKET, NULL);
-			}
+		action(NULL, BRACKET, NULL);
+		any_t data = (any_t) (m->data[i].data);
+		KMFContainer *n = data;
+		n->VT->visit(n, NULL, action, NULL, false);
+		if(length > 1) {
+			action(NULL, CLOSEBRACKETCOLON, NULL);
+			length--;
+		} else {
+			action(NULL, CLOSEBRACKET, NULL);
 		}
 	}
 	/*action(NULL, CLOSESQBRACKETCOLON, NULL);*/
@@ -39,17 +37,15 @@ void Visitor_visitPaths(hashmap_map *m, char *container, char *path, fptrVisitAc
 	char *originalPath = strdup(path);
 
 	for(i = 0; i< m->table_size; i++) {
-		if(m->data[i].in_use != 0) {
-			any_t data = (any_t) (m->data[i].data);
-			KMFContainer *n = data;
-			sprintf(path, "%s[%s]", originalPath, n->VT->internalGetKey(n));
-			if (secondAction != NULL) {
-				if (secondAction(path, container)) {
-					n->VT->visit(n, path, action, secondAction, true);
-				}
-			} else {
+		any_t data = (any_t) (m->data[i].data);
+		KMFContainer *n = data;
+		sprintf(path, "%s[%s]", originalPath, n->VT->internalGetKey(n));
+		if (secondAction != NULL) {
+			if (secondAction(path, container)) {
 				n->VT->visit(n, path, action, secondAction, true);
 			}
+		} else {
+			n->VT->visit(n, path, action, secondAction, true);
 		}
 	}
 	free(originalPath);
@@ -59,18 +55,16 @@ void Visitor_visitModelRefs(hashmap_map *m, int length, char* ref, char *path, f
 {
 	int i;
 	for(i = 0; i< m->table_size; i++) {
-		if(m->data[i].in_use != 0) {
-			any_t data = (any_t) (m->data[i].data);
-			KMFContainer *n = data;
-			sprintf(path, "%s[%s]", ref, n->VT->internalGetKey(n));
-			action(path, STRREF, NULL);
-			/*action(NULL, RETURN, NULL);*/
-			if(length > 1) {
-				action(NULL, COLON, NULL);
-				length--;
-			} else {
-				action(NULL, RETURN, NULL);
-			}
+		any_t data = (any_t) (m->data[i].data);
+		KMFContainer *n = data;
+		sprintf(path, "%s[%s]", ref, n->VT->internalGetKey(n));
+		action(path, STRREF, NULL);
+		/*action(NULL, RETURN, NULL);*/
+		if(length > 1) {
+			action(NULL, COLON, NULL);
+			length--;
+		} else {
+			action(NULL, RETURN, NULL);
 		}
 	}
 	/*action(NULL, CLOSESQBRACKETCOLON, NULL);*/
@@ -81,12 +75,12 @@ void Visitor_visitPathRefs(hashmap_map *m, char *container, char *path, fptrVisi
 	int i;
 
 	for(i = 0; i< m->table_size; i++) {
-		if(m->data[i].in_use != 0) {
-			any_t data = (any_t) (m->data[i].data);
-			KMFContainer* n = data;
-			sprintf(path, "%s/%s\\%s", parent, n->path, container);
-			action(path, REFERENCE, parent);
-		}
+		any_t data = (any_t) (m->data[i].data);
+		KMFContainer* n = data;
+		char* this_path = n->VT->getPath(n);
+		sprintf(path, "%s/%s\\%s", parent, this_path, container);
+		free(this_path);
+		action(path, REFERENCE, parent);
 	}
 }
 

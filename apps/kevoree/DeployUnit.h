@@ -19,6 +19,7 @@ typedef struct _DeployUnit_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -31,13 +32,11 @@ typedef struct _DeployUnit_VT {
 } DeployUnit_VT;
 
 typedef struct _DeployUnit {
-	DeployUnit *next;
 	DeployUnit_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * NamedElement
 	 */

@@ -27,6 +27,7 @@ typedef struct _ComponentType_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -51,13 +52,11 @@ typedef struct _ComponentType_VT {
 } ComponentType_VT;
 
 typedef struct _ComponentType {
-	ComponentType *next;
 	ComponentType_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * NamedElement
 	 */

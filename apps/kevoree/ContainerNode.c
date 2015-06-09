@@ -136,15 +136,13 @@ ContainerNode_addComponents(ContainerNode * const this, ComponentInstance *ptr)
 		PRINTF("ERROR: The ComponentInstance cannot be added in ContainerNode because the key is not defined\n");
 	} else {
 		if(this->components == NULL) {
-			this->components = hashmap_new();
+			this->components = hashmap_new(get_key_for_hashmap);
 		}
 
 		if(hashmap_get(this->components, internalKey, (void**)(&container)) == MAP_MISSING) {
 			/*container = (ComponentInstance*)ptr;*/
 			if(hashmap_put(this->components, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup(this->path);
-				ptr->path = malloc(sizeof(char) * (strlen(this->path) + strlen("/components[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "%s/components[%s]", this->path, internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: component cannot be added!\n");
 			}
@@ -171,7 +169,7 @@ ContainerNode_addHosts(ContainerNode * const this, ContainerNode *ptr)
 			/*
 			 * TODO if result == NULL
 			 */
-			this->hosts = hashmap_new();
+			this->hosts = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->hosts, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if ((hashmap_put(this->hosts, internalKey, ptr)) == MAP_OK) {
@@ -208,7 +206,7 @@ ContainerNode_addGroups(ContainerNode * const this, Group *ptr)
 		PRINTF("The Group cannot be added in ContainerNode because the key is not defined\n");
 	} else {
 		if(this->groups == NULL) {
-			this->groups = hashmap_new();
+			this->groups = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->groups, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if ((hashmap_put(this->groups, internalKey, ptr)) == MAP_OK) {
@@ -233,14 +231,12 @@ ContainerNode_addNetworkInformation(ContainerNode * const this, NetworkInfo *ptr
 		PRINTF("ERROR: The NetworkInfo cannot be added in ContainerNode because the key is not defined\n");
 	} else {
 		if(this->networkInformation == NULL) {
-			this->networkInformation = hashmap_new();
+			this->networkInformation = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->networkInformation, internalKey, (void**)(&container)) == MAP_MISSING) {
 			/*container = (NetworkInfo*)ptr;*/
 			if(hashmap_put(this->networkInformation, internalKey, ptr) == 0) {
-				ptr->eContainer = strdup(this->path);
-				ptr->path = malloc(sizeof(char) * (strlen(this->path) +	strlen("/networkInformation[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "%s/networkInformation[%s]", this->path, internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: networkInformation cannot be added!\n");
 			}
@@ -259,10 +255,7 @@ ContainerNode_removeComponents(ContainerNode* const this, ComponentInstance* ptr
 		PRINTF("ERROR: ComponentInstance cannot be removed in ContainerNode because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->components, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: component %s cannot be removed!\n", internalKey);
 		}
@@ -316,10 +309,7 @@ ContainerNode_removeNetworkInformation(ContainerNode * const this, NetworkInfo *
 		PRINTF("The NetworkInfo cannot be removed in ContainerNode because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->networkInformation, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: networkInformation %s cannot be removed!\n", internalKey);
 		}
@@ -401,7 +391,9 @@ ContainerNode_visit(ContainerNode * const this, char *parent, fptrVisitAction ac
 
 	if(this->host != NULL) {
 		if (visitPaths) {
-			sprintf(path,"%s/%s\\host", parent, this->host->path);
+			char* this_path = this->host->VT->getPath(this->host);
+			sprintf(path,"%s/%s\\host", parent, this_path);
+			free(this_path);
 			action(path, REFERENCE, parent);
 		} else {
 			action("host", SQBRACKET, NULL);
@@ -452,7 +444,7 @@ void
 
 	/* Instance attributes and references */
 	/* Local references */
-	char path[250];
+	char path[150];
 	memset(&path[0], 0, sizeof(path));
 	char token[100];
 	memset(&token[0], 0, sizeof(token));
@@ -590,6 +582,17 @@ void
 	}
 }
 
+static char*
+ContainerNode_getPath(KMFContainer* kmf)
+{
+	ContainerNode* obj = (ContainerNode*)kmf;
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("nodes[]") + strlen(obj->VT->internalGetKey(obj)) + 1);
+	sprintf(r, "nodes[%s]", obj->VT->internalGetKey(obj));
+	free(tmp);
+	return r;
+}
+
 const ContainerNode_VT containerNode_VT = {
 		.super = &instance_VT,
 		/*
@@ -598,6 +601,7 @@ const ContainerNode_VT containerNode_VT = {
 		 */
 		.metaClassName = ContainerNode_metaClassName,
 		.internalGetKey = ContainerNode_internalGetKey,
+		.getPath = ContainerNode_getPath,
 		.visit = ContainerNode_visit,
 		.findByPath = ContainerNode_findByPath,
 		.delete = delete_ContainerNode,

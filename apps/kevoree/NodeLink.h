@@ -20,6 +20,7 @@ typedef struct _NodeLink_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -32,13 +33,11 @@ typedef struct _NodeLink_VT {
 } NodeLink_VT;
 
 typedef struct _NodeLink {
-	NodeLink *next;
 	NodeLink_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * NodeLink
 	 */

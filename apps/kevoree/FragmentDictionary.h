@@ -14,6 +14,7 @@ typedef struct _FragmentDictionary_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -29,13 +30,11 @@ typedef struct _FragmentDictionary_VT {
 } FragmentDictionary_VT;
 
 typedef struct _FragmentDictionary {
-	FragmentDictionary *next;
 	FragmentDictionary_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * Dictionary
 	 * TODO fix size

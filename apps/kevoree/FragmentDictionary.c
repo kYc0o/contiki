@@ -89,6 +89,17 @@ static void
 	}
 }
 
+static char*
+FragmentDictionary_getPath(KMFContainer* kmf)
+{
+	FragmentDictionary* obj = (FragmentDictionary*)kmf;
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("/fragmentDictionary[]") + strlen(obj->VT->internalGetKey(obj)) + 1);
+	sprintf(r, "%s/fragmentDictionary[%s]", tmp, obj->VT->internalGetKey(obj));
+	free(tmp);
+	return r;
+}
+
 const FragmentDictionary_VT fragmentDictionary_VT = {
 		.super = &dictionary_VT,
 		/*
@@ -97,6 +108,7 @@ const FragmentDictionary_VT fragmentDictionary_VT = {
 		 */
 		.metaClassName = FragmentDictionary_metaClassName,
 		.internalGetKey = FragmentDictionary_internalGetKey,
+		.getPath = FragmentDictionary_getPath,
 		.visit = FragmentDictionary_visit,
 		.findByPath = FragmentDictionary_findByPath,
 		.delete = delete_FragmentDictionary,
@@ -129,7 +141,6 @@ FragmentDictionary
 	 * KMFContainer
 	 */
 	pFragDicObj->eContainer = NULL;
-	pFragDicObj->path = NULL;
 	/*
 	 * Dictionary
 	 */

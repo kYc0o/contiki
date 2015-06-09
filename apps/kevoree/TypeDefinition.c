@@ -66,9 +66,7 @@ TypeDefinition_addDictionaryType(TypeDefinition * const this, DictionaryType *pt
 		this->VT->removeDictionaryType(this, ptr);
 	}
 	this->dictionaryType = ptr;
-	ptr->eContainer = strdup(this->path);
-	ptr->path = malloc(sizeof(char) * (strlen(this->path) + strlen("/dictionaryType[]") + strlen(ptr->VT->internalGetKey(ptr))) + 1);
-	sprintf(ptr->path, "%s/dictionaryType[%s]", this->path, ptr->VT->internalGetKey(ptr));
+	ptr->eContainer = this;
 }
 
 void
@@ -81,10 +79,7 @@ void
 TypeDefinition_removeDictionaryType(TypeDefinition * const this, DictionaryType *ptr)
 {
 	this->dictionaryType = NULL;
-	free(ptr->eContainer);
 	ptr->eContainer = NULL;
-	free(ptr->path);
-	ptr->path = NULL;
 }
 
 void
@@ -98,7 +93,7 @@ TypeDefinition_addSuperTypes(TypeDefinition * const this, TypeDefinition *ptr)
 		PRINTF("ERROR: The TypeDefinition cannot be added in TypeDefinition because the key is not defined\n");
 	} else {
 		if(this->superTypes == NULL) {
-			this->superTypes = hashmap_new();
+			this->superTypes = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->superTypes, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if ((hashmap_put(this->superTypes, internalKey, ptr)) == MAP_OK) {
@@ -192,7 +187,9 @@ void TypeDefinition_visit(TypeDefinition * const this, char *parent, fptrVisitAc
 
 	if(this->deployUnits != NULL) {
 		if (visitPaths) {
-			sprintf(path, "%s/%s\\typeDefinition", parent, this->deployUnits->path);
+			char* tmp_path = this->deployUnits->VT->getPath(this->deployUnits);
+			sprintf(path, "%s/%s\\typeDefinition", parent, tmp_path);
+			free(tmp_path);
 			action(path, REFERENCE, parent);
 		} else {
 			action("deployUnit", SQBRACKET, NULL);
@@ -261,7 +258,7 @@ void
 	} else if(!strcmp("abstract",attribute)) {
 		return (void*)this->abstract;
 	} else {
-		char path[250];
+		char path[150];
 		memset(&path[0], 0, sizeof(path));
 		char token[100];
 		memset(&token[0], 0, sizeof(token));
@@ -354,6 +351,17 @@ void
 	}
 }
 
+char*
+TypeDefinition_getPath(KMFContainer* kmf)
+{
+	TypeDefinition* td = (TypeDefinition*)kmf;
+	char* tmp = (td->eContainer)?get_eContainer_path(td):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("typeDefinitions[]") + strlen(td->VT->internalGetKey(td)) + 1);
+	sprintf(r, "typeDefinitions[%s]", td->VT->internalGetKey(td));
+	free(tmp);
+	return r;
+}
+
 const TypeDefinition_VT typeDefinition_VT = {
 		.super = &namedElement_VT,
 		/*
@@ -362,6 +370,7 @@ const TypeDefinition_VT typeDefinition_VT = {
 		 */
 		.metaClassName = TypeDefinition_metaClassName,
 		.internalGetKey = TypeDefinition_internalGetKey,
+		.getPath = TypeDefinition_getPath,
 		.visit = TypeDefinition_visit,
 		.findByPath = TypeDefinition_findByPath,
 		.delete = delete_TypeDefinition,

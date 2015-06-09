@@ -21,6 +21,7 @@ typedef struct _NetworkInfo_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -33,13 +34,11 @@ typedef struct _NetworkInfo_VT {
 } NetworkInfo_VT;
 
 typedef struct _NetworkInfo {
-	NetworkInfo *next;
 	NetworkInfo_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * NamedElement
 	 */

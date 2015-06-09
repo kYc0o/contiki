@@ -82,6 +82,7 @@ const PortType_VT portType_VT = {
 		.super = &typeDefinition_VT,
 		.metaClassName = PortType_metaClassName,
 		.internalGetKey = PortType_internalGetKey,
+		.getPath = TypeDefinition_getPath,
 		.visit = PortType_visit,
 		.findByPath = TypeDefinition_findByPath,
 		.delete = delete_PortType,

@@ -23,6 +23,25 @@ char *my_strdup(const char *string)
 	return r;
 }
 
+char*
+KMFContainer_get_path(void* this) {
+	KMFContainer* c = (KMFContainer*)this;
+	return strdup("");
+}
+
+char*
+get_eContainer_path(KMFContainer* kmf)
+{
+	return kmf->eContainer->VT->getPath(kmf->eContainer);
+}
+
+char*
+get_key_for_hashmap(any_t t)
+{
+	KMFContainer* c = (KMFContainer*)t;
+	return c->VT->internalGetKey(c); 
+}
+
 void
 initKMFContainer(KMFContainer * const this)
 {
@@ -30,18 +49,12 @@ initKMFContainer(KMFContainer * const this)
 	 * KMFContainer
 	 */
 	this->eContainer = NULL;
-	this->path = NULL;
 }
 
 static void
 delete_KMFContainer(KMFContainer * const this)
 {
-	if (this->path != NULL) {
-		free(this->path);
-	}
-	if (this->eContainer != NULL) {
-		free(this->eContainer);
-	}
+
 }
 
 void
@@ -58,11 +71,9 @@ deleteContainerContents(map_t container)
 	hashmap_map *m = (hashmap_map*)container;
 	int i;
 	for(i = 0; i< m->table_size; i++) {
-		if(m->data[i].in_use != 0) {
-			any_t data = (any_t) (m->data[i].data);
-			KMFContainer *n = data;
-			delete(n);
-		}
+		any_t data = (any_t) (m->data[i].data);
+		KMFContainer *n = data;
+		delete(n);
 	}
 }
 
@@ -79,6 +90,7 @@ const KMFContainer_VT KMF_VT = {
 		.super = NULL,
 		.metaClassName = NULL,
 		.internalGetKey = NULL,
+		.getPath = KMFContainer_get_path,
 		.visit = KMFContainer_visit,
 		.findByPath = NULL,
 		.delete = delete_KMFContainer

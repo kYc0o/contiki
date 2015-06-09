@@ -114,6 +114,17 @@ static void
 	}
 }
 
+static char*
+PortTypeMapping_getPath(KMFContainer* kmf)
+{
+	PortTypeMapping* obj = (PortTypeMapping*)kmf;
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("/mappings[]") + strlen(obj->VT->internalGetKey(obj)) + 1);
+	sprintf(r, "%s/mappings[%s]", tmp, obj->VT->internalGetKey(obj));
+	free(tmp);
+	return r;
+}
+
 const PortTypeMapping_VT portTypeMapping_VT = {
 		.super = &KMF_VT,
 		/*
@@ -121,6 +132,7 @@ const PortTypeMapping_VT portTypeMapping_VT = {
 		 */
 		.metaClassName = PortTypeMapping_metaClassName,
 		.internalGetKey = PortTypeMapping_internalGetKey,
+		.getPath = PortTypeMapping_getPath,
 		.visit = PortTypeMapping_visit,
 		.findByPath = PortTypeMapping_findByPath,
 		.delete = delete_PortTypeMapping

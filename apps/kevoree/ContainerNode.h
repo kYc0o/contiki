@@ -35,6 +35,7 @@ typedef struct _ContainerNode_VT {
 	Instance_VT *super;
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -68,13 +69,11 @@ typedef struct _ContainerNode_VT {
 } ContainerNode_VT;
 
 typedef struct _ContainerNode {
-	ContainerNode *next;
 	ContainerNode_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * NamedElement
 	 */

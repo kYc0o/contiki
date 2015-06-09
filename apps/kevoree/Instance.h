@@ -28,6 +28,7 @@ typedef struct _Instance_VT {
 	NamedElement_VT *super;
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -44,13 +45,11 @@ typedef struct _Instance_VT {
 } Instance_VT;
 
 typedef struct _Instance {
-	Instance *next;
 	Instance_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * NamedElement
 	 */

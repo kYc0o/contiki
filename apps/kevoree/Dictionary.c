@@ -74,16 +74,14 @@ Dictionary_addValues(Dictionary * const this, DictionaryValue *ptr)
 	{
 		if(this->values == NULL)
 		{
-			this->values = hashmap_new();
+			this->values = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->values, internalKey, (void**)(&container)) == MAP_MISSING)
 		{
 			/*container = (DictionaryValue*)ptr;*/
 			if(hashmap_put(this->values, internalKey, ptr) == MAP_OK)
 			{
-				ptr->eContainer = strdup(this->path);
-				ptr->path = malloc(sizeof(char) * (strlen(this->path) + strlen("/values[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "%s/values[%s]", this->path, internalKey);
+				ptr->eContainer = this;
 			}
 		}
 	}
@@ -102,10 +100,7 @@ Dictionary_removeValues(Dictionary * const this, DictionaryValue *ptr)
 	{
 		if(hashmap_remove(this->values, internalKey) == MAP_OK)
 		{
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		}
 	}
 }
@@ -173,7 +168,7 @@ static void
 	/* Local references */
 	else
 	{
-		char path[250];
+		char path[150];
 		memset(&path[0], 0, sizeof(path));
 		char token[100];
 		memset(&token[0], 0, sizeof(token));
@@ -274,6 +269,17 @@ static void
 	}
 }
 
+static char*
+Dictionary_getPath(KMFContainer* kmf)
+{
+	Dictionary* obj = (Dictionary*)kmf;
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("/dictionary[]") + strlen(obj->VT->internalGetKey(obj)) + 1);
+	sprintf(r, "%s/dictionary[%s]", tmp, obj->VT->internalGetKey(obj));
+	free(tmp);
+	return r;
+}
+
 const Dictionary_VT dictionary_VT = {
 		.super = &KMF_VT,
 		/*
@@ -281,6 +287,7 @@ const Dictionary_VT dictionary_VT = {
 		 */
 		.metaClassName = Dictionary_metaClassName,
 		.internalGetKey = Dictionary_internalGetKey,
+		.getPath = Dictionary_getPath,
 		.visit = Dictionary_visit,
 		.findByPath = Dictionary_findByPath,
 		.delete = delete_Dictionary,

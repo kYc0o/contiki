@@ -97,7 +97,9 @@ MBinding_visit(MBinding * const this, char *parent, fptrVisitAction action, fptr
 
 	if(this->port != NULL) {
 		if (visitPaths) {
-			sprintf(path,"%s/%s\\port", parent, this->port->path);
+			char* tmp_path = this->port->VT->getPath(this->port);
+			sprintf(path,"%s/%s\\port", parent, tmp_path);
+			free(tmp_path);
 			action(path, REFERENCE, parent);
 		} else {
 			action("port", SQBRACKET, NULL);
@@ -113,7 +115,9 @@ MBinding_visit(MBinding * const this, char *parent, fptrVisitAction action, fptr
 
 	if(this->channel != NULL) {
 		if (visitPaths) {
-			sprintf(path,"%s/%s\\hub", parent, this->channel->path);
+			char* tmp_channel = this->channel->VT->getPath(this->channel);
+			sprintf(path,"%s/%s\\hub", parent, tmp_channel);
+			free(tmp_channel);
 			action(path, REFERENCE, parent);
 		} else {
 			action("hub", SQBRACKET, NULL);
@@ -139,7 +143,7 @@ static void
 	/* Local references */
 	else
 	{
-		char path[250];
+		char path[150];
 		memset(&path[0], 0, sizeof(path));
 		char token[100];
 		memset(&token[0], 0, sizeof(token));
@@ -247,6 +251,17 @@ static void
 	}
 }
 
+static char*
+MBinding_getPath(KMFContainer* kmf)
+{
+	MBinding* obj = (MBinding*)kmf;
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("mBindings[]") + strlen(obj->VT->internalGetKey(obj)) + 1);
+	sprintf(r, "mBindings[%s]", obj->VT->internalGetKey(obj));
+	free(tmp);
+	return r;
+}
+
 const MBinding_VT mBinding_VT = {
 		.super = &KMF_VT,
 		/*
@@ -254,6 +269,7 @@ const MBinding_VT mBinding_VT = {
 		 */
 		.metaClassName = MBinding_metaClassName,
 		.internalGetKey = MBinding_internalGetKey,
+		.getPath = MBinding_getPath,
 		.visit = MBinding_visit,
 		.findByPath = MBinding_findByPath,
 		.delete = delete_MBinding,

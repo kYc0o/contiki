@@ -17,6 +17,7 @@ typedef struct _GroupType_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -35,13 +36,11 @@ typedef struct _GroupType_VT {
 } GroupType_VT;
 
 typedef struct _GroupType {
-	GroupType *next;
 	GroupType_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * NamedElement
 	 */

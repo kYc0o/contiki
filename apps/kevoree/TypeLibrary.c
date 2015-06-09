@@ -6,6 +6,7 @@
 #include "TypeDefinition.h"
 #include "Visitor.h"
 #include "TypeLibrary.h"
+#include "TypedElement.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -72,7 +73,7 @@ TypeLibrary_addSubTypes(TypeLibrary * const this, TypeDefinition *ptr)
 	{
 		if(this->subTypes == NULL)
 		{
-			this->subTypes = hashmap_new();
+			this->subTypes = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->subTypes, internalKey, (void**)(&container)) == MAP_MISSING)
 		{
@@ -142,7 +143,7 @@ static void
 
 	/* NamedElement */
 	/* Local references */
-	char path[250];
+	char path[150];
 	memset(&path[0], 0, sizeof(path));
 	char token[100];
 	memset(&token[0], 0, sizeof(token));
@@ -249,6 +250,7 @@ const TypeLibrary_VT typeLibrary_VT = {
 		 */
 		.metaClassName = TypeLibrary_metaClassName,
 		.internalGetKey = TypeLibrary_internalGetKey,
+		.getPath = TypedElement_getPath,
 		.visit = TypeLibrary_visit,
 		.findByPath = TypeLibrary_findByPath,
 		.delete = delete_TypeLibrary,

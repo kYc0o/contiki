@@ -64,9 +64,7 @@ Instance_addDictionary(Instance * const this, Dictionary *ptr)
 		this->VT->removeDictionary(this, ptr);
 	}
 	this->dictionary = ptr;
-	ptr->eContainer = strdup(this->path);
-	ptr->path = malloc(sizeof(char) * (strlen(this->path) + strlen("/dictionary[]") + strlen(ptr->VT->internalGetKey(ptr))) + 1);
-	sprintf(ptr->path, "%s/dictionary[%s]", this->path, ptr->VT->internalGetKey(ptr));
+	ptr->eContainer = this;
 }
 
 void
@@ -80,14 +78,12 @@ Instance_addFragmentDictionary(Instance * const this, FragmentDictionary *ptr)
 		PRINTF("ERROR: The FragmentDictionary cannot be added in Instance because the key is not defined\n");
 	} else {
 		if(this->fragmentDictionary == NULL) {
-			this->fragmentDictionary = hashmap_new();
+			this->fragmentDictionary = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->fragmentDictionary, internalKey, (void**)(&container)) == MAP_MISSING) {
 			/*container = (FragmentDictionary*)ptr;*/
 			if(hashmap_put(this->fragmentDictionary, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup(this->path);
-				ptr->path = malloc(sizeof(char) * (strlen(this->path) + strlen("/fragmentDictionary[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "%s/fragmentDictionary[%s]", this->path, internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: fragmentDictionary cannot be added!\n");
 			}
@@ -106,10 +102,7 @@ Instance_removeTypeDefinition(Instance * const this, TypeDefinition *ptr)
 void
 Instance_removeDictionary(Instance * const this, Dictionary *ptr)
 {
-	free(ptr->eContainer);
-	free(ptr->path);
 	ptr->eContainer = NULL;
-	ptr->path = NULL;
 	this->dictionary = NULL;
 }
 
@@ -123,10 +116,7 @@ Instance_removeFragmentDictionary(Instance * const this, FragmentDictionary *ptr
 	}
 	else {
 		if(hashmap_remove(this->fragmentDictionary, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: component %s cannot be removed!\n", internalKey);
 		}
@@ -172,7 +162,9 @@ Instance_visit(Instance * const this, char *parent, fptrVisitAction action, fptr
 
 	if(this->typeDefinition != NULL) {
 		if (visitPaths) {
-			sprintf(path, "%s/%s\\typeDefinition", parent, this->typeDefinition->path);
+			char* tmp_path = this->typeDefinition->VT->getPath(this->typeDefinition);
+			sprintf(path, "%s/%s\\typeDefinition", parent, tmp_path);
+			free(tmp_path);
 			action(path, REFERENCE, parent);
 		} else {
 			action("typeDefinition", SQBRACKET, NULL);
@@ -239,7 +231,7 @@ static void
 	}
 	/* Local references */
 	else {
-		char path[250];
+		char path[150];
 		memset(&path[0], 0, sizeof(path));
 		char token[100];
 		memset(&token[0], 0, sizeof(token));
@@ -375,6 +367,7 @@ const Instance_VT instance_VT = {
 		.super = &namedElement_VT,
 		.metaClassName = Instance_metaClassName,
 		.internalGetKey = Instance_internalGetKey,
+		.getPath = KMFContainer_get_path,
 		.visit = Instance_visit,
 		.findByPath = Instance_findByPath,
 		.delete = delete_Instance,

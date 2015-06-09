@@ -58,32 +58,37 @@ void Planner_compareModels(ContainerRoot *currModel, ContainerRoot *targetModel,
 	ModelTrace *trace;
 
 	list_init(adaptations);
-
+	
+	/* save the path for future usage */
+	char* targetNode_path = targetNode->VT->getPath(targetNode);
 	for (trace = list_head(traces->traces_list); trace != NULL; trace = list_item_next(trace)) {
 		/*PRINTF("INFO: Passing trace %s\n", trace->refName);*/
 
 		KMFContainer *modelElement = targetModel->VT->findByPath(targetModel, trace->srcPath);
 
 		if(!strcmp(trace->refName, "components"))
-		{
-			if(!strcmp(trace->srcPath, targetNode->path))
+		{			
+			if(!strcmp(trace->srcPath, targetNode_path))
 			{
 				if (trace->vt->getType() == ADD) {
 					KMFContainer *elemToAdd = targetModel->VT->findByPath(targetModel, ((ModelAddTrace*)trace)->previousPath);
-					if (!strcmp(elemToAdd->eContainer, targetNode->path)) {
+					char* container_path = get_eContainer_path(elemToAdd);
+					if (!strcmp(container_path, targetNode_path)) {
 						AdaptationModel_add(Planner_adapt(AddInstance, elemToAdd));
 					}
+					free(container_path);
 				} else if (trace->vt->getType() == REMOVE) {
 					KMFContainer *elemToAdd = currModel->VT->findByPath(currModel, ((ModelRemoveTrace*)trace)->objPath);
-					if (!strcmp(elemToAdd->eContainer, targetNode->path)) {
+					char* container_path = get_eContainer_path(elemToAdd);
+					if (!strcmp(container_path, targetNode_path)) {
 						AdaptationModel_add(Planner_adapt(StopInstance, elemToAdd));
 						AdaptationModel_add(Planner_adapt(RemoveInstance, elemToAdd));
 					}
+					free(container_path);
 				} else {
 					PRINTF("ERROR: Cannot cast ModelTrace!\n");
 				}
 			}
-
 		} else if(!strcmp(trace->refName, "started")) {
 			if (
 					(
@@ -95,26 +100,34 @@ void Planner_compareModels(ContainerRoot *currModel, ContainerRoot *targetModel,
 			) {
 				ModelSetTrace *modelsettrace = (ModelSetTrace*)trace;
 
-				if (!strcmp(modelsettrace->srcPath, targetNode->path)) {
+				if (!strcmp(modelsettrace->srcPath, targetNode_path)) {
 					PRINTF("HARAKIRI: %s\n", modelsettrace->vt->ToString(modelsettrace));
 				} else {
 					KMFContainer *comp = targetModel->VT->findByPath(targetModel, modelsettrace->srcPath);
-					if (comp != NULL && !strcmp(comp->eContainer, targetNode->path)) {
+					char* container_path = get_eContainer_path(comp);
+					if (comp != NULL && !strcmp(container_path, targetNode_path)) {
 						if (!strcmp(modelsettrace->content, "true")) {
 							AdaptationModel_add(Planner_adapt(StartInstance, modelElement));
 						} else {
 							AdaptationModel_add(Planner_adapt(StopInstance, modelElement));
 						}
 					}
+					free(container_path);
 				}
 			}
 		} else if(!strcmp(trace->refName, "value")) {
 			if (!strcmp(modelElement->VT->metaClassName(modelElement), "DictionaryValue")) {
-				KMFContainer *container = targetModel->VT->findByPath(targetModel, modelElement->eContainer);
-				KMFContainer *container2 = targetModel->VT->findByPath(targetModel, container->eContainer);
-				if (!strcmp(container2->eContainer, targetNode->path)) {
+				char* container_path = get_eContainer_path(modelElement);
+				KMFContainer *container = targetModel->VT->findByPath(targetModel, container_path);
+				free(container_path);
+				container_path = get_eContainer_path(container);
+				KMFContainer *container2 = targetModel->VT->findByPath(targetModel, container_path);
+				free(container_path);
+				container_path = get_eContainer_path(container2);
+				if (!strcmp(container_path, targetNode_path)) {
 					AdaptationModel_add(Planner_adapt(UpdateDictionaryInstance, container2));
 				}
+				free(container_path);
 				/*
 				 * Check why modelElement->eContainer->eContainer
 				 */
@@ -122,15 +135,19 @@ void Planner_compareModels(ContainerRoot *currModel, ContainerRoot *targetModel,
 		} else if (!strcmp(trace->refName, "typeDefinition")) {
 			if (!strcmp(modelElement->VT->metaClassName(modelElement), "ComponentInstance")) {
 				ComponentInstance *ci = (ComponentInstance*)modelElement;
-				if (!strcmp(ci->eContainer, targetNode->path)) {
+				char* container_path = get_eContainer_path(ci);
+				if (!strcmp(container_path, targetNode_path)) {
 					TypeDefinition *t = ci->typeDefinition;
 					DeployUnit *du = t->deployUnits;
 					AdaptationModel_add(Planner_adapt(AddDeployUnit, (KMFContainer*)du));
 				}
+				free(container_path);
 			}
 		}
 
 	}
+	/* free some memory */
+	free(targetNode_path);
 }
 
 list_t Planner_schedule()

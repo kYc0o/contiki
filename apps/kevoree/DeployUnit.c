@@ -66,7 +66,7 @@ DeployUnit_addRequiredLibs(DeployUnit * const this, DeployUnit *ptr)
 		PRINTF("The DeployUnit cannot be added in DeployUnit because the key is not defined\n");
 	} else {
 		if(this->requiredLibs == NULL) {
-			this->requiredLibs = hashmap_new();
+			this->requiredLibs = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->requiredLibs, internalKey, (void**)(&container)) == MAP_MISSING) {
 			hashmap_put(this->requiredLibs, internalKey, ptr);
@@ -210,7 +210,7 @@ static void
 	/* Local references */
 	else
 	{
-		char path[250];
+		char path[150];
 		memset(&path[0], 0, sizeof(path));
 		char token[100];
 		memset(&token[0], 0, sizeof(token));
@@ -312,6 +312,17 @@ static void
 	}
 }
 
+static char*
+DeployUnit_getPath(KMFContainer* kmf)
+{
+	DeployUnit* obj = (DeployUnit*)kmf;
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("deployUnits[]") + strlen(obj->VT->internalGetKey(obj)) + 1);
+	sprintf(r, "deployUnits[%s]", obj->VT->internalGetKey(obj));
+	free(tmp);
+	return r;
+}
+
 const DeployUnit_VT deployUnit_VT = {
 		.super = &namedElement_VT,
 		/*
@@ -320,6 +331,7 @@ const DeployUnit_VT deployUnit_VT = {
 		 */
 		.metaClassName = DeployUnit_metaClassName,
 		.internalGetKey = DeployUnit_internalGetKey,
+		.getPath = DeployUnit_getPath,
 		.visit = DeployUnit_visit,
 		.findByPath = DeployUnit_findByPath,
 		.delete = delete_DeployUnit,

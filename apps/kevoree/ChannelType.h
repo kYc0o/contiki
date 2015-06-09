@@ -19,6 +19,7 @@ typedef struct _ChannelType_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -34,13 +35,11 @@ typedef struct _ChannelType_VT {
 } ChannelType_VT;
 
 typedef struct _ChannelType {
-	ChannelType *next;
 	ChannelType_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * NamedElement
 	 */

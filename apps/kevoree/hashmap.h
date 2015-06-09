@@ -22,16 +22,19 @@ typedef void *any_t;
 
 /* We need to keep keys and values */
 typedef struct _hashmap_element{
-	char* key;
-	int in_use;
 	any_t data;
 } hashmap_element;
+
+/*
+ * Used to compute an element key
+ */
+typedef char* (*PFgetKey)(any_t);
 
 /* A hashmap has some maximum size and current size,
  * as well as the data to hold. */
 typedef struct _hashmap_map{
 	int table_size;
-	int size;
+	PFgetKey getKey;
 	hashmap_element *data;
 } hashmap_map;
 
@@ -51,7 +54,7 @@ typedef any_t map_t;
 /*
  * Return an empty hashmap. Returns NULL if empty.
 */
-extern map_t hashmap_new();
+extern map_t hashmap_new(PFgetKey getKey);
 
 /*
  * Iteratively call f with argument (item, data) for

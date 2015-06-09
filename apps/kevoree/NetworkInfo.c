@@ -51,13 +51,11 @@ NetworkInfo_addValues(NetworkInfo * const this, NetworkProperty *ptr)
 		PRINTF("ERROR: The NetworkProperty cannot be added in NetworkInfo because the key is not defined\n");
 	} else {
 		if(this->values == NULL) {
-			this->values = hashmap_new();
+			this->values = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->values, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->values, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup(this->path);
-				ptr->path = malloc(sizeof(char) * (strlen(this->path) + strlen("/values[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "%s/values[%s]", this->path, internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: value cannot be added!\n");
 			}
@@ -76,10 +74,7 @@ NetworkInfo_removeValues(NetworkInfo * const this, NetworkProperty *ptr)
 		PRINTF("ERROR: The NetworkProperty cannot be removed in NetworkInfo because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->values, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: value %s cannot be removed!\n", internalKey);
 		}
@@ -154,7 +149,7 @@ static void
 {
 	/* NamedElement attributes */
 	/* Local references */
-	char path[250];
+	char path[150];
 	memset(&path[0], 0, sizeof(path));
 	char token[100];
 	memset(&token[0], 0, sizeof(token));
@@ -255,6 +250,17 @@ static void
 	}
 }
 
+static char*
+NetworkInfo_getPath(KMFContainer* kmf)
+{
+	NetworkInfo* obj = (NetworkInfo*)kmf;
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("/networkInformation[]") + strlen(obj->VT->internalGetKey(obj)) + 1);
+	sprintf(r, "%s/networkInformation[%s]", tmp, obj->VT->internalGetKey(obj));
+	free(tmp);
+	return r;
+}
+
 const NetworkInfo_VT networkInfo_VT = {
 		.super = &namedElement_VT,
 		/*
@@ -263,6 +269,7 @@ const NetworkInfo_VT networkInfo_VT = {
 		 */
 		.metaClassName = NetworkInfo_metaClassName,
 		.internalGetKey = NetworkInfo_internalGetKey,
+		.getPath = NetworkInfo_getPath,
 		.visit = NetworkInfo_visit,
 		.findByPath = NetworkInfo_findByPath,
 		.delete = delete_NetworkInfo,

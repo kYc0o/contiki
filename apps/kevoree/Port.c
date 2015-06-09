@@ -87,7 +87,7 @@ Port_addBindings(Port * const this, MBinding *ptr)
 	{
 		if(this->bindings == NULL)
 		{
-			this->bindings = hashmap_new();
+			this->bindings = hashmap_new(get_key_for_hashmap);
 		}
 
 		if(hashmap_get(this->bindings, internalKey, (void**)(&container)) == MAP_MISSING)
@@ -156,7 +156,9 @@ Port_visit(Port * const this, char *parent, fptrVisitAction action, fptrVisitAct
 
 	if(this->portTypeRef != NULL) {
 		if (visitPaths) {
-			sprintf(path,"%s/%s\\portTypeRef", parent, this->portTypeRef->path);
+			char* ref_path = this->portTypeRef->VT->getPath(this->portTypeRef);
+			sprintf(path,"%s/%s\\portTypeRef", parent, ref_path);
+			free(ref_path);
 			action(path, REFERENCE, parent);
 		} else {
 			action("portTypeRef", SQBRACKET, NULL);
@@ -178,7 +180,7 @@ static void
 
 	/* NamedElement */
 	/* Local references */
-	char path[250];
+	char path[150];
 	memset(&path[0], 0, sizeof(path));
 	char token[100];
 	memset(&token[0], 0, sizeof(token));
@@ -277,6 +279,34 @@ static void
 	}
 }
 
+static char*
+Port_getPath(KMFContainer* kmf)
+{
+	any_t any;
+	Port* obj = (Port*)kmf;
+	char* internalKey = obj->VT->internalGetKey(obj);
+	
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	
+	ComponentInstance* container = (ComponentInstance*)obj->eContainer;
+	if (hashmap_get(container->provided, internalKey, (void**)(&any)) == MAP_OK) {
+		char* r = (char*)malloc(strlen(tmp) + strlen("/provided[]") + strlen(internalKey) + 1);
+		sprintf(r, "%s/provided[%s]", tmp, internalKey);
+		free(tmp);
+		return r;
+	}
+	else if (hashmap_get(container->required, internalKey, (void**)(&any)) == MAP_OK) {
+		char* r = (char*)malloc(strlen(tmp) + strlen("/required[]") + strlen(internalKey) + 1);
+		sprintf(r, "%s/required[%s]", tmp, internalKey);
+		free(tmp);
+		return r;
+	}
+	else {
+		free(tmp);
+		return strdup("");
+	}
+}
+
 const Port_VT port_VT = {
 		.super = &namedElement_VT,
 		/*
@@ -284,6 +314,7 @@ const Port_VT port_VT = {
 		 */
 		.metaClassName = Port_metaClassName,
 		.internalGetKey = Port_internalGetKey,
+		.getPath = Port_getPath,
 		.visit = Port_visit,
 		.findByPath = Port_findByPath,
 		.delete = delete_Port,

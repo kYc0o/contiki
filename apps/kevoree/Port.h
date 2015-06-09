@@ -26,6 +26,7 @@ typedef struct _Port_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -40,13 +41,11 @@ typedef struct _Port_VT {
 } Port_VT;
 
 typedef struct _Port {
-	Port *next;
 	Port_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * NamedElement
 	 */

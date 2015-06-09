@@ -241,13 +241,11 @@ ContainerRoot_addNodes(ContainerRoot * const this, ContainerNode *ptr)
 		PRINTF("ERROR :The ContainerNode cannot be added in ContainerRoot because the key is not defined\n");
 	} else {
 		if(this->nodes == NULL) {
-			this->nodes = hashmap_new();
+			this->nodes = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->nodes, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->nodes, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup("");
-				ptr->path = malloc(sizeof(char) * (strlen("nodes[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "nodes[%s]", internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: Node cannot be added!\n");
 			}
@@ -268,14 +266,12 @@ ContainerRoot_addTypeDefinitions(ContainerRoot * const this, TypeDefinition *ptr
 		PRINTF("ERROR: The TypeDefinition cannot be added in ContainerRoot because the key is not defined\n");
 	} else {
 		if(this->typeDefinitions == NULL) {
-			this->typeDefinitions = hashmap_new();
+			this->typeDefinitions = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->typeDefinitions, internalKey, (void**)(&container)) == MAP_MISSING) {
 			/*container = (TypeDefinition*)ptr;*/
 			if(hashmap_put(this->typeDefinitions, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup("");
-				ptr->path = malloc(sizeof(char) * (strlen("typeDefinitions[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "typeDefinitions[%s]", internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: TypeDefinition cannot be added!\n");
 			}
@@ -296,13 +292,11 @@ ContainerRoot_addRepositories(ContainerRoot * const this, Repository *ptr)
 		PRINTF("ERROR :The Repository cannot be added in ContainerRoot because the key is not defined\n");
 	} else {
 		if(this->repositories == NULL) {
-			this->repositories = hashmap_new();
+			this->repositories = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->repositories, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->repositories, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup("");
-				ptr->path = malloc(sizeof(char) * (strlen("repositories[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "repositories[%s]", internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: Repository cannot be added!\n");
 			}
@@ -323,13 +317,11 @@ ContainerRoot_addDataTypes(ContainerRoot * const this, TypedElement *ptr)
 		PRINTF("ERROR: The TypedElement cannot be added in ContainerRoot because the key is not defined\n");
 	} else {
 		if(this->dataTypes == NULL) {
-			this->dataTypes = hashmap_new();
+			this->dataTypes = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->dataTypes, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->dataTypes, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup("");
-				ptr->path = malloc(sizeof(char) * (strlen("dataTypes[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "dataTypes[%s]", internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: TypedElement cannot be added!\n");
 			}
@@ -350,13 +342,11 @@ ContainerRoot_addLibraries(ContainerRoot * const this, TypeLibrary *ptr)
 		PRINTF("ERROR: The TypeLibrary cannot be added in ContainerRoot because the key is not defined\n");
 	} else {
 		if(this->libraries == NULL) {
-			this->libraries = hashmap_new();
+			this->libraries = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->libraries, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->libraries, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup("");
-				ptr->path = malloc(sizeof(char) * (strlen("dataTypes[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "dataTypes[%s]", internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: TypeLibrary cannot be added!\n");
 			}
@@ -377,13 +367,11 @@ static ContainerRoot_addHubs(ContainerRoot * const this, Channel *ptr)
 		PRINTF("ERROR: The Channel cannot be added in ContainerRoot because the key is not defined\n");
 	} else {
 		if(this->hubs == NULL) {
-			this->hubs = hashmap_new();
+			this->hubs = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->hubs, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->hubs, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup("");
-				ptr->path = malloc(sizeof(char) * (strlen("hubs[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "hubs[%s]", internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: Channel cannot be added!\n");
 			}
@@ -404,13 +392,11 @@ ContainerRoot_addBindings(ContainerRoot * const this, MBinding *ptr)
 		PRINTF("ERROR: The MBinding cannot be added in ContainerRoot because the key is not defined\n");
 	} else {
 		if(this->mBindings == NULL) {
-			this->mBindings = hashmap_new();
+			this->mBindings = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->mBindings, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->mBindings, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup("");
-				ptr->path = malloc(sizeof(char) * (strlen("mBindings[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "mBindings[%s]", internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: MBinding cannot be added!\n");
 			}
@@ -432,12 +418,10 @@ ContainerRoot_addDeployUnits(ContainerRoot * const this, DeployUnit *ptr)
 		PRINTF("ERROR: The DeployUnit cannot be added in ContainerRoot because the key is not defined\n");
 	} else {
 		if(this->deployUnits == NULL) {
-			this->deployUnits = hashmap_new();
+			this->deployUnits = hashmap_new(get_key_for_hashmap);
 		} if(hashmap_get(this->deployUnits, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->deployUnits, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup("");
-				ptr->path = malloc(sizeof(char) * (strlen("deployUnits[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "deployUnits[%s]", internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: DeployUnit cannot be added!\n");
 			}
@@ -458,13 +442,11 @@ ContainerRoot_addNodeNetworks(ContainerRoot * const this, NodeNetwork *ptr)
 		PRINTF("ERROR: The NodeNetwork cannot be added in ContainerRoot because the key is not defined\n");
 	} else {
 		if(this->nodeNetworks == NULL) {
-			this->nodeNetworks = hashmap_new();
+			this->nodeNetworks = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->nodeNetworks, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->nodeNetworks, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup("");
-				ptr->path = malloc(sizeof(char) * (strlen("nodeNetworks[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "nodeNetworks[%s]", internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: NodeNetwork cannot be added!\n");
 			}
@@ -485,13 +467,11 @@ ContainerRoot_addGroups(ContainerRoot * const this, Group *ptr)
 		PRINTF("ERROR: The Group cannot be added in ContainerRoot because the key is not defined\n");
 	} else {
 		if(this->groups == NULL) {
-			this->groups = hashmap_new();
+			this->groups = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->groups, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->groups, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup("");
-				ptr->path = malloc(sizeof(char) * (strlen("groups[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "groups[%s]", internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: Group cannot be added!\n");
 			}
@@ -510,10 +490,7 @@ ContainerRoot_removeNodes(ContainerRoot * const this, ContainerNode *ptr)
 		PRINTF("ERROR: The ContainerNode cannot be removed in ContainerRoot because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->nodes, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: Cannot remove %s from nodes!\n", internalKey);
 		}
@@ -529,10 +506,7 @@ ContainerRoot_removeTypeDefinitions(ContainerRoot * const this, TypeDefinition *
 		PRINTF("ERROR: The TypeDefinition cannot be removed in ContainerRoot because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->typeDefinitions, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: Cannot remove %s from typeDefinitions!\n", internalKey);
 		}
@@ -548,11 +522,7 @@ ContainerRoot_removeRepositories(ContainerRoot * const this, Repository *ptr)
 		PRINTF("ERROR: The Repository cannot be removed in ContainerRoot because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->repositories, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
-
 		} else {
 			PRINTF("ERROR: Cannot remove %s from repositories!\n", internalKey);
 		}
@@ -567,10 +537,7 @@ ContainerRoot_removeDataTypes(ContainerRoot * const this, TypedElement *ptr)
 		PRINTF("ERROR: The TypedElement cannot be removed in ContainerRoot because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->dataTypes, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: Cannot remove %s from dataTypes!\n", internalKey);
 		}
@@ -586,10 +553,7 @@ ContainerRoot_removeLibraries(ContainerRoot * const this, TypeLibrary *ptr)
 		PRINTF("ERROR: The TypeLibrary cannot be removed in ContainerRoot because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->libraries, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: Cannot remove %s from libraries!\n", internalKey);
 		}
@@ -605,10 +569,7 @@ ContainerRoot_removeHubs(ContainerRoot * const this, Channel *ptr)
 		PRINTF("ERROR: The Channel cannot be removed in ContainerRoot because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->hubs, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: Cannot remove %s from hubs!\n", internalKey);
 		}
@@ -624,10 +585,7 @@ ContainerRoot_removeBindings(ContainerRoot * const this, MBinding *ptr)
 		PRINTF("ERROR: The MBinding cannot be removed in ContainerRoot because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->mBindings, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: Cannot remove %s from hubs!\n", internalKey);
 		}
@@ -643,10 +601,8 @@ ContainerRoot_removeDeployUnits(ContainerRoot * const this,  DeployUnit *ptr)
 		PRINTF("ERROR: The DeployUnit cannot be removed in ContainerRoot because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->deployUnits, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
 			free(internalKey);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: Cannot remove %s from deployUnits!\n", internalKey);
 		}
@@ -662,10 +618,7 @@ ContainerRoot_removeNodeNetworks(ContainerRoot * const this, NodeNetwork *ptr)
 		PRINTF("ERROR: The NodeNetwork cannot be removed in ContainerRoot because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->nodeNetworks, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: Cannot remove %s from nodeNetworks!\n", internalKey);
 		}
@@ -681,10 +634,7 @@ ContainerRoot_removeGroups(ContainerRoot * const this, Group *ptr)
 		PRINTF("ERROR: The Group cannot be removed in ContainerRoot because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->groups, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: Cannot remove %s from groups!\n", internalKey);
 		}
@@ -951,7 +901,7 @@ static void
 	} else if (!strcmp("\\generated_KMF_ID", _path)) {
 		return this->generated_KMF_ID;
 	} else {
-		char path[250];
+		char path[150];
 		memset(&path[0], 0, sizeof(path));
 		char token[100];
 		memset(&token[0], 0, sizeof(token));
@@ -1143,6 +1093,7 @@ ContainerRoot_VT containerRoot_VT = {
 		.super = &KMF_VT,
 		.metaClassName = ContainerRoot_metaClassName,
 		.internalGetKey = ContainerRoot_internalGetKey,
+		.getPath = KMFContainer_get_path,
 		.visit = ContainerRoot_visit,
 		.findByPath = ContainerRoot_findByPath,
 		.delete = delete_ContainerRoot,

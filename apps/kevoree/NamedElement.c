@@ -72,6 +72,7 @@ const NamedElement_VT namedElement_VT = {
 		 */
 		.metaClassName = NamedElement_metaClassName,
 		.internalGetKey = NamedElement_internalGetKey,
+		.getPath = KMFContainer_get_path,
 		.visit = NamedElement_visit,
 		.findByPath = NamedElement_findByPath,
 		.delete = delete_NamedElement

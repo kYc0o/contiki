@@ -13,6 +13,7 @@ typedef struct _Repository_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -22,13 +23,11 @@ typedef struct _Repository_VT {
 } Repository_VT;
 
 typedef struct _Repository {
-	Repository *next;
 	Repository_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * Repository
 	 */
