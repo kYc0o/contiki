@@ -77,8 +77,11 @@ static void
 process_light()
 {
   int light_val = light_sensor.value(0);
-  float light = ((float)light_val) / LIGHT_SENSOR_VALUE_SCALE;
-  printf("light: %f lux\n", light);
+  /*
+   * TODO fix cast
+   */
+  /*float light = (float)light_val / LIGHT_SENSOR_VALUE_SCALE;*/
+  printf("light: %d lux\n", light_val);
 }
 
 
