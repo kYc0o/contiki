@@ -23,6 +23,7 @@ typedef struct _NodeNetwork_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -39,13 +40,11 @@ typedef struct _NodeNetwork_VT {
 } NodeNetwork_VT;
 
 typedef struct _NodeNetwork {
-	NodeNetwork *next;
 	NodeNetwork_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * NodeNetwork
 	 */

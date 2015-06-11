@@ -47,7 +47,7 @@
 #define PRINTF(...)
 #endif
 
-
+#define CURRENT_MODEL_SIZE 2375
 
 /**as
  * The Kevoree runtime for contiki includes a set of processes
@@ -108,9 +108,7 @@ static struct Runtime {
 	ContainerRoot *tmp_newModel;
 } runtime;
 
-
-
-static const char *DEFAULTMODEL = "{\"eClass\" : \"org.kevoree.ContainerRoot\",\"generated_KMF_ID\" : \"BXX5q3eV\",\"nodes\" : [{\"eClass\" : \"org.kevoree.ContainerNode\",\"name\" : \"n1759\",\"metaData\" : \"\",\"started\" : \"1\",\"components\" : [],\"hosts\" : [],\"host\" : [],\"groups\" : [\"groups[group0]\"],\"networkInformation\" : [{\"eClass\" : \"org.kevoree.NetworkInfo\",\"name\" : \"ip\",\"values\" : [{\"eClass\" : \"org.kevoree.NetworkProperty\",\"name\" : \"front\",\"value\" : \"m3-XX.lille.iotlab.info\"},{\"eClass\" : \"org.kevoree.NetworkProperty\",\"name\" : \"local\",\"value\" : \"fe80:0000:0000:0000:0323:4501:4471:0343\"}]}],\"typeDefinition\" : [\"typeDefinitions[ContikiNode/0.0.1]\"],\"dictionary\" : [],\"fragmentDictionary\" : []}],\"typeDefinitions\" : [{\"eClass\" : \"org.kevoree.NodeType\",\"name\" : \"ContikiNode\",\"version\" : \"0.0.1\",\"factoryBean\" : \"\",\"bean\" : \"\",\"abstract\" : \"0\",\"deployUnit\" : [\"deployUnits[org.kevoree.library.c//kevoree-contiki-node/0.0.1]\"],\"dictionaryType\" : [{\"eClass\" : \"org.kevoree.DictionaryType\",\"generated_KMF_ID\" : \"o8AVQY3e\",\"attributes\" : []}],\"superTypes\" : []},{\"eClass\" : \"org.kevoree.GroupType\",\"name\" : \"CoAPGroup\",\"version\" : \"0.0.1\",\"factoryBean\" : \"\",\"bean\" : \"\",\"abstract\" : \"0\",\"deployUnit\" : [\"deployUnits[//kevoree-group-coap/0.0.1]\"],\"dictionaryType\" : [{\"eClass\" : \"org.kevoree.DictionaryType\",\"generated_KMF_ID\" : \"3dddTFpd\",\"attributes\" : [{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"proxy_port\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"int\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"20000\"},{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"port\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"number\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"\"},{\"eClass\" : \"org.kevoree.DictionaryAttribute\",\"name\" : \"path\",\"optional\" : \"1\",\"state\" : \"0\",\"datatype\" : \"string\",\"fragmentDependant\" : \"1\",\"defaultValue\" : \"\"}]}],\"superTypes\" : []}],\"repositories\" : [],\"dataTypes\" : [],\"libraries\" : [{\"eClass\" : \"org.kevoree.TypeLibrary\",\"name\" : \"ContikiLib\",\"subTypes\" : [\"typeDefinitions[ContikiNode/0.0.1]\",\"typeDefinitions[CoAPGroup/0.0.1]\"]},{\"eClass\" : \"org.kevoree.TypeLibrary\",\"name\" : \"Default\",\"subTypes\" : []}],\"hubs\" : [],\"mBindings\" : [],\"deployUnits\" : [{\"eClass\" : \"org.kevoree.DeployUnit\",\"name\" : \"kevoree-group-coap\",\"groupName\" : \"\",\"version\" : \"0.0.1\",\"url\" : \"\",\"hashcode\" : \"\",\"type\" : \"ce\"},{\"eClass\" : \"org.kevoree.DeployUnit\",\"name\" : \"kevoree-contiki-node\",\"groupName\" : \"org.kevoree.library.c\",\"version\" : \"0.0.1\",\"url\" : \"\",\"hashcode\" : \"\",\"type\" : \"ce\"}],\"nodeNetworks\" : [],\"groups\" : [{\"eClass\" : \"org.kevoree.Group\",\"name\" : \"group0\",\"metaData\" : \"\",\"started\" : \"1\",\"subNodes\" : [\"nodes[n1759]\"],\"typeDefinition\" : [\"typeDefinitions[CoAPGroup/0.0.1]\"],\"dictionary\" : [],\"fragmentDictionary\" : [{\"eClass\" : \"org.kevoree.FragmentDictionary\",\"generated_KMF_ID\" : \"VEj2RlNr\",\"name\" : \"contiki-node\",\"values\" : []}]}]}";
+static char *current_model;
 
 /* kevoree event types */
 static process_event_t NEW_KEV_TYPE;
@@ -157,7 +155,7 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 		PROCESS_WAIT_EVENT();
 		if (ev == NEW_ADAPTATION_MODEL) {
 			PRINTF("INFO: Starting adaptations\n");
-			
+
 			if (list_length(plannedAdaptations) > 0) {
 				ap = list_pop(plannedAdaptations);
 				processTrace(ap);
@@ -166,10 +164,11 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			else {
 				// TODO remove old model
 				// update current model
+				//runtime.currentModel->VT->delete(runtime.currentModel);
 				runtime.currentModel = runtime.tmp_newModel;
 				runtime.tmp_newModel = NULL;
 				// notify we have a new model
-				disseminateTheModel(runtime.currentModel);
+				//disseminateTheModel(runtime.currentModel);
 			}
 		}
 		else if (ev == DEPLOY_UNIT_DOWNLOADED) {
@@ -189,10 +188,11 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			else {
 				// TODO remove old model
 				// update current model
+				//runtime.currentModel->VT->delete(runtime.currentModel);
 				runtime.currentModel = runtime.tmp_newModel;
 				runtime.tmp_newModel = NULL;
 				// notify we have a new model
-				disseminateTheModel(runtime.currentModel);
+				//disseminateTheModel(runtime.currentModel);
 			}
 		}
 		else if (ev == ADAPTATION_EXECUTED) {
@@ -205,10 +205,11 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			else {
 				// TODO remove old model
 				// update current model
+				//runtime.currentModel->VT->delete(runtime.currentModel);
 				runtime.currentModel = runtime.tmp_newModel;
 				runtime.tmp_newModel = NULL;
 				// notify we have a new model
-				disseminateTheModel(runtime.currentModel);
+				//disseminateTheModel(runtime.currentModel);
 			}
 		}
 	}
@@ -254,16 +255,13 @@ processTrace(AdaptationPrimitive *ap) {
 		int i;
 		for(i = 0; i< m->table_size; i++)
 		{
-			if(m->data[i].in_use != 0)
-			{
-				any_t data = (any_t) (m->data[i].data);
-				DictionaryValue* n = data;
-				PRINTF("INFO: DictionaryValue %s -> %s\n", n->name, n->value);
-				pair = (struct DictionaryPair*)malloc(sizeof(struct DictionaryPair));
-				pair->key = strdup(n->name);
-				pair->value = strdup(n->value);
-				list_add(e->dictionary, pair);
-			}
+			any_t data = (any_t) (m->data[i].data);
+			DictionaryValue* n = data;
+			PRINTF("INFO: DictionaryValue %s -> %s\n", n->name, n->value);
+			pair = (struct DictionaryPair*)malloc(sizeof(struct DictionaryPair));
+			pair->key = strdup(n->name);
+			pair->value = strdup(n->value);
+			list_add(e->dictionary, pair);
 		}
 		process_post(&kev_model_installer, ADAPTATION_EXECUTED, NULL);
 		break;
@@ -300,36 +298,40 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 		PRINTF("Here a new model is coming\n");
 		if (newModel != NULL && runtime.currentModel != NULL) {
 			// char *traces;
-			TraceSequence *ts = ModelCompare(newModel, runtime.currentModel, "n1759");
+			TraceSequence *ts = ModelCompare(newModel, runtime.currentModel, runtime.node_name);
 
 			list_init(plannedAdaptations);
 
-			Planner_compareModels(runtime.currentModel, newModel, "n1759", ts);
-			plannedAdaptations = Planner_schedule();
-
-			if (plannedAdaptations != NULL) {
-				int adaptListLength = list_length(plannedAdaptations);
-				PRINTF("INFO: Number of adaptations: %d\n", adaptListLength);
-				AdaptationPrimitive *c;
-				for (c = list_head(plannedAdaptations); c != NULL; c = list_item_next(c)) {
-					PRINTF("%s: Priority: %d Type: %d\n", c->ref->path, Priority_Primitives(c->primitiveType), c->primitiveType);
-				}
-			} else {
-				PRINTF("ERROR: cannot create Adaptation primitives\n");
-				continue;
-			}
-
+			Planner_compareModels(runtime.currentModel, newModel, runtime.node_name, ts);
+			/*ts->delete(ts);*/
 			ModelTrace *mt;
 			while (list_length(ts->traces_list)) {
 				mt = list_pop(ts->traces_list);
-#ifdef DEBUG
+				/*#ifdef DEBUG
 				char *trace;
 				trace = mt->vt->ToString(mt);
 				PRINTF("%s", trace);
 				free(trace);
-#endif
+#endif*/
 				mt->vt->Delete(mt);
 			}
+
+			runtime.currentModel->VT->delete(runtime.currentModel);
+			plannedAdaptations = Planner_schedule();
+
+			if (plannedAdaptations != NULL) {
+				int adaptListLength = list_length(plannedAdaptations);
+				printf("INFO: Number of adaptations: %d\n", adaptListLength);
+				AdaptationPrimitive *c;
+				for (c = list_head(plannedAdaptations); c != NULL; c = list_item_next(c)) {
+					printf("INFO: %s: Priority: %d Type: %d\n", c->ref->VT->getPath(c->ref), Priority_Primitives(c->primitiveType), c->primitiveType);
+				}
+			} else {
+				printf("ERROR: cannot create Adaptation primitives\n");
+				continue;
+			}
+
+
 			// save the model for latter usage
 			runtime.tmp_newModel = newModel;
 			// adapt the system
@@ -353,35 +355,47 @@ int initKevRuntime(const char* nodeName, const DeployUnitRetriver* retriever)
 	LIST_STRUCT_INIT(&runtime, types);
 	LIST_STRUCT_INIT(&runtime, instances);
 	LIST_STRUCT_INIT(&runtime, deployUnits);	
-	
+
 	if (nodeName == NULL) return -1;
 
 	sprintf(runtime.node_name, "n%s", nodeName);
-	
+
 	runtime.deployUnitRetriever = (DeployUnitRetriver*)retriever;
 	runtime.tmp_newModel = NULL;
-	
+
 	retriever->init();
 
-	/* let's assign the empty model as the current model */
+	/* let's assign the empty model as the current model
+	current_model = malloc(CURRENT_MODEL_SIZE);
+	sprintf(current_model, "{\"eClass\":\"org.kevoree.ContainerRoot\",\"generated_KMF_ID\":\"CtHbJw37\",\"nodes\":[{\"eClass\":\"org.kevoree.ContainerNode\",\"name\":\"%s\",\"started\":\"true\",\"metaData\":\"\",\"typeDefinition\":[\"typeDefinitions[ContikiNode/0.0.1]\"],\"hosts\":[],\"host\":[],\"groups\":[\"groups[group0]\"],\"dictionary\":[],\"fragmentDictionary\":[],\"components\":[],\"networkInformation\":[{\"eClass\":\"org.kevoree.NetworkInfo\",\"name\":\"ip\",\"values\":[{\"eClass\":\"org.kevoree.NetworkProperty\",\"name\":\"lo\",\"value\":\"fe80::3554\"}]}]}],\"typeDefinitions\":[{\"eClass\":\"org.kevoree.NodeType\",\"abstract\":\"false\",\"bean\":\"\",\"name\":\"ContikiNode\",\"factoryBean\":\"\",\"version\":\"0.0.1\",\"deployUnit\":[\"deployUnits[org.kevoree.library.c//kevoree-contiki-node/0.0.1]\"],\"superTypes\":[],\"dictionaryType\":[]},{\"eClass\":\"org.kevoree.GroupType\",\"abstract\":\"false\",\"bean\":\"\",\"name\":\"UDPGroup\",\"factoryBean\":\"\",\"version\":\"0.0.1\",\"deployUnit\":[\"deployUnits[//kevoree-group-udp/0.0.1]\"],\"superTypes\":[],\"dictionaryType\":[{\"eClass\":\"org.kevoree.DictionaryType\",\"generated_KMF_ID\":\"3dddTFpd\",\"attributes\":[{\"eClass\":\"org.kevoree.DictionaryAttribute\",\"fragmentDependant\":\"false\",\"optional\":\"false\",\"name\":\"port\",\"state\":\"true\",\"datatype\":\"int\",\"defaultValue\":\"1234\",\"genericTypes\":[]}]}]}],\"repositories\":[{\"eClass\":\"org.kevoree.Repository\",\"url\":\"[aaaa::1]:1234\"}],\"dataTypes\":[],\"libraries\":[{\"eClass\":\"org.kevoree.TypeLibrary\",\"name\":\"ContikiLib\",\"subTypes\":[\"typeDefinitions[ContikiNode/0.0.1]\",\"typeDefinitions[UDPGroup/0.0.1]\"]}],\"hubs\":[],\"mBindings\":[],\"deployUnits\":[{\"eClass\":\"org.kevoree.DeployUnit\",\"groupName\":\"\",\"name\":\"kevoree-group-udp\",\"hashcode\":\"\",\"type\":\"ce\",\"url\":\"\",\"version\":\"0.0.1\",\"requiredLibs\":[]},{\"eClass\":\"org.kevoree.DeployUnit\",\"groupName\":\"org.kevoree.library.c\",\"name\":\"kevoree-contiki-node\",\"hashcode\":\"\",\"type\":\"ce\",\"url\":\"\",\"version\":\"0.0.1\",\"requiredLibs\":[]}],\"nodeNetworks\":[],\"groups\":[{\"eClass\":\"org.kevoree.Group\",\"name\":\"group0\",\"started\":\"true\",\"metaData\":\"\",\"typeDefinition\":[\"typeDefinitions[UDPGroup/0.0.1]\"],\"subNodes\":[\"nodes[%s]\"],\"dictionary\":[{\"eClass\":\"org.kevoree.Dictionary\",\"generated_KMF_ID\":\"0.26062655518762771432122795371\",\"values\":[{\"eClass\":\"org.kevoree.DictionaryValue\",\"name\":\"port\",\"value\":\"1234\"}]}],\"fragmentDictionary\":[{\"eClass\":\"org.kevoree.FragmentDictionary\",\"name\":\"%s\",\"generated_KMF_ID\":\"\",\"values\":[{\"eClass\":\"org.kevoree.DictionaryValue\",\"name\":\"port\",\"value\":\"1234\"}]}]}]}", runtime.node_name, runtime.node_name, runtime.node_name);
+
+	int fd;
+	if ((fd = cfs_open("current_model.json", CFS_READ)) != -1) {
+		printf("INFO: current_model.json already present! \n");
+		cfs_close(fd);
+	} else {
+		printf("INFO: creating current_model.json\n");
+		cfs_close(fd);
+		fd = cfs_open("current_model.json", CFS_WRITE);
+		cfs_write(fd, current_model, strlen(current_model));
+		cfs_close(fd);
+	}
+	free(current_model);*/
+
 	struct jsonparse_state jsonState;
-
-	int fd = cfs_open("file.txt", CFS_WRITE);
-	cfs_write(fd, DEFAULTMODEL, strlen(DEFAULTMODEL));
-	cfs_close(fd);
-
-	jsonparse_setup(&jsonState, "file.txt");
+	jsonparse_setup(&jsonState, "current_model.json");
 	runtime.currentModel = JSONKevDeserializer(&jsonState, jsonparse_next(&jsonState));
 	cfs_close(jsonState.fd);
-	cfs_remove("file.txt");
 
-	if (runtime.currentModel == NULL)
+	if (runtime.currentModel == NULL) {
+		printf("ERROR: runtime creation failed!\n");
 		return ERR_KEV_INIT_FAILURE;
+	}
 
 	/* start support protothreads */
 	process_start(&kev_model_listener, NULL);
 	process_start(&kev_model_installer, NULL);
-	
+
 	printf("Node Runtime %s initialized\n", runtime.node_name);
 
 	return 0;
@@ -541,6 +555,15 @@ stopInstance(const char* instanceName)
 	return -1;
 }
 
+int
+updateInstance(const char *instanceName)
+{
+	/*
+	 * TODO Update parameters
+	 */
+	return -1;
+}
+
 /* dealing with deploy units */
 void notifyDeployUnitDownloaded(const char* fileName)
 {
@@ -552,7 +575,7 @@ void loadElfFile(const char* filename)
 {
 	int fdFile;
 	uint32_t received;
-	
+
 	/* sanity check */
 	if (filename == NULL) {
 		printf("ERROR: Why are you trying to load a (null) file as an elf at %s:%d\n",__FILE__,__LINE__);
@@ -575,7 +598,7 @@ void loadElfFile(const char* filename)
 
 	// execute the program
 	if (ELFLOADER_OK == received) {
-		PRINTF("tRYING TO EXECUTE AUTOSTART PROCESSES\n");
+		PRINTF("TRYING TO EXECUTE AUTOSTART PROCESSES\n");
 		if (elfloader_autostart_processes) {
 			PRINTF("EXECUTING AUTOSTART PROCESSES\n");
 			//PRINT_PROCESSES(elfloader_autostart_processes);

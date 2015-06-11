@@ -19,6 +19,7 @@ typedef struct _TypedElement_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -31,13 +32,11 @@ typedef struct _TypedElement_VT {
 } TypedElement_VT;
 
 typedef struct _TypedElement {
-	TypedElement *next;
 	TypedElement_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * NamedElement
 	 */
@@ -54,6 +53,8 @@ void initTypedElement(TypedElement * const this);
 TypedElement *TypedElement_findGenericTypesByID(TypedElement * const this, char *id);
 void TypedElement_addGenericTypes(TypedElement * const this, TypedElement *ptr);
 void TypedElement_removeGenericTypes(TypedElement * const this, TypedElement *ptr);
+
+char* TypedElement_getPath(KMFContainer* kmf);
 
 extern const TypedElement_VT typedElement_VT;
 

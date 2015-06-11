@@ -79,16 +79,14 @@ NodeLink_addNetworkProperties(NodeLink * const this, NetworkProperty *ptr)
 	{
 		if(this->networkProperties == NULL)
 		{
-			this->networkProperties = hashmap_new();
+			this->networkProperties = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->networkProperties, internalKey, (void**)(&container)) == MAP_MISSING)
 		{
 			/*container = (NetworkProperty*)ptr;*/
 			if(hashmap_put(this->networkProperties, internalKey, ptr) == MAP_OK)
 			{
-				ptr->eContainer = strdup(this->path);
-				ptr->path = malloc(sizeof(char) * (strlen(this->path) + strlen("/networkProperties[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "%s/networkProperties[%s]", this->path, internalKey);
+				ptr->eContainer = this;
 			}
 		}
 	}
@@ -107,10 +105,7 @@ NodeLink_removeNetworkProperties(NodeLink * const this, NetworkProperty *ptr)
 	{
 		if(hashmap_remove(this->networkProperties, internalKey) == MAP_OK)
 		{
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		}
 	}
 }
@@ -212,7 +207,7 @@ static void
 	/* Local references */
 	else
 	{
-		char path[250];
+		char path[150];
 		memset(&path[0], 0, sizeof(path));
 		char token[100];
 		memset(&token[0], 0, sizeof(token));
@@ -319,6 +314,7 @@ const NodeLink_VT nodeLink_VT = {
 		 */
 		.metaClassName = NodeLink_metaClassName,
 		.internalGetKey = NodeLink_internalGetKey,
+		.getPath = KMFContainer_get_path,
 		.visit = NodeLink_visit,
 		.findByPath = NodeLink_findByPath,
 		.delete = delete_NodeLink,

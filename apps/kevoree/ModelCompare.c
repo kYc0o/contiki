@@ -31,6 +31,7 @@
 static ContainerRoot *current_model = NULL;
 static ContainerRoot *new_model = NULL;
 static ContainerNode *myself = NULL;
+static char * myself_path = NULL;
 
 LIST(model_traces);
 
@@ -90,6 +91,8 @@ TraceSequence *ModelCompare(ContainerRoot *_newModel, ContainerRoot *_currentMod
 	if(ts == NULL) {
 		return NULL;
 	}
+	
+	myself_path = myself->VT->getPath(myself);
 
 	PRINTF("INFO: new_model detected, comparing with curent_model\n");
 	current_model->VT->visit(current_model, "", actionUpdate, actionRemove, true);
@@ -99,11 +102,18 @@ TraceSequence *ModelCompare(ContainerRoot *_newModel, ContainerRoot *_currentMod
 
 	if(model_traces == NULL) {
 		printf("ERROR: Cannot create traces\n");
+		if (myself_path) {
+			free(myself_path);
+		}
 		return NULL;
 	}
 	PRINTF("INFO: Traces created successfully\n");
 
 	ts->populate(ts, model_traces);
+	
+	if (myself_path) {
+		free(myself_path);
+	}
 
 	return ts;
 }
@@ -179,21 +189,24 @@ void *actionRemove(char *_path, void *value)
 	if ((container = new_model->VT->findByPath(new_model, _path)) != NULL) {
 		return (void*)true;
 	} else if ((container = (KMFContainer*)current_model->VT->findByPath(current_model, _path)) != NULL) {
-		if ((src = strdup(container->eContainer)) != NULL) {
+		if ((src = get_eContainer_path(container)) != NULL) {
 			char *src2 = NULL;
 			char *metaClassName = container->VT->metaClassName(container);
 			if (!strcmp(metaClassName, "DictionaryValue")) {
 				KMFContainer *elem = current_model->VT->findByPath(current_model, src);
-				src2 = elem->eContainer;
+				src2 = get_eContainer_path(elem);
 				KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
-				src2 = elem2->eContainer;
+				free(src2);
+				src2 = get_eContainer_path(elem2);
 			}
 			if (!strcmp(metaClassName, "ComponentInstance") ||
 					!strcmp(metaClassName, "DictionaryValue") ||
-					!strcmp(src, myself->path)) {
+					!strcmp(src, myself_path)) {
 				if ((src2 == NULL ||
-						!strcmp(src2, myself->path))
-						&& !strcmp(src, myself->path)) {
+						!strcmp(src2, myself_path))
+						&& !strcmp(src, myself_path)) {
+						
+					if (src2) free(src2);
 					ModelTrace *mt = newPoly_ModelRemoveTrace(src, value, _path);
 					if (mt != NULL)	{
 						list_add(model_traces, mt);
@@ -205,12 +218,10 @@ void *actionRemove(char *_path, void *value)
 						free(src);
 						return (void*)true;
 					}
-				} else {
-					free(src);
 				}
-			} else {
-				free(src);
 			}
+			if (src2) free(src2);
+			free(src);
 		} else {
 			PRINTF("ERROR: not enough memory for src!\n");
 			return (void*)true;
@@ -228,21 +239,23 @@ void *actionAdd(char* _path, void *value)
 	if ((container = current_model->VT->findByPath(current_model, _path)) != NULL) {
 		return (void*)true;
 	} else if ((container = (KMFContainer*)new_model->VT->findByPath(new_model, _path)) != NULL) {
-		if ((src = strdup(container->eContainer)) != NULL) {
+		if ((src = get_eContainer_path(container)) != NULL) {
 			char *src2 = NULL;
 			char *metaClassName = container->VT->metaClassName(container);
 			if (!strcmp(metaClassName, "DictionaryValue")) {
 				KMFContainer *elem = new_model->VT->findByPath(new_model, src);
-				src2 = elem->eContainer;
+				src2 = get_eContainer_path(elem);
 				KMFContainer *elem2 = new_model->VT->findByPath(new_model, src2);
-				src2 = elem2->eContainer;
+				free(src2);
+				src2 = get_eContainer_path(elem2);
 			}
 			if (!strcmp(metaClassName, "ComponentInstance") ||
 					!strcmp(metaClassName, "DictionaryValue") ||
-					!strcmp(src, myself->path)) {
+					!strcmp(src, myself_path)) {
 				if ((src2 == NULL ||
-						!strcmp(src2, myself->path))
-						&& !strcmp(src, myself->path)) {
+						!strcmp(src2, myself_path))
+						&& !strcmp(src, myself_path)) {
+					if (src2) free(src2);
 					ModelTrace *mt = newPoly_ModelAddTrace(src, value, _path, metaClassName);
 					if (mt != NULL)	{
 						list_add(model_traces, mt);
@@ -251,14 +264,13 @@ void *actionAdd(char* _path, void *value)
 					} else {
 						printf("ERROR: ModelTrace cannot be added!\n");
 						printf("path = %s  value = %s\n", _path, (char*)value);
+						free(src);
 						return (void*)true;
 					}
-				} else {
-					free(src);
 				}
-			} else {
-				free(src);
 			}
+			if (src2) free(src2);
+			free(src);
 		} else {
 			PRINTF("ERROR: not enough memory for src!\n");
 			return (void*)true;
@@ -270,7 +282,7 @@ void *actionAdd(char* _path, void *value)
 void actionUpdate(char* _path, Type type, void* value)
 {
 	char *__path = strdup(_path);
-	char path[250];
+	char path[150];
 	char *path2 = strdup(_path);
 	char *path3 = NULL;
 	char *refname = NULL;
@@ -315,16 +327,18 @@ void actionUpdate(char* _path, Type type, void* value)
 			char *metaClassName = container->VT->metaClassName(container);
 			if (!strcmp(metaClassName, "DictionaryValue")) {
 				KMFContainer *elem = current_model->VT->findByPath(current_model, src);
-				src2 = elem->eContainer;
+				src2 = get_eContainer_path(elem);
 				KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
-				src2 = elem2->eContainer;
+				free(src2);
+				src2 = get_eContainer_path(elem2);
 			}
 			if (!strcmp(metaClassName, "ComponentInstance") ||
 					!strcmp(metaClassName, "DictionaryValue") ||
-					!strcmp(src, myself->path)) {
+					!strcmp(src, myself_path)) {
 				if ((src2 == NULL ||
-						!strcmp(src2, myself->path))
-						&& !strcmp(src, myself->path)) {
+						!strcmp(src2, myself_path))
+						&& !strcmp(src, myself_path)) {
+					
 					ModelTrace *mt = newPoly_ModelRemoveTrace(src, refname, path);
 					if (mt != NULL)	{
 						list_add(model_traces, mt);
@@ -334,6 +348,7 @@ void actionUpdate(char* _path, Type type, void* value)
 					}
 				}
 			}
+			if (src2) free(src2);
 		}
 		break;
 
@@ -342,22 +357,25 @@ void actionUpdate(char* _path, Type type, void* value)
 			/*25 Mai
 			 * TODO check NULL
 			 */
+			 // TODO : FUCK, IS HERE THE MEMORY LEAK?
 			if ((container = (KMFContainer*)current_model->VT->findByPath(current_model, path)) != NULL) {
-				if ((src = strdup(container->eContainer)) != NULL) {
+				if ((src = get_eContainer_path(container)) != NULL) {
 					char *src2 = NULL;
 					char *metaClassName = container->VT->metaClassName(container);
 					if (!strcmp(metaClassName, "DictionaryValue")) {
 						KMFContainer *elem = current_model->VT->findByPath(current_model, src);
-						src2 = elem->eContainer;
+						src2 = get_eContainer_path(elem);
 						KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
-						src2 = elem2->eContainer;
+						free(src2);
+						src2 = get_eContainer_path(elem2);
 					}
 					if (!strcmp(metaClassName, "ComponentInstance") ||
 							!strcmp(metaClassName, "DictionaryValue") ||
-							!strcmp(src, myself->path)) {
+							!strcmp(src, myself_path)) {
 						if ((src2 == NULL ||
-								!strcmp(src2, myself->path))
-								&& !strcmp(src, myself->path)) {
+								!strcmp(src2, myself_path))
+								&& !strcmp(src, myself_path)) {
+								
 							ModelTrace *mt = newPoly_ModelRemoveTrace(src, refname, path);
 							if (mt != NULL)	{
 								list_add(model_traces, mt);
@@ -367,6 +385,7 @@ void actionUpdate(char* _path, Type type, void* value)
 							}
 						}
 					}
+					if (src2) free(src2);
 				} else {
 					PRINTF("ERROR: not enough memory for src!\n");
 				}
@@ -380,16 +399,17 @@ void actionUpdate(char* _path, Type type, void* value)
 			char *metaClassName = container->VT->metaClassName(container);
 			if (!strcmp(metaClassName, "DictionaryValue")) {
 				KMFContainer *elem = current_model->VT->findByPath(current_model, src);
-				src2 = elem->eContainer;
+				src2 = get_eContainer_path(elem);
 				KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
-				src2 = elem2->eContainer;
+				free(src2);
+				src2 = get_eContainer_path(elem2);
 			}
 			if (!strcmp(metaClassName, "ComponentInstance") ||
 					!strcmp(metaClassName, "DictionaryValue") ||
-					!strcmp(src, myself->path)) {
+					!strcmp(src, myself_path)) {
 				if ((src2 == NULL ||
-						!strcmp(src2, myself->path))
-						&& !strcmp(src, myself->path)) {
+						!strcmp(src2, myself_path))
+						&& !strcmp(src, myself_path)) {
 					char* string = current_model->VT->findByPath(current_model, _path);
 					char* string2 = new_model->VT->findByPath(new_model, _path);
 					if(string != NULL && string2 != NULL) {
@@ -427,6 +447,7 @@ void actionUpdate(char* _path, Type type, void* value)
 					}
 				}
 			}
+			if (src2) free(src2);
 		}
 		break;
 
@@ -436,22 +457,23 @@ void actionUpdate(char* _path, Type type, void* value)
 			 * TODO check NULL
 			 */
 			container = (KMFContainer*)current_model->VT->findByPath(current_model, path);
-			src = strdup(container->eContainer);
+			src = get_eContainer_path(container);
 			PRINTF("src: %s\n", src);
 			char *src2 = NULL;
 			char *metaClassName = container->VT->metaClassName(container);
 			if (!strcmp(metaClassName, "DictionaryValue")) {
 				KMFContainer *elem = current_model->VT->findByPath(current_model, src);
-				src2 = elem->eContainer;
+				src2 = get_eContainer_path(elem);
 				KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
-				src2 = elem2->eContainer;
+				free(src2);
+				src2 = get_eContainer_path(elem2);
 			}
 			if (!strcmp(metaClassName, "ComponentInstance") ||
 					!strcmp(metaClassName, "DictionaryValue") ||
-					!strcmp(src, myself->path)) {
+					!strcmp(src, myself_path)) {
 				if ((src2 == NULL ||
-						!strcmp(src2, myself->path))
-						&& !strcmp(src, myself->path)) {
+						!strcmp(src2, myself_path))
+						&& !strcmp(src, myself_path)) {
 					ModelTrace *mt = newPoly_ModelRemoveTrace(src, refname, path);
 					/*char *strTrace = mt->ToString(mt->pDerivedObj);
 						PRINTF(strTrace);
@@ -464,21 +486,23 @@ void actionUpdate(char* _path, Type type, void* value)
 					}
 				}
 			}
+			if (src2) free(src2);
 		} else {
 			char *src2 = NULL;
 			char *metaClassName = container->VT->metaClassName(container);
 			if (!strcmp(metaClassName, "DictionaryValue")) {
 				KMFContainer *elem = current_model->VT->findByPath(current_model, src);
-				src2 = elem->eContainer;
+				src2 = get_eContainer_path(elem);
 				KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
-				src2 = elem2->eContainer;
+				free(src2);
+				src2 = get_eContainer_path(elem2);
 			}
 			if (!strcmp(metaClassName, "ComponentInstance") ||
 					!strcmp(metaClassName, "DictionaryValue") ||
-					!strcmp(src, myself->path)) {
+					!strcmp(src, myself_path)) {
 				if ((src2 == NULL ||
-						!strcmp(src2, myself->path))
-						&& !strcmp(src, myself->path)) {
+						!strcmp(src2, myself_path))
+						&& !strcmp(src, myself_path)) {
 					bool v = (bool)(current_model->VT->findByPath(current_model, _path));
 					bool v2 = (bool)(new_model->VT->findByPath(new_model, _path));
 					char v2str[MAX_NUMBER] = {0};
@@ -500,6 +524,7 @@ void actionUpdate(char* _path, Type type, void* value)
 					}
 				}
 			}
+			if (src2) free(src2);
 		}
 		break;
 	case INTEGER:
@@ -508,22 +533,23 @@ void actionUpdate(char* _path, Type type, void* value)
 			 * TODO check NULL
 			 */
 			if ((container = (KMFContainer*)current_model->VT->findByPath(current_model, path)) != NULL) {
-				src = strdup(container->eContainer);
+				src = get_eContainer_path(container);
 				PRINTF("src: %s\n", src);
 				char *src2 = NULL;
 				char *metaClassName = container->VT->metaClassName(container);
 				if (!strcmp(metaClassName, "DictionaryValue")) {
 					KMFContainer *elem = current_model->VT->findByPath(current_model, src);
-					src2 = elem->eContainer;
+					src2 = get_eContainer_path(elem);
 					KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
-					src2 = elem2->eContainer;
+					free(src);
+					src2 = get_eContainer_path(elem2);
 				}
 				if (!strcmp(metaClassName, "ComponentInstance") ||
 						!strcmp(metaClassName, "DictionaryValue") ||
-						!strcmp(src, myself->path)) {
+						!strcmp(src, myself_path)) {
 					if ((src2 == NULL ||
-							!strcmp(src2, myself->path))
-							&& !strcmp(src, myself->path)) {
+							!strcmp(src2, myself_path))
+							&& !strcmp(src, myself_path)) {
 						ModelTrace *mt = newPoly_ModelRemoveTrace(src, refname, path);
 						/*char *strTrace = mt->ToString(mt->pDerivedObj);
 				PRINTF(strTrace);
@@ -536,22 +562,24 @@ void actionUpdate(char* _path, Type type, void* value)
 						}
 					}
 				}
+				if (src2) free(src2);
 			}
 		} else {
 			char *src2 = NULL;
 			char *metaClassName = container->VT->metaClassName(container);
 			if (!strcmp(metaClassName, "DictionaryValue")) {
 				KMFContainer *elem = current_model->VT->findByPath(current_model, src);
-				src2 = elem->eContainer;
+				src2 = get_eContainer_path(elem);
 				KMFContainer *elem2 = current_model->VT->findByPath(current_model, src2);
-				src2 = elem2->eContainer;
+				free(src2);
+				src2 = get_eContainer_path(elem2);
 			}
 			if (!strcmp(metaClassName, "ComponentInstance") ||
 					!strcmp(metaClassName, "DictionaryValue") ||
-					!strcmp(src, myself->path)) {
+					!strcmp(src, myself_path)) {
 				if ((src2 == NULL ||
-						!strcmp(src2, myself->path))
-						&& !strcmp(src, myself->path)) {
+						!strcmp(src2, myself_path))
+						&& !strcmp(src, myself_path)) {
 					int v = (int)(current_model->VT->findByPath(current_model, _path));
 					int v2 = (int)(new_model->VT->findByPath(new_model, _path));
 					char v2str[MAX_NUMBER] = {0};
@@ -569,6 +597,7 @@ void actionUpdate(char* _path, Type type, void* value)
 					}
 				}
 			}
+			if (src2) free(src2);
 		}
 		break;
 
@@ -595,7 +624,7 @@ void actionUpdate(char* _path, Type type, void* value)
 void actionAddSet(char *_path, Type type, void *value)
 {
 	char *__path = strdup(_path);
-	char path[250];
+	char path[150];
 	char *path2 = strdup(_path);
 	char *refname = NULL;
 	char *src = NULL;
@@ -625,7 +654,7 @@ void actionAddSet(char *_path, Type type, void *value)
 		if(container == NULL && container2 != NULL)
 		{
 			if ((container = (KMFContainer*)new_model->VT->findByPath(new_model, path)) != NULL) {
-				if ((src = strdup(container->path)) != NULL && container2 != NULL) {
+				if ((src = container->VT->getPath(container)) != NULL && container2 != NULL) {
 					/*typename = strdup(container->VT->metaClassName(container));*/
 				} else {
 					PRINTF("ERROR: not enough memory for src!\n");
@@ -633,10 +662,13 @@ void actionAddSet(char *_path, Type type, void *value)
 			} else {
 				PRINTF("ERROR: Cannot retrieve source!\n");
 			}
-			if (!strcmp(src, myself->path) ||
+			char* tmp_path = get_eContainer_path(container2);
+			if (!strcmp(src, myself_path) ||
 					(!strcmp(refname, "typeDefinition") &&
-							!strcmp(container2->eContainer, myself->path))) {
-				ModelTrace *mt = newPoly_ModelAddTrace((char*)value, refname, container->path, NULL);
+							!strcmp(tmp_path, myself_path))) {
+				
+				free(tmp_path);
+				ModelTrace *mt = newPoly_ModelAddTrace((char*)value, refname, src, NULL);
 				/*char *strTrace = mt->ToString(mt->pDerivedObj);
 				PRINTF(strTrace);
 				free(strTrace);*/
@@ -656,17 +688,19 @@ void actionAddSet(char *_path, Type type, void *value)
 		if(container == NULL)
 		{
 			if ((container = (KMFContainer*)new_model->VT->findByPath(new_model, path)) != NULL) {
-				if ((src = strdup(container->path)) != NULL) {
+				if ((src = container->VT->getPath(container)) != NULL) {
 					char *src2 = NULL;
 					char *metaClassName = container->VT->metaClassName(container);
 					if (!strcmp(metaClassName, "DictionaryValue")) {
 						KMFContainer *elem = new_model->VT->findByPath(new_model, src);
-						src2 = elem->eContainer;
+						src2 = get_eContainer_path(elem);
 						KMFContainer *elem2 = new_model->VT->findByPath(new_model, src2);
-						src2 = elem2->eContainer;
+						free(src2);
+						src2 = get_eContainer_path(elem2);
 						KMFContainer *elem3 = new_model->VT->findByPath(new_model, src2);
-
-						if (!strcmp(myself->path, elem3->eContainer)) {
+						free(src2);
+						src2 = get_eContainer_path(elem3);
+						if (!strcmp(myself_path, src2)) {
 							ModelTrace *mt = newPoly_ModelSetTrace(src, refname, (char*)value);
 							/*char *strTrace = mt->ToString(mt->pDerivedObj);
 																PRINTF(strTrace);
@@ -680,12 +714,13 @@ void actionAddSet(char *_path, Type type, void *value)
 								printf("path = %s  value = %s\n", path, (char*)value);
 							}
 						}
+						free(src2);
 
 					} else if (!strcmp(metaClassName, "ComponentInstance") ||
-							!strcmp(src, myself->path)) {
+							!strcmp(src, myself_path)) {
 						if ((src2 == NULL ||
-								!strcmp(src2, myself->path))
-								&& !strcmp(src, myself->path)) {
+								!strcmp(src2, myself_path))
+								&& !strcmp(src, myself_path)) {
 							ModelTrace *mt = newPoly_ModelSetTrace(src, refname, (char*)value);
 							/*char *strTrace = mt->ToString(mt->pDerivedObj);
 									PRINTF(strTrace);
@@ -715,9 +750,10 @@ void actionAddSet(char *_path, Type type, void *value)
 		container = current_model->VT->findByPath(current_model, path);
 		if (container == NULL) {
 			if ((container = (KMFContainer*)new_model->VT->findByPath(new_model, path)) != NULL) {
-				if ((src = strdup(container->path)) != NULL) {
-					if (!strcmp(src, myself->path) ||
-							!strcmp(myself->path, container->eContainer)) {
+				if ((src = container->VT->getPath(container)) != NULL) {
+					char* tmp_path = get_eContainer_path(container);
+					if (!strcmp(src, myself_path) ||
+							!strcmp(myself_path, tmp_path)) {
 						char v2str[MAX_NUMBER] = {0};
 						if ((bool)value == 1) {
 							sprintf(v2str, "%s", "true");
@@ -734,6 +770,7 @@ void actionAddSet(char *_path, Type type, void *value)
 							printf("path = %s  value = %s\n", path, (char*)value);
 						}
 					}
+					free(tmp_path);
 				} else {
 					PRINTF("ERROR: not enough memory for src!\n");
 				}
@@ -750,7 +787,7 @@ void actionAddSet(char *_path, Type type, void *value)
 		container = current_model->VT->findByPath(current_model, path);
 		if (container == NULL) {
 			if ((container = (KMFContainer*)new_model->VT->findByPath(new_model, path)) != NULL) {
-				if ((src = strdup(container->path)) != NULL) {
+				if ((src = container->VT->getPath(container)) != NULL) {
 					/*typename = strdup(container->VT->metaClassName(container));*/
 				} else {
 					PRINTF("ERROR: not enough memory for src!\n");
@@ -759,7 +796,7 @@ void actionAddSet(char *_path, Type type, void *value)
 				PRINTF("ERROR: Cannot retrieve source!\n");
 			}
 
-			if (!strcmp(src, myself->path)) {
+			if (!strcmp(src, myself_path)) {
 				char v2str[MAX_NUMBER] = {0};
 				sprintf(v2str, "%d", (int)value);
 

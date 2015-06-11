@@ -49,9 +49,27 @@
 #if SLIP_ARCH_CONF_ENABLE
 #include "dev/slip.h"
 #endif
-
+#ifdef IOTLAB_M3
+#include "dev/light-sensor.h"
+#endif
 
 #define PROCESS_CONF_NO_PROCESS_NAMES 0
+
+static void
+config_light()
+{
+  light_sensor.configure(LIGHT_SENSOR_SOURCE, ISL29020_LIGHT__AMBIENT);
+  light_sensor.configure(LIGHT_SENSOR_RESOLUTION, ISL29020_RESOLUTION__16bit);
+  light_sensor.configure(LIGHT_SENSOR_RANGE, ISL29020_RANGE__1000lux);
+  SENSORS_ACTIVATE(light_sensor);
+}
+static void
+process_light()
+{
+  int light_val = light_sensor.value(0);
+  float light = ((float)light_val) / LIGHT_SENSOR_VALUE_SCALE;
+  printf("light: %f lux\n", light);
+}
 
 /*---------------------------------------------------------------------------*/
 /*
@@ -189,6 +207,8 @@ int main()
     print_processes(autostart_processes);
     autostart_start(autostart_processes);
     watchdog_start();
+    config_light();
+    process_light();
 
     while(1)
     {

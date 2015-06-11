@@ -115,11 +115,8 @@ typedef unsigned int uip_stats_t;
  */
 
 #define NETSTACK_CONF_NETWORK       sicslowpan_driver
-
 #define NETSTACK_CONF_MAC           csma_driver
-
 #define NETSTACK_CONF_FRAMER        framer_802154
-
 #define NETSTACK_CONF_RDC           contikimac_driver
 //#define NETSTACK_CONF_RDC           nullrdc_driver
 //#define NETSTACK_CONF_RDC           cxmac_driver
@@ -208,6 +205,16 @@ typedef unsigned int uip_stats_t;
 
 // TODO replace by default contiki compression RFC6282 HC-06
 #define SICSLOWPAN_CONF_COMPRESSION SICSLOWPAN_COMPRESSION_IPV6
+/* Specify a minimum packet size for 6lowpan compression to be
+   enabled. This is needed for ContikiMAC, which needs packets to be
+   larger than a specified size, if no ContikiMAC header should be
+   used. */
+#define SICSLOWPAN_CONF_COMPRESSION_THRESHOLD 63
+#define CONTIKIMAC_CONF_WITH_CONTIKIMAC_HEADER 0
+#undef NBR_TABLE_CONF_MAX_NEIGHBORS
+#define NBR_TABLE_CONF_MAX_NEIGHBORS     25
+#undef UIP_CONF_MAX_ROUTES
+#define UIP_CONF_MAX_ROUTES   25
 #endif /* WITH_UIP6 */
 
 

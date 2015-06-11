@@ -49,7 +49,7 @@ static int updateShellGroup(void* instance);
 static int sendShellGroup(void* instance, ContainerRoot* model);
 
 /*static const char *NEWMODEL = "{\"eClass\": \"org.kevoree.ContainerRoot\",\"generated_KMF_ID\": \"CtHbJw37\",\"nodes\": [{\"eClass\": \"org.kevoree.ContainerNode\",\"name\": \"node0\",\"started\": \"false\",\"metaData\": \"{\\\"x\\\":296,\\\"y\\\":167}\",\"typeDefinition\": [\"typeDefinitions[ContikiNode/0.0.1]\"],\"hosts\": [],\"host\": [],\"groups\": [\"groups[group0]\"],\"dictionary\": [],\"fragmentDictionary\": [],\"components\": [{\"eClass\": \"org.kevoree.ComponentInstance\",\"name\": \"comp457\",\"started\": \"true\",\"metaData\": \"{\\\"x\\\":408,\\\"y\\\":239}\",\"typeDefinition\": [\"typeDefinitions[hello_world/0.0.1]\"],\"namespace\": [],\"dictionary\": [{\"eClass\": \"org.kevoree.Dictionary\",\"generated_KMF_ID\": \"0.68263587262481451424775426644\",\"values\": [{\"eClass\": \"org.kevoree.DictionaryValue\",\"name\": \"time\",\"value\": \"6\"}]}],\"fragmentDictionary\": [],\"provided\": [],\"required\": []}],\"networkInformation\": [{\"eClass\": \"org.kevoree.NetworkInfo\",\"name\": \"ip\",\"values\": [{\"eClass\": \"org.kevoree.NetworkProperty\",\"name\": \"local\",\"value\": \"aaaa::0:0:5\"},{\"eClass\": \"org.kevoree.NetworkProperty\",\"name\": \"front\",\"value\": \"m3-XX.lille.iotlab.info\"}]}]}],\"typeDefinitions\": [{\"eClass\": \"org.kevoree.NodeType\",\"abstract\": \"false\",\"bean\": \"\",\"name\": \"ContikiNode\",\"factoryBean\": \"\",\"version\": \"0.0.1\",\"deployUnit\": [\"deployUnits[org.kevoree.library.c//kevoree-contiki-node/0.0.1]\"],\"superTypes\": [],\"dictionaryType\": [{\"eClass\": \"org.kevoree.DictionaryType\",\"generated_KMF_ID\": \"9o86ZdvQ\",\"attributes\": []}]},{\"eClass\": \"org.kevoree.GroupType\",\"abstract\": \"false\",\"bean\": \"\",\"name\": \"CoAPGroup\",\"factoryBean\": \"\",\"version\": \"0.0.1\",\"deployUnit\": [\"deployUnits[//kevoree-group-coap/0.0.1]\"],\"superTypes\": [],\"dictionaryType\": [{\"eClass\": \"org.kevoree.DictionaryType\",\"generated_KMF_ID\": \"hytCmvXU\",\"attributes\": [{\"eClass\": \"org.kevoree.DictionaryAttribute\",\"fragmentDependant\": \"false\",\"optional\": \"false\",\"name\": \"path\",\"state\": \"false\",\"datatype\": \"string\",\"defaultValue\": \"\",\"genericTypes\": []},{\"eClass\": \"org.kevoree.DictionaryAttribute\",\"fragmentDependant\": \"false\",\"optional\": \"false\",\"name\": \"port\",\"state\": \"false\",\"datatype\": \"number\",\"defaultValue\": \"\",\"genericTypes\": []},{\"eClass\": \"org.kevoree.DictionaryAttribute\",\"fragmentDependant\": \"false\",\"optional\": \"false\",\"name\": \"proxy_port\",\"state\": \"false\",\"datatype\": \"int\",\"defaultValue\": \"20000\",\"genericTypes\": []}]}]},{\"eClass\": \"org.kevoree.ComponentType\",\"abstract\": \"false\",\"bean\": \"\",\"name\": \"hello_world\",\"factoryBean\": \"\",\"version\": \"0.0.1\",\"deployUnit\": [\"deployUnits[kev_contiki//hello_world/0.0.1]\"],\"superTypes\": [],\"dictionaryType\": [{\"eClass\": \"org.kevoree.DictionaryType\",\"generated_KMF_ID\": \"3dddTFpd\",\"attributes\": [{\"eClass\": \"org.kevoree.DictionaryAttribute\",\"fragmentDependant\": \"false\",\"optional\": \"false\",\"name\": \"time\",\"state\": \"false\",\"datatype\": \"int\",\"defaultValue\": \"5\",\"genericTypes\": []}]}],\"required\": [],\"provided\": []}],\"repositories\": [{\"eClass\": \"org.kevoree.Repository\",\"url\": \"coap://[bbbb::1]:5683/libraries\"}],\"dataTypes\": [],\"libraries\": [{\"eClass\": \"org.kevoree.TypeLibrary\",\"name\": \"ContikiLib\",\"subTypes\": [\"typeDefinitions[ContikiNode/0.0.1]\",\"typeDefinitions[CoAPGroup/0.0.1]\"]},{\"eClass\": \"org.kevoree.TypeLibrary\",\"name\": \"Default\",\"subTypes\": [\"typeDefinitions[hello_world/0.0.1]\"]}],\"hubs\": [],\"mBindings\": [],\"deployUnits\": [{\"eClass\": \"org.kevoree.DeployUnit\",\"groupName\": \"\",\"name\": \"kevoree-group-coap\",\"hashcode\": \"\",\"type\": \"ce\",\"url\": \"\",\"version\": \"0.0.1\",\"requiredLibs\": []},{\"eClass\": \"org.kevoree.DeployUnit\",\"groupName\": \"org.kevoree.library.c\",\"name\": \"kevoree-contiki-node\",\"hashcode\": \"\",\"type\": \"ce\",\"url\": \"\",\"version\": \"0.0.1\",\"requiredLibs\": []},{\"eClass\": \"org.kevoree.DeployUnit\",\"groupName\": \"kev_contiki\",\"name\": \"hello_world\",\"hashcode\": \"\",\"type\": \"ce\",\"url\": \"\",\"version\": \"0.0.1\",\"requiredLibs\": []}],\"nodeNetworks\": [],\"groups\": [{\"eClass\": \"org.kevoree.Group\",\"name\": \"group0\",\"started\": \"false\",\"metaData\": \"{\\\"x\\\":504,\\\"y\\\":259}\",\"typeDefinition\": [\"typeDefinitions[CoAPGroup/0.0.1]\"],\"subNodes\": [\"nodes[node0]\"],\"dictionary\": [],\"fragmentDictionary\": [{\"eClass\": \"org.kevoree.FragmentDictionary\",\"name\": \"contiki-node\",\"generated_KMF_ID\": \"QoMNUckL\",\"values\": []}]}]}";
-*/
+ */
 
 int fd_read;
 uint32_t length;
@@ -93,7 +93,7 @@ PROCESS_THREAD(shellGroupP, ev, data)
 			/* wow I have a new model, do te magic with the traces and so on */
 			PRINTF("New model %s received in group with instance %p\n", instance->fileNameWithModel, instance);
 			newModel = NULL;
-			
+
 			if((fd_read = cfs_open(instance->fileNameWithModel, CFS_READ)) != -1) {
 
 				cfs_close(fd_read);
@@ -104,6 +104,15 @@ PROCESS_THREAD(shellGroupP, ev, data)
 				newModel = JSONKevDeserializer(&jsonState, jsonparse_next(&jsonState));
 				cfs_close(jsonState.fd);
 				PRINTF("INFO: Deserialized finished\n");
+
+				if (newModel == NULL) {
+					printf("ERROR: new_model cannot be loaded\n");
+					PROCESS_EXIT();
+				} else {
+					printf("INFO: newModel.json successfully loaded\n");
+					int length = hashmap_length(newModel->nodes);
+					printf("INFO: newModel with %d nodes is ready!\n", length);
+				}
 			}
 			/* Afterwards, just call notifyNewModel */
 			if (newModel != NULL && notifyNewModel(newModel)== PROCESS_ERR_OK)

@@ -70,7 +70,7 @@ TypedElement_addGenericTypes(TypedElement * const this, TypedElement *ptr)
 		PRINTF("ERROR: The TypedElement cannot be added in TypedElement because the key is not defined");
 	} else {
 		if(this->genericTypes == NULL) {
-			this->genericTypes = hashmap_new();
+			this->genericTypes = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->genericTypes, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->genericTypes, internalKey, ptr) == MAP_OK) {
@@ -149,7 +149,7 @@ static void
 {
 	/* NamedElement attributes */
 	/* Local references */
-	char path[250];
+	char path[150];
 	memset(&path[0], 0, sizeof(path));
 	char token[100];
 	memset(&token[0], 0, sizeof(token));
@@ -250,6 +250,17 @@ static void
 	}
 }
 
+char*
+TypedElement_getPath(KMFContainer* kmf)
+{
+	TypedElement* te = (TypedElement*)kmf;
+	char* tmp = (te->eContainer)?get_eContainer_path(te):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("dataTypes[]") + strlen(te->VT->internalGetKey(te)) + 1);
+	sprintf(r, "dataTypes[%s]", te->VT->internalGetKey(te));
+	free(tmp);
+	return r;
+}
+
 const TypedElement_VT typedElement_VT = {
 		.super = &namedElement_VT,
 		/*
@@ -258,6 +269,7 @@ const TypedElement_VT typedElement_VT = {
 		 */
 		.metaClassName = TypedElement_metaClassName,
 		.internalGetKey = TypedElement_internalGetKey,
+		.getPath = TypedElement_getPath,
 		.visit = TypedElement_visit,
 		.findByPath = TypedElement_findByPath,
 		.delete = delete_TypedElement,

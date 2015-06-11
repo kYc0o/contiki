@@ -76,15 +76,13 @@ PortTypeRef_addMappings(PortTypeRef * const this, PortTypeMapping *ptr)
 	{
 		if(this->mappings == NULL)
 		{
-			this->mappings = hashmap_new();
+			this->mappings = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->mappings, internalKey, (void**)(&container)) == MAP_MISSING)
 		{
 			if(hashmap_put(this->mappings, internalKey, ptr) == MAP_OK)
 			{
-				ptr->eContainer = strdup(this->path);
-				ptr->path = malloc(sizeof(char) * (strlen(this->path) + strlen("/mappings[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "%s/mappings[%s]", this->path, internalKey);
+				ptr->eContainer = this;
 			}
 		}
 	}
@@ -109,10 +107,7 @@ PortTypeRef_removeMappings(PortTypeRef * const this, PortTypeMapping *ptr)
 	{
 		if(hashmap_remove(this->mappings, internalKey) == MAP_OK)
 		{
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		}
 	}
 }
@@ -158,7 +153,9 @@ PortTypeRef_visit(PortTypeRef * const this, char *parent, fptrVisitAction action
 
 	if(this->ref != NULL) {
 		if (visitPaths) {
-			sprintf(path,"%s/%s\\ref", parent, this->ref->path);
+			char* tmp_path = this->ref->VT->getPath(this->ref);
+			sprintf(path,"%s/%s\\ref", parent, tmp_path);
+			free(tmp_path);
 			action(path, REFERENCE, parent);
 		} else {
 			action("ref", SQBRACKET, NULL);
@@ -204,7 +201,7 @@ static void
 	/* Local references */
 	else
 	{
-		char path[250];
+		char path[150];
 		memset(&path[0], 0, sizeof(path));
 		char token[100];
 		memset(&token[0], 0, sizeof(token));
@@ -315,6 +312,34 @@ static void
 	}
 }
 
+static char*
+PortTypeRef_getPath(KMFContainer* kmf)
+{
+	any_t any;
+	PortTypeRef* obj = (PortTypeRef*)kmf;
+	char* internalKey = obj->VT->internalGetKey(obj);
+	
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	
+	ComponentType* container = (ComponentType*)obj->eContainer;
+	if (hashmap_get(container->provided, internalKey, (void**)(&any)) == MAP_OK) {
+		char* r = (char*)malloc(strlen(tmp) + strlen("/provided[]") + strlen(internalKey) + 1);
+		sprintf(r, "%s/provided[%s]", tmp, internalKey);
+		free(tmp);
+		return r;
+	}
+	else if (hashmap_get(container->required, internalKey, (void**)(&any)) == MAP_OK) {
+		char* r = (char*)malloc(strlen(tmp) + strlen("/required[]") + strlen(internalKey) + 1);
+		sprintf(r, "%s/required[%s]", tmp, internalKey);
+		free(tmp);
+		return r;
+	}
+	else {
+		free(tmp);
+		return strdup("");
+	}
+}
+
 const PortTypeRef_VT portTypeRef_VT = {
 		.super = &namedElement_VT,
 		/*
@@ -323,6 +348,7 @@ const PortTypeRef_VT portTypeRef_VT = {
 		 */
 		.metaClassName = PortTypeRef_metaClassName,
 		.internalGetKey = PortTypeRef_internalGetKey,
+		.getPath = PortTypeRef_getPath,
 		.visit = PortTypeRef_visit,
 		.findByPath = PortTypeRef_findByPath,
 		.delete = delete_PortTypeRef,

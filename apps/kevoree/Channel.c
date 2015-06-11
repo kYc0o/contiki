@@ -68,7 +68,7 @@ Channel_addBindings(Channel * const this, MBinding *ptr)
 			/*
 			 * TODO add if == NULL
 			 */
-			this->bindings = hashmap_new();
+			this->bindings = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->bindings, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if ((hashmap_put(this->bindings, internalKey, ptr)) == MAP_OK) {
@@ -154,7 +154,7 @@ static void
 	/* There is no local attributes */
 
 	/* Local references */
-	char path[250];
+	char path[150];
 	memset(&path[0], 0, sizeof(path));
 	char token[100];
 	memset(&token[0], 0, sizeof(token));
@@ -241,6 +241,17 @@ static void
 	}
 }
 
+static char*
+Channel_getPath(KMFContainer* kmf)
+{
+	Channel* channel = (Channel*)kmf;
+	char* tmp = (channel->eContainer)?get_eContainer_path(channel):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("hubs[]") + strlen(channel->VT->internalGetKey(channel)) + 1);
+	sprintf(r, "hubs[%s]", channel->VT->internalGetKey(channel));
+	free(tmp);
+	return r;
+}
+
 const Channel_VT channel_VT = {
 		/*
 		 * KMFContainer
@@ -249,6 +260,7 @@ const Channel_VT channel_VT = {
 		.super = &instance_VT,
 		.metaClassName = Channel_metaClassName,
 		.internalGetKey = Channel_internalGetKey,
+		.getPath = Channel_getPath,
 		.visit = Channel_visit,
 		.findByPath = Channel_findByPath,
 		.delete = delete_Channel,

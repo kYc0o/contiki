@@ -594,6 +594,12 @@ static void reset(void)
             | rf_tx_power;
     rf2xx_reg_write(RF2XX_DEVICE, RF2XX_REG__PHY_TX_PWR, reg);
 
+    // Set max RX power
+    reg = rf2xx_reg_read(RF2XX_DEVICE, RF2XX_REG__RX_SYN);
+    reg &= 0xF0;
+    reg |= 0x07;
+    rf2xx_reg_write(RF2XX_DEVICE, RF2XX_REG__RX_SYN, reg);
+
     // Disable CLKM signal
     reg = RF2XX_TRX_CTRL_0_DEFAULT__PAD_IO
             | RF2XX_TRX_CTRL_0_DEFAULT__PAD_IO_CLKM

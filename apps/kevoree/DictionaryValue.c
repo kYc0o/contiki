@@ -91,6 +91,17 @@ void
 	}
 }
 
+static char*
+DictionaryValue_getPath(KMFContainer* kmf)
+{
+	DictionaryValue* obj = (DictionaryValue*)kmf;
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("/values[]") + strlen(obj->VT->internalGetKey(obj)) + 1);
+	sprintf(r, "%s/values[%s]", tmp, obj->VT->internalGetKey(obj));
+	free(tmp);
+	return r;
+}
+
 const DictionaryValue_VT dictionaryValue_VT = {
 		.super = &KMF_VT,
 		/*
@@ -98,6 +109,7 @@ const DictionaryValue_VT dictionaryValue_VT = {
 		 */
 		.metaClassName = DictionaryValue_metaClassName,
 		.internalGetKey = DictionaryValue_internalGetKey,
+		.getPath = DictionaryValue_getPath,
 		.visit = DictionaryValue_visit,
 		.findByPath = DictionaryValue_findByPath,
 		.delete = delete_DictionaryValue

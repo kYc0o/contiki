@@ -18,6 +18,7 @@ typedef struct _Dictionary_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -30,13 +31,11 @@ typedef struct _Dictionary_VT {
 } Dictionary_VT;
 
 typedef struct _Dictionary {
-	Dictionary *next;
 	Dictionary_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * Dictionary
 	 * TODO fix id size

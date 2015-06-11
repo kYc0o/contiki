@@ -27,7 +27,7 @@ void* newHelloWorld(const char* componentTypeName)
 {
     HelloWorld* i = (HelloWorld*)malloc(sizeof(HelloWorld));
     // probably it is good idea to zeroed the memory
-	strcpy(i->name, "Inti");
+	strcpy(i->name, "nobody");
     return i;
 }
 
@@ -37,7 +37,7 @@ int startHelloWorld(void* instance)
     HelloWorld* inst = (HelloWorld*) instance;
 	KevContext* ctx = getContext(inst);
 	printf("Hey %s, this is the often abused Hello World application running in component %s\n", inst->name, getInstanceName(ctx));
-	printf("the value for time is %s\n", getDictionaryAttributeValue(ctx, "time"));
+	printf("the value for name is %s\n", getDictionaryAttributeValue(ctx, "name"));
 	free(ctx);
     return 0;
 }

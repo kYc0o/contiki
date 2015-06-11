@@ -70,7 +70,7 @@ Group_addSubNodes(Group * const this, ContainerNode *ptr)
 		PRINTF("ERROR: The ContainerNode cannot be added in Group because the key is not defined\n");
 	} else {
 		if(this->subNodes == NULL) {
-			this->subNodes = hashmap_new();
+			this->subNodes = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->subNodes, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if ((hashmap_put(this->subNodes, internalKey, ptr)) == MAP_OK) {
@@ -146,7 +146,7 @@ void
 
 	/* Instance attributes and references */
 	/* Local references */
-	char path[250];
+	char path[150];
 	memset(&path[0], 0, sizeof(path));
 	char token[100];
 	memset(&token[0], 0, sizeof(token));
@@ -233,6 +233,17 @@ void
 	}
 }
 
+static char*
+Group_getPath(KMFContainer* kmf)
+{
+	Group* obj = (Group*)kmf;
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("groups[]") + strlen(obj->VT->internalGetKey(obj)) + 1);
+	sprintf(r, "groups[%s]", obj->VT->internalGetKey(obj));
+	free(tmp);
+	return r;
+}
+
 const Group_VT group_VT = {
 		/*
 		 * KMFContainer_VT
@@ -241,6 +252,7 @@ const Group_VT group_VT = {
 		.super = &instance_VT,
 		.metaClassName = Group_metaClassName,
 		.internalGetKey = Group_internalGetKey,
+		.getPath = Group_getPath,
 		.visit = Group_visit,
 		.findByPath = Group_findByPath,
 		.delete = delete_Group,

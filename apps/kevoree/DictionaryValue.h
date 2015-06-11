@@ -12,6 +12,7 @@ typedef struct _DictionaryValue_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -19,13 +20,11 @@ typedef struct _DictionaryValue_VT {
 } DictionaryValue_VT;
 
 typedef struct _DictionaryValue {
-	DictionaryValue *next;
 	DictionaryValue_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * DictionaryValue
 	 */

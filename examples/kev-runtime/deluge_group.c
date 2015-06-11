@@ -38,7 +38,7 @@
 #include "deluge-udp.h"
 #include "deluge_group.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #define PRINTF(...) printf(__VA_ARGS__)
 #else
@@ -334,7 +334,7 @@ sendDelugeGroup(void* inst, ContainerRoot* model)
 		PRINTF("ERROR: some problem dissemineting\n");
 	}
 	else {
-		PRINTF("INFO: dissemineting new version of the file with version %d\n", newVersion);
+		PRINTF("INFO: dissemineting new version of the file with version %d\n", instance->info.version);
 	}
 	
 	return 0;

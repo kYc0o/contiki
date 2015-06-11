@@ -2,9 +2,7 @@
 #include "rtkev.h"
 #include <stdio.h>
 
-#ifdef IOTLAB_M3
 #include "dev/light-sensor.h"
-#endif
 
 /* forward declaration */
 static void* newBlink(const char*);
@@ -15,7 +13,7 @@ static int updateBlink(void* instance);
 static
 const ComponentInterface SensingComponentInterface = {
 	.interfaceType = ComponentInstanceInterface,
-	.name = "SensingComponentType", 
+	.name = "sensing/0.0.1",
     .newInstance = newBlink,
     .start = startBlink,
     .stop = stopBlink,
@@ -79,8 +77,11 @@ static void
 process_light()
 {
   int light_val = light_sensor.value(0);
-  float light = ((float)light_val) / LIGHT_SENSOR_VALUE_SCALE;
-  printf("light: %f lux\n", light);
+  /*
+   * TODO fix cast
+   */
+  /*float light = (float)light_val / LIGHT_SENSOR_VALUE_SCALE;*/
+  printf("light: %d lux\n", light_val);
 }
 
 
@@ -89,18 +90,13 @@ PROCESS_THREAD(sensor_collection, ev, data)
   PROCESS_BEGIN();
   static struct etimer timer;
 
-#ifdef IOTLAB_M3
   config_light();
-#endif
   etimer_set(&timer, CLOCK_SECOND);
 
   while(1) {
     PROCESS_WAIT_EVENT();
     if (ev == PROCESS_EVENT_TIMER) {
-#ifdef IOTLAB_M3
       process_light();
-#endif
-
       etimer_restart(&timer);
     }
   }

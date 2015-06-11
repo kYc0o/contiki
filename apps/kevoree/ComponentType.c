@@ -81,14 +81,12 @@ ComponentType_addRequired(ComponentType * const this, PortTypeRef *ptr)
 		PRINTF("ERROR: The PortTypeRef cannot be added in ComponentType because the key is not defined");
 	} else {
 		if(this->required == NULL) {
-			this->required = hashmap_new();
+			this->required = hashmap_new(get_key_for_hashmap);
 		}
 
 		if(hashmap_get(this->required, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->required, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup(this->path);
-				ptr->path = malloc(sizeof(char) * (strlen(this->path) +	strlen("/required[]") +	strlen(internalKey)) + 1);
-				sprintf(ptr->path, "%s/required[%s]", this->path, internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: required cannot be added!\n");
 			}
@@ -109,13 +107,11 @@ ComponentType_addProvided(ComponentType * const this, PortTypeRef *ptr)
 		PRINTF("ERROR: The PortTypeRef cannot be added in ComponentType because the key is not defined");
 	} else {
 		if(this->provided == NULL) {
-			this->provided = hashmap_new();
+			this->provided = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->provided, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->provided, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup(this->path);
-				ptr->path = malloc(sizeof(char) * (strlen(this->path) +	strlen("/provided[]") +	strlen(internalKey)) + 1);
-				sprintf(ptr->path, "%s/provided[%s]", this->path, internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: provided cannot be added!\n");
 			}
@@ -134,10 +130,7 @@ ComponentType_removeRequired(ComponentType * const this, PortTypeRef *ptr)
 		PRINTF("ERROR: The PortTypeRef cannot be removed in ComponentType because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->required, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: required %s cannot be removed!\n", internalKey);
 		}
@@ -153,10 +146,7 @@ ComponentType_removeProvided(ComponentType * const this, PortTypeRef *ptr)
 		PRINTF("The PortTypeRef cannot be removed in ComponentType because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->provided, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: required %s cannot be removed!\n", internalKey);
 		}
@@ -223,7 +213,7 @@ static void
 {
 	/* There is no local attributes */
 	/* TypeDefinition attributes */
-	char path[250];
+	char path[150];
 	memset(&path[0], 0, sizeof(path));
 	char token[100];
 	memset(&token[0], 0, sizeof(token));
@@ -329,6 +319,7 @@ const ComponentType_VT componentType_VT = {
 		 */
 		.metaClassName = ComponentType_metaClassName,
 		.internalGetKey = ComponentType_internalGetKey,
+		.getPath = TypeDefinition_getPath,
 		.visit = ComponentType_visit,
 		.findByPath = ComponentType_findByPath,
 		.delete = delete_ComponentType,

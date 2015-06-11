@@ -84,13 +84,11 @@ DictionaryType_addAttributes(DictionaryType * const this, DictionaryAttribute *p
 		PRINTF("ERROR: The DictionaryAttribute cannot be added in DictionaryType because the key is not defined\n");
 	} else {
 		if(this->attributes == NULL) {
-			this->attributes = hashmap_new();
+			this->attributes = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->attributes, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->attributes, internalKey, ptr) == MAP_OK) {
-				ptr->eContainer = strdup(this->path);
-				ptr->path = malloc(sizeof(char) * (strlen(this->path) + strlen("/attributes[]") + strlen(internalKey)) + 1);
-				sprintf(ptr->path, "%s/attributes[%s]", this->path, internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: attribute cannot be added!\n");
 			}
@@ -109,10 +107,7 @@ DictionaryType_removeAttributes(DictionaryType * const this, DictionaryAttribute
 		PRINTF("ERROR: The DictionaryValue cannot be removed in Dictionary because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->attributes, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: attribute %s cannot be removed!\n", internalKey);
 		}
@@ -169,7 +164,7 @@ static void
 	/* Local references */
 	else
 	{
-		char path[250];
+		char path[150];
 		memset(&path[0], 0, sizeof(path));
 		char token[100];
 		memset(&token[0], 0, sizeof(token));
@@ -271,6 +266,17 @@ static void
 	}
 }
 
+static char*
+DictionaryType_getPath(KMFContainer* kmf)
+{
+	DictionaryType* obj = (DictionaryType*)kmf;
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("/dictionaryType[]") + strlen(obj->VT->internalGetKey(obj)) + 1);
+	sprintf(r, "%s/dictionaryType[%s]", tmp, obj->VT->internalGetKey(obj));
+	free(tmp);
+	return r;
+}
+
 const DictionaryType_VT dictionaryType_VT = {
 		.super = &KMF_VT,
 		/*
@@ -279,6 +285,7 @@ const DictionaryType_VT dictionaryType_VT = {
 		 */
 		.metaClassName = DictionaryType_metaClassName,
 		.internalGetKey = DictionaryType_internalGetKey,
+		.getPath = DictionaryType_getPath,
 		.visit = DictionaryType_visit,
 		.findByPath = DictionaryType_findByPath,
 		.delete = delete_DictionaryType,

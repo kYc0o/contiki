@@ -110,7 +110,7 @@ ComponentInstance_addProvided(ComponentInstance * const this, Port *ptr)
 			/*
 			 * TODO add if == NULL
 			 */
-			this->provided = hashmap_new();
+			this->provided = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->provided, internalKey, (void**)(&container)) == MAP_MISSING) {
 			/*container = (MBinding*)ptr;*/
@@ -118,12 +118,7 @@ ComponentInstance_addProvided(ComponentInstance * const this, Port *ptr)
 				/*
 				 * TODO add if == NULL
 				 */
-				if (ptr->eContainer) {
-					free(ptr->eContainer);
-				}
-				ptr->eContainer = strdup(this->path);
-				ptr->path = malloc(sizeof(char) * (strlen(this->path) +	strlen("/provided[]") +	strlen(internalKey)) + 1);
-				sprintf(ptr->path, "%s/provided[%s]", this->path, internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: provided cannot be added!\n");
 			}
@@ -144,14 +139,12 @@ ComponentInstance_addRequired(ComponentInstance * const this, Port *ptr)
 		PRINTF("ERROR: The Port cannot be added in ComponentInstance because the key is not defined\n");
 	} else {
 		if(this->required == NULL) {
-			this->required = hashmap_new();
+			this->required = hashmap_new(get_key_for_hashmap);
 		}
 		if(hashmap_get(this->required, internalKey, (void**)(&container)) == MAP_MISSING) {
 			if(hashmap_put(this->required, internalKey, ptr) == MAP_OK)
 			{
-				ptr->eContainer = strdup(this->path);
-				ptr->path = malloc(sizeof(char) * (strlen(this->path) +	strlen("/required[]") +	strlen(internalKey)) + 1);
-				sprintf(ptr->path, "%s/required[%s]", this->path, internalKey);
+				ptr->eContainer = this;
 			} else {
 				PRINTF("ERROR: required cannot be added!\n");
 			}
@@ -170,10 +163,7 @@ ComponentInstance_removeProvided(ComponentInstance * const this, Port *ptr)
 		PRINTF("ERROR: The Port cannot be removed in ComponentInstance because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->provided, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: provided %s cannot be removed!\n", internalKey);
 		}
@@ -189,10 +179,7 @@ ComponentInstance_removeRequired(ComponentInstance * const this, Port *ptr)
 		PRINTF("ERROR: The Port cannot be removed in ComponentInstance because the key is not defined\n");
 	} else {
 		if(hashmap_remove(this->required, internalKey) == MAP_OK) {
-			free(ptr->eContainer);
 			ptr->eContainer = NULL;
-			free(ptr->path);
-			ptr->path = NULL;
 		} else {
 			PRINTF("ERROR: required %s cannot be removed!\n", internalKey);
 		}
@@ -255,7 +242,7 @@ static void
 
 	/* Instance */
 	/* Local references */
-	char path[250];
+	char path[150];
 	memset(&path[0], 0, sizeof(path));
 	char token[100];
 	memset(&token[0], 0, sizeof(token));
@@ -352,6 +339,17 @@ static void
 	}
 }
 
+static char*
+ComponentInstance_getPath(KMFContainer* kmf)
+{
+	ComponentInstance* obj = (ComponentInstance*)kmf;
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("/components[]") + strlen(obj->VT->internalGetKey(obj)) + 1);
+	sprintf(r, "%s/components[%s]", tmp, obj->VT->internalGetKey(obj));
+	free(tmp);
+	return r;
+}
+
 const ComponentInstance_VT componentInstance_VT = {
 		/*
 		 * KMFContainer_VT
@@ -360,6 +358,7 @@ const ComponentInstance_VT componentInstance_VT = {
 		.super = &instance_VT,
 		.metaClassName = ComponentInstance_metaClassName,
 		.internalGetKey = ComponentInstance_internalGetKey,
+		.getPath = ComponentInstance_getPath,
 		.visit = ComponentInstance_visit,
 		.findByPath = ComponentInstance_findByPath,
 		.delete = delete_ComponentInstance,

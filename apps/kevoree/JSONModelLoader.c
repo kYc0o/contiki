@@ -13,6 +13,13 @@
 #define PRINTF(...)
 #endif
 
+static char*
+get_key_for_hashmap_json_loader(any_t t)
+{
+	ObjectReference* c = (ObjectReference*)t;
+	return c->mapId; 
+}
+
 JSONModelLoader *new_JSONModelLoader()
 {
 	JSONModelLoader *pObj = NULL;
@@ -24,7 +31,7 @@ JSONModelLoader *new_JSONModelLoader()
 		return NULL;
 	}
 
-	pObj->objects = hashmap_new();
+	pObj->objects = hashmap_new(get_key_for_hashmap_json_loader);
 
 	pObj->addObjectReference = JSONModelLoader_AddObjectReference;
 	pObj->delete = delete_JSONModelLoader;

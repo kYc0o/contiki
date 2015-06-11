@@ -81,6 +81,17 @@ static void
 	}
 }
 
+static char*
+Repository_getPath(KMFContainer* kmf)
+{
+	Repository* repo = (Repository*)kmf;
+	char* tmp = (repo->eContainer)?get_eContainer_path(repo):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("repositories[]") + strlen(repo->VT->internalGetKey(repo)) + 1);
+	sprintf(r, "repositories[%s]", repo->VT->internalGetKey(repo));
+	free(tmp);
+	return r;
+}
+
 const Repository_VT repository_VT = {
 		.super = &KMF_VT,
 		/*
@@ -88,6 +99,7 @@ const Repository_VT repository_VT = {
 		 */
 		.metaClassName = Repository_metaClassName,
 		.internalGetKey = Repository_internalGetKey,
+		.getPath = Repository_getPath,
 		.visit = Repository_visit,
 		.findByPath = Repository_findByPath,
 		.delete = delete_Repository

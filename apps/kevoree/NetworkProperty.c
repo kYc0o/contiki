@@ -80,6 +80,16 @@ static void
 	}
 }
 
+static char*
+NetworkProperty_getPath(KMFContainer* kmf)
+{
+	NetworkProperty* obj = (NetworkProperty*)kmf;
+	char* tmp = (obj->eContainer)?get_eContainer_path(obj):strdup("");
+	char* r = (char*)malloc(strlen(tmp) + strlen("/values[]") + strlen(obj->VT->internalGetKey(obj)) + 1);
+	sprintf(r, "%s/values[%s]", tmp, obj->VT->internalGetKey(obj));
+	free(tmp);
+	return r;
+}
 
 const NetworkProperty_VT networkProperty = {
 		.super = &namedElement_VT,
@@ -89,6 +99,7 @@ const NetworkProperty_VT networkProperty = {
 		 */
 		.metaClassName = NetworkProperty_metaClassName,
 		.internalGetKey = NetworkProperty_internalGetKey,
+		.getPath = NetworkProperty_getPath,
 		.visit = NetworkProperty_visit,
 		.findByPath = NetworkProperty_findByPath,
 		.delete = delete_NetworkProperty,

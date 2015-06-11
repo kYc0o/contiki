@@ -26,6 +26,7 @@ typedef struct _TypeDefinition_VT {
 	NamedElement_VT *super;
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -41,13 +42,11 @@ typedef struct _TypeDefinition_VT {
 } TypeDefinition_VT;
 
 typedef struct _TypeDefinition {
-	TypeDefinition *next;
 	TypeDefinition_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * NamedElement
 	 */
@@ -77,6 +76,8 @@ void TypeDefinition_removeDeployUnit(TypeDefinition * const this, DeployUnit *pt
 void TypeDefinition_removeDictionaryType(TypeDefinition * const this, DictionaryType *ptr);
 void TypeDefinition_removeSuperTypes(TypeDefinition * const this, TypeDefinition *ptr);
 void TypeDefinition_visit(TypeDefinition * const this, char *parent, fptrVisitAction action, fptrVisitActionRef secondAction, bool visitPaths);
+
+char* TypeDefinition_getPath(KMFContainer*);
 
 extern const TypeDefinition_VT typeDefinition_VT;
 

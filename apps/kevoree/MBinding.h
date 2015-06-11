@@ -21,6 +21,7 @@ typedef struct _MBinding_VT {
 	 */
 	fptrKMFMetaClassName metaClassName;
 	fptrKMFInternalGetKey internalGetKey;
+	fptrKMFGetPath getPath;
 	fptrVisit visit;
 	fptrFindByPath findByPath;
 	fptrDelete delete;
@@ -34,13 +35,11 @@ typedef struct _MBinding_VT {
 } MBinding_VT;
 
 typedef struct _MBinding {
-	MBinding *next;
 	MBinding_VT *VT;
 	/*
 	 * KMFContainer
 	 */
-	char *eContainer;
-	char *path;
+	KMFContainer *eContainer;
 	/*
 	 * MBinding
 	 */
