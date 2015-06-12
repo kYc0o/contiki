@@ -15,9 +15,7 @@
 #define DECOMPRESS 1
 
 //TODO remove extra space and new line characters
-const char *const code_attr[ALPHABET_SIZE][2] ={{"eClass","a"},{"name","aa"},{"values","ab"},{"generated_KMF_ID","ac"},{"value","ad"},{"false","ae"},{"true","af"},{"started","ag"},{"metaData","ah"},{"typeDefinition","ai"},{"dictionary","aj"},{"fragmentDictionary","ak"},{"org.kevoree.Dictionary","al"},{"org.kevoree.DictionaryValue","am"},{"provided","an"},{"required","ao"},{"port","ap"},{"1234","aq"},{"version","ar"},{"0.0.1","as"},{"groups","at"},{"org.kevoree.NetworkProperty","au"},{"org.kevoree.ContainerNode","av"},{"hosts","aw"},{"host","ax"},{"groups[group0]","ay"},{"components","az"},{"networkInformation","a0"},{"org.kevoree.NetworkInfo","a1"},{"org.kevoree.ComponentInstance","a2"},{"namespace","a3"},{"org.kevoree.FragmentDictionary","a4"},{"local","a5"},{"interval","a6"},{"url","a7"},{"1000","a8"},{"Inti","a9"},{"abstract","b"},{"bean","ba"},{"factoryBean","bb"},{"deployUnit","bc"},{"superTypes","bd"},{"dictionaryType","be"},{"org.kevoree.DictionaryAttribute","bf"},{"fragmentDependant","bg"},{"optional","bh"},{"state","bi"},{"datatype","bj"},{"defaultValue","bk"},{"org.kevoree.DeployUnit","bl"},{"groupName","bm"},{"hashcode","bn"},{"type","bo"},{"genericTypes","bp"},{"requiredLibs","bq"}};
-
-
+const char *const code_attr[ALPHABET_SIZE][2] ={{"eClass","a"},{"name","aa"},{"values","ab"},{"generated_KMF_ID","ac"},{"value","ad"},{"false","ae"},{"true","af"},{"started","ag"},{"metaData","ah"},{"typeDefinition","ai"},{"dictionary","aj"},{"fragmentDictionary","ak"},{"org.kevoree.Dictionary","al"},{"org.kevoree.DictionaryValue","am"},{"provided","an"},{"required","ao"},{"port","ap"},{"1234","aq"},{"version","ar"},{"0.0.1","as"},{"groups","at"},{"org.kevoree.NetworkProperty","au"},{"org.kevoree.ContainerNode","av"},{"hosts","aw"},{"host","ax"},{"groups[group0]","ay"},{"components","az"},{"networkInformation","a0"},{"org.kevoree.NetworkInfo","a1"},{"org.kevoree.ComponentInstance","a2"},{"namespace","a3"},{"org.kevoree.FragmentDictionary","a4"},{"local","a5"},{"interval","a6"},{"url","a7"},{"1000","a8"},{"Inti","a9"},{"abstract","b"},{"bean","ba"},{"factoryBean","bb"},{"deployUnit","bc"},{"superTypes","bd"},{"dictionaryType","be"},{"org.kevoree.DictionaryAttribute","bf"},{"fragmentDependant","bg"},{"optional","bh"},{"state","bi"},{"datatype","bj"},{"defaultValue","bk"},{"org.kevoree.DeployUnit","bl"},{"groupName","bm"},{"hashcode","bn"},{"type","bo"},{"genericTypes","bp"},{"requiredLibs","bq"},{"org.kevoree.DictionaryType","br"},{"attributes","bs"},{"int","bt"},{"org.kevoree.ComponentType","bu"},{"kev_contiki","bv"},{"org.kevoree.TypeLibrary","bw"},{"subTypes","bx"},{"3dddTFpd","by"},{"hello_world","bz"},{"n1759","b0"},{"nb772","b1"},{"n2151","b2"},{"n2251","b3"},{"n1559","b4"},{"blink","b5"},{"sensing","b6"},{"sieve","b7"},{"nb870","b8"},{"n1459","b9"},{"nb771","c"},{"org.kevoree.ContainerRoot","ca"},{"nodes","cb"},{"typeDefinitions","cc"},{"org.kevoree.NodeType","cd"},{"ContikiNode","ce"},{"org.kevoree.GroupType","cf"},{"repositories","cg"},{"dataTypes","ch"},{"libraries","ci"},{"ContikiLib","cj"},{"Default","ck"},{"hubs","cl"},{"mBindings","cm"},{"deployUnits","cn"},{"org.kevoree.library.c","co"},{"nodeNetworks","cp"},{"org.kevoree.Group","cq"},{"group0","cr"},{"subNodes","cs"}};
 
 const char* getSubsituteCode(char* code)
 {
@@ -42,7 +40,6 @@ const char* getAttributeCode(char* code)
   }
   return code;
 }
-
 
 /**
  * in, out: CFS file descriptor
@@ -74,17 +71,22 @@ void substitutionCode(int in, int out, int mode)
       {
 	in_attribute = false;
 	attr[attr_index] = '\0';
-	attr_index = 0; //reset attribute attr_index
-	if (mode == COMPRESS) {
-	  code = getSubsituteCode(attr);
-	}
-	else if (mode == DECOMPRESS) {
-	  code = getAttributeCode(attr);
-	}
+        if (attr_index == 0) {
+          code = "";
+        }
+        else {
+          if (mode == COMPRESS) {
+            code = getSubsituteCode(attr);
+          }
+          else if (mode == DECOMPRESS) {
+            code = getAttributeCode(attr);
+          }
+        }
 	size = strlen(code);
 	char tmp_buf[2 + size];
 	sprintf(tmp_buf, "\"%s\"", code);
 	cfs_write(out, tmp_buf, strlen(tmp_buf));
+	attr_index = 0; //reset attribute attr_index
       }
       // inside an attribute
       else if (buf[j] != '"' && in_attribute)
