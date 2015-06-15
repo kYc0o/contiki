@@ -65,13 +65,13 @@ int substitutionCode(int in, int out, int mode)
       // begining of an attribute name
       if (buf[j] =='"' && !in_attribute)
       {
-	in_attribute = true;
+        in_attribute = true;
       }
       // end of an attribute name
       else if (buf[j] == '"' && in_attribute)
       {
-	in_attribute = false;
-	attr[attr_index] = '\0';
+        in_attribute = false;
+        attr[attr_index] = '\0';
         if (attr_index == 0) {
           code = "";
         }
@@ -83,25 +83,25 @@ int substitutionCode(int in, int out, int mode)
             code = getAttributeCode(attr);
           }
         }
-	size = strlen(code);
-	char tmp_buf[2 + size];
-	sprintf(tmp_buf, "\"%s\"", code);
-	cfs_write(out, tmp_buf, strlen(tmp_buf));
-	attr_index = 0; //reset attribute attr_index
-        out_size += (2 + size);
+        size = strlen(code);
+        char tmp_buf[2 + size];
+        sprintf(tmp_buf, "\"%s\"", code);
+        out_size += cfs_write(out, tmp_buf, strlen(tmp_buf));
+        attr_index = 0; //reset attribute attr_index
       }
       // inside an attribute
       else if (buf[j] != '"' && in_attribute)
       {
-	attr[attr_index] = buf[j];
-	attr_index++;
+        attr[attr_index] = buf[j];
+        attr_index++;
       }
       else
       {
-	char c[1];
-        out_size++;
-	sprintf(c, "%c", buf[j]); //avoid encoding error
-	cfs_write(out, c, sizeof(c));
+        if (buf[j] != ' ') {
+          char c[1];
+          sprintf(c, "%c", buf[j]); //avoid encoding error
+          out_size += cfs_write(out, c, sizeof(c));
+        }
       }
 
     }
