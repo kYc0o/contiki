@@ -34,13 +34,20 @@ PROCESS_THREAD(compression, ev, data)
   char model_buffer[COMPRESSED_FILE_SIZE];
   static uint32_t fdFile;
   static struct etimer et;
+  static struct cfs_dirent dirent;
+  static struct cfs_dir dir;
   static char *filename;
   char * f_plain_name = "model.json";
   char * f_name = "model-comp.json";
   int fd, s;
   PROCESS_BEGIN();
 
+
   printf("node_id: %d\n", node_id);
+
+  //printf("Formatting\n");
+  //fdFile = cfs_coffee_format();
+  //printf("Formatted with result %ld\n", fdFile);
 
   cfs_remove(f_name);
   memset(model_buffer, 0, sizeof(model_buffer));
@@ -62,12 +69,33 @@ PROCESS_THREAD(compression, ev, data)
     } else {
       printf("Written %d bytes\n", s);
     }
+    cfs_close(fd);
 
     // compress model
     printf("Compressing %s to %s\n", f_plain_name, f_name);
     int size = compress(f_plain_name, f_name);
     printf("done compressing\n");
     printf("compressed size is %d\n", size);
+
+    // print compressed file
+    fd = cfs_open(f_name, CFS_READ);
+    s = cfs_read(fd, model_buffer, sizeof(model_buffer));
+    model_buffer[sizeof(model_buffer) - 1] = '\0';
+    if(s <= 0) {
+      printf("failed to read data from the file\n");
+    } else {
+      printf("File contents: \n%s\n", model_buffer);
+    }
+    cfs_close(fd);
+
+    // list root directory
+    if(cfs_opendir(&dir, ".") == 0) {
+      while(cfs_readdir(&dir, &dirent) != -1) {
+        printf("File: %s (%ld bytes)\n",
+            dirent.name, (long)dirent.size);
+      }
+      cfs_closedir(&dir);
+    }
 
     // remove uncompressed model
     cfs_remove(f_plain_name);
@@ -85,6 +113,8 @@ PROCESS_THREAD(compression, ev, data)
     } else {
       printf("Written %d bytes\n", s);
     }
+    cfs_close(fd);
+
   }
 
 
@@ -95,7 +125,7 @@ PROCESS_THREAD(compression, ev, data)
     printf("Error disseminating\n");
   }
 
-  etimer_set(&et, CLOCK_SECOND*90);
+  etimer_set(&et, CLOCK_SECOND*30);
 
   while(1) {
     PROCESS_WAIT_EVENT();
