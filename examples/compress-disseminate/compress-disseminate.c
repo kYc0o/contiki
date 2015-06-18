@@ -28,7 +28,6 @@ char * f_plain_name = "model.json";
 char * f_name = "model-comp.json";
 char plain_buffer[PLAIN_FILE_SIZE];
 char model_buffer[COMPRESSED_FILE_SIZE];
-static uint32_t fdFile;
 int fd, s;
 static struct cfs_dirent dirent;
 static struct cfs_dir dir;
@@ -47,7 +46,7 @@ static void listDir()
 static void modelDownloaded(unsigned version)
 {
   printf("\n\nDownload of version %d is completed\n", version);
-  //cfs_remove(f_plain_name);
+  cfs_remove(f_plain_name);
   //listDir();
   printf("\nDecompressing file %s to %s\n", f_name, f_plain_name);
   int size_decompress = decompress(f_name, f_plain_name);
@@ -71,6 +70,7 @@ static void modelDownloaded(unsigned version)
     printf("decompressed file contents: \n%s\n", plain_buffer);
   }
   cfs_close(fd);
+  listDir();
 }
 
 PROCESS(compression, "Model compression");

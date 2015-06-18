@@ -67,6 +67,16 @@ PROCESS_THREAD(compression, ev, data)
   }
   cfs_close(fd);
 
+  // print decompressed file
+  fd = cfs_open(f_plain_name, CFS_READ);
+  s = cfs_read(fd, plain_buffer, sizeof(plain_buffer));
+  if(s <= 0) {
+    printf("failed to read data from the file\n");
+  } else {
+    printf("Decompressed file contents: \n%s\n", plain_buffer);
+  }
+  cfs_close(fd);
+
   // compress model
   printf("Compressing %s to %s\n", f_plain_name, f_name);
   int size = compress(f_plain_name, f_name);
