@@ -51,7 +51,6 @@
 #include "jsonparse.h"
 
 #include "kevoree.h"
-#include "KMF4C.h"
 #include "AbstractComponent.h"
 #include "AbstractTypeDefinition.h"
 #include "JSONModelLoader.h"
