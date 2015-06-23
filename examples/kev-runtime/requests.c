@@ -58,7 +58,7 @@ uint8_t total_len(struct KevoreePacket* pkt)
  */
 enum MessageProcessingErroCode
 process_message(
-	const char* source_address, 
+	const uip_ipaddr_t *source_address,
 	uint16_t msg_len, 
 	const uint8_t* msg, 
 	const struct RequestProcessingCallback* callbacks)
@@ -77,7 +77,7 @@ process_message(
 			receiver_port, sender_port, datalen, crc, crcC);
 #endif
 
-	/* stop processecing if the packet has errors */
+	/* stop processing if the packet has errors */
 	if (crc != crcC) {
 		return WRONG_CRC;
 	}
@@ -97,6 +97,12 @@ process_message(
 	}
 	else if (pkt->cmd == GET_CHUNK) {
 		callbacks->onChunkRequest(pkt->data.get_chunk.session_id, pkt->data.get_chunk.chunk_id);
+	}
+	else if (pkt->cmd == REQ_ROUTES) {
+		callbacks->onRouteRequest(source_address);
+	}
+	else if (pkt->cmd == RESPONSE_ROUTES) {
+		callbacks->onRouteResponse(pkt->data.addrs);
 	}
 	else {
 		int tt = pkt->cmd;
@@ -158,13 +164,32 @@ build_ack_packet(struct KevoreePacket* pkt)
 	pkt->crc = crc16_data((unsigned char*)pkt, total_len(pkt), 0);
 }
 
+void
+build_routes_packet(struct KevoreePacket* pkt, uint16_t *addrs, uint8_t length)
+{
+	pkt->crc = 0;
+	pkt->cmd = RESPONSE_ROUTES;
+	pkt->len = sizeof(uint16_t) * length;
+	memcpy(pkt->data.addrs, addrs, pkt->len);
+	pkt->crc = crc16_data((unsigned char*)pkt, total_len(pkt), 0);
+}
+
+void
+build_req_packet(struct KevoreePacket* pkt)
+{
+	pkt->crc = 0;
+	pkt->cmd = REQ_ROUTES;
+	pkt->len = 0;
+	pkt->crc = crc16_data((unsigned char*)pkt, total_len(pkt), 0);
+}
+
 /* dealing with requests */
 struct DeployUnitRequest*
-find_request_by_source(list_t list, const char* source_address, const char* artifact)
+find_request_by_source(list_t list, const uip_ipaddr_t* source_address, const char* artifact)
 {
 	struct DeployUnitRequest* r;
 	for (r = list_head(list) ; r != NULL ; r = list_item_next(r)) {
-		if (strcmp(r->deployUnitName, artifact) == 0 && strcmp(r->source_address, source_address) == 0)
+		if (strcmp(r->deployUnitName, artifact) == 0 && r->source_address == source_address)
 			return r;
 	}
 	return NULL;
@@ -182,11 +207,11 @@ find_request_by_session(list_t list, uint16_t session_id)
 }
 
 struct DeployUnitRequest*
-create_request(const char* source_address, const char* artifact, enum State initial_state)
+create_request(const uip_ipaddr_t* source_address, const char* artifact, enum State initial_state)
 {
 	static uint16_t last_session_id = 1;
 	struct DeployUnitRequest* r = (struct DeployUnitRequest*)malloc(sizeof(struct DeployUnitRequest));
-	r->source_address = strdup(source_address);
+	r->source_address = source_address;
 	r->deployUnitName = strdup(artifact);
 	r->session_id = last_session_id ++;
 	r->state = initial_state;
@@ -200,7 +225,7 @@ create_request(const char* source_address, const char* artifact, enum State init
 void
 dispose_request(struct DeployUnitRequest* r)
 {
-	if (r->source_address != NULL) free(r->source_address);
+	/*if (r->source_address != NULL) free(r->source_address);*/
 	
 	if (r->deployUnitName != NULL) free(r->deployUnitName);
 	

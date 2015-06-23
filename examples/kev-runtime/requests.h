@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "lib/list.h"
+#include "uip.h"
 
 
 #define PORT 1234
@@ -37,7 +38,7 @@ struct DeployUnitRequest {
 	/* processing state */
 	enum State state;
 	/* source address of this request (can be NULL) */
-	char* source_address;
+	uip_ipaddr_t* source_address;
 	/* deploy unit being requested */
 	char* deployUnitName;
 	/* local file with the deploy unit */
@@ -61,7 +62,9 @@ enum MessageType {
 	/* response types */
 	RESPONSE_SUMMARY=5, // the message is a response to GET_ARTIFACT when the artifact is locally available
 	RESPONSE_CHUNK=6, // the message is a response to GET_CHUNK
-	RESPONSE_ACK_LOOKING_FOR_PACKET=7 // the message is a response to GET_ARTIFACT when the artifact must be requested to another server
+	RESPONSE_ACK_LOOKING_FOR_PACKET=7, // the message is a response to GET_ARTIFACT when the artifact must be requested to another server
+	REQ_ROUTES=8, // Get routes from parent
+	RESPONSE_ROUTES=9
 };
 
 
@@ -93,6 +96,9 @@ struct KevoreePacket {
 			uint16_t chunk_id;
 			uint8_t data[REQUEST_PACKET_SIZE];
 		} chunk;
+
+		/* relevant ip6 addresses */
+		uint16_t addrs[REQUEST_PACKET_SIZE/2];
 	} data;
 	
 };
@@ -105,8 +111,10 @@ struct RequestProcessingCallback {
 	void (*onNewSummary)(uint16_t, uint16_t);
 	void (*onNewChunk)(uint16_t, uint16_t, const uint8_t*);
 	void (*onAckArtifactRequest)(void);
-	void (*onArtifactRequest)(const char*, const char*);
+	void (*onArtifactRequest)(const uip_ipaddr_t*, const char*);
 	void (*onChunkRequest)(uint16_t, uint16_t);
+	void (*onRouteRequest)(uip_ipaddr_t*);
+	void (*onRouteResponse)(uint16_t*);
 };
 
 enum MessageProcessingErroCode {
@@ -119,7 +127,7 @@ enum MessageProcessingErroCode {
 	\brief Process an incoming message
 	\ret   0 if everything is Ok, a negative value otherwise
  */
-enum MessageProcessingErroCode process_message(const char* source_address, uint16_t msg_len, const uint8_t* msg, const struct RequestProcessingCallback* callbacks);
+enum MessageProcessingErroCode process_message(const uip_ipaddr_t* source_address, uint16_t msg_len, const uint8_t* msg, const struct RequestProcessingCallback* callbacks);
 
 /* create packets */
 void build_get_artifact_packet(struct KevoreePacket* dst, const char* artifact);
@@ -127,10 +135,11 @@ void build_get_chunk_packet(struct KevoreePacket* dst, uint16_t session_id, uint
 void build_summary_packet(struct KevoreePacket* dst, uint16_t session_id, uint16_t nr_chunks);
 void build_chunk_packet(struct KevoreePacket* dst, uint16_t chunk_id, uint16_t msg_len, const uint8_t* msg);
 void build_ack_packet(struct KevoreePacket* dst);
+void build_routes_packet(struct KevoreePacket* pkt, uint16_t *addrs, uint8_t length);
 
 /* dealing with requests */
-struct DeployUnitRequest* find_request_by_source(list_t list, const char* source_address, const char* artifact);
+struct DeployUnitRequest* find_request_by_source(list_t list, const uip_ipaddr_t* source_address, const char* artifact);
 struct DeployUnitRequest* find_request_by_session(list_t list, uint16_t session_id);
-struct DeployUnitRequest* create_request(const char* source_address, const char* artifact, enum State initial_state);
+struct DeployUnitRequest* create_request(const uip_ipaddr_t* source_address, const char* artifact, enum State initial_state);
 
 #endif
