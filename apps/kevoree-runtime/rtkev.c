@@ -20,6 +20,7 @@
 
 #include "cfs/cfs.h"
 #include "loader/elfloader.h"
+#include "uip.h"
 
 #include "rtkev.h"
 #include "lib/list.h"
@@ -128,6 +129,9 @@ processTrace(AdaptationPrimitive *ap);
 static void
 disseminateTheModel(ContainerRoot* model);
 
+static uip_ipaddr_t
+*getRepository();
+
 static int
 isAlreadyInstalled(const char* deployUnitId);
 
@@ -164,7 +168,7 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			else {
 				// TODO remove old model
 				// update current model
-				//runtime.currentModel->VT->delete(runtime.currentModel);
+				runtime.currentModel->VT->delete(runtime.currentModel);
 				runtime.currentModel = runtime.tmp_newModel;
 				runtime.tmp_newModel = NULL;
 				// notify we have a new model
@@ -188,7 +192,7 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			else {
 				// TODO remove old model
 				// update current model
-				//runtime.currentModel->VT->delete(runtime.currentModel);
+				runtime.currentModel->VT->delete(runtime.currentModel);
 				runtime.currentModel = runtime.tmp_newModel;
 				runtime.tmp_newModel = NULL;
 				// notify we have a new model
@@ -205,7 +209,7 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			else {
 				// TODO remove old model
 				// update current model
-				//runtime.currentModel->VT->delete(runtime.currentModel);
+				runtime.currentModel->VT->delete(runtime.currentModel);
 				runtime.currentModel = runtime.tmp_newModel;
 				runtime.tmp_newModel = NULL;
 				// notify we have a new model
@@ -263,6 +267,7 @@ processTrace(AdaptationPrimitive *ap) {
 			pair->value = strdup(n->value);
 			list_add(e->dictionary, pair);
 		}
+		updateInstance(ci->name);
 		process_post(&kev_model_installer, ADAPTATION_EXECUTED, NULL);
 		break;
 	case StartInstance:
@@ -316,7 +321,7 @@ PROCESS_THREAD(kev_model_listener, ev, data)
 				mt->vt->Delete(mt);
 			}
 
-			runtime.currentModel->VT->delete(runtime.currentModel);
+			/*runtime.currentModel->VT->delete(runtime.currentModel);*/
 			plannedAdaptations = Planner_schedule();
 
 			if (plannedAdaptations != NULL) {
@@ -558,9 +563,17 @@ stopInstance(const char* instanceName)
 int
 updateInstance(const char *instanceName)
 {
-	/*
-	 * TODO Update parameters
-	 */
+	struct InstanceEntry* entry = findInstanceByName(instanceName);
+	if (entry) {
+		/* start instance using supplied component interface */
+		if (!entry->interface->update(entry->instance))
+			PRINTF("INFO: starting instance OK\n");
+		else {
+			PRINTF("ERROR: instance cannot be updated!\n");
+			return -1;
+		}
+		return 0;
+	}
 	return -1;
 }
 
