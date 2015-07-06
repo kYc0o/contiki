@@ -76,8 +76,8 @@ static void kevoree_onNewChunk(uint16_t chunk_id, uint16_t len, const uint8_t* d
 static void kevoree_onAckArtifactRequest(void);
 static void kevoree_onArtifactRequest(const uip_ipaddr_t* source_address, const char* artifact);
 static void kevoree_onChunkRequest(uint16_t session_id, uint16_t chunk_id);
-static void kevoree_onRouteRequest(uip_ipaddr_t *reqAddr);
-static void kevoree_onRouteResponse(uint16_t *addrs);
+static void kevoree_onRepoAddrRequest(uip_ipaddr_t *src, uip_ipaddr_t *reqSrc, char *duName);
+static void kevoree_onRepoAddr(uip_ipaddr_t *src, char *duName);
 
 /*static uip_ipaddr_t repoAddr;*/
 static uip_ipaddr_t addr;
@@ -90,8 +90,8 @@ static const struct RequestProcessingCallback kevoree_runtime_request_callbacks 
 		.onAckArtifactRequest = kevoree_onAckArtifactRequest,
 		.onArtifactRequest = kevoree_onArtifactRequest,
 		.onChunkRequest = kevoree_onChunkRequest,
-		.onRouteRequest = kevoree_onRouteRequest,
-		.onRouteResponse = kevoree_onRouteResponse
+		.onRepoRequest = kevoree_onRepoAddrRequest,
+		.onRepoAddr = kevoree_onRepoAddr
 };
 
 static void
@@ -177,7 +177,7 @@ static void
 kevoree_onArtifactRequest(const uip_ipaddr_t* source_address, const char* artifact)
 {
 	struct KevoreePacket pkt;
-	struct DeployUnitRequest* req = find_request_by_source(requests_as_server, source_address, artifact);
+	struct DeployUnitRequest* req = find_request_by_source(requests_as_server, convertAddr(source_address), artifact);
 
 	printf("======================================== We shouldn't be executing this ============ \n");
 
@@ -185,7 +185,7 @@ kevoree_onArtifactRequest(const uip_ipaddr_t* source_address, const char* artifa
 
 	if (req == NULL) {
 		/* a new request */
-		req = create_request(source_address, artifact, SENDING_SUMMARY);
+		req = create_request(convertAddr(source_address), artifact, SENDING_SUMMARY);
 		list_add(requests_as_server, req);
 	}
 
@@ -204,7 +204,7 @@ kevoree_onArtifactRequest(const uip_ipaddr_t* source_address, const char* artifa
 
 			/* if needed, enqueue new request for the upward server */
 			if (req->state != WAITING_FOR_LOCATION) {
-				req = create_request(source_address, artifact, WAITING_FOR_SUMMARY);
+				req = create_request(convertAddr(source_address), artifact, WAITING_FOR_SUMMARY);
 				//list_add(requests_as_client, req);
 			}
 
@@ -379,7 +379,7 @@ PROCESS_THREAD(udp_retriever_p, ev, data)
 			else if (active_request && active_request->state == RECEIVING_CHUNKS) {
 				/* prepare request */
 				build_get_chunk_packet(&pkt, active_request->session_id, active_request->current_packet);
-			
+
 				/* TODO: send message to the server */
 				simple_udp_sendto(&unicast_connection, &pkt, total_len(&pkt), &addr);
 			}
@@ -408,7 +408,7 @@ PROCESS_THREAD(udp_retriever_p, ev, data)
 			PRINTF("INFO: Requesting new deploy unit\n");
 
 			/* create request */
-			struct DeployUnitRequest* req = create_request(get_local_address(), (char*)data, WAITING_FOR_SUMMARY);
+			struct DeployUnitRequest* req = create_request(convertAddr(get_local_address()), (char*)data, WAITING_FOR_SUMMARY);
 			free((char*)data);
 			sprintf(tmpName, "artifact%d", last_filename_suffix++);
 			req->localFilename = strdup(tmpName);
@@ -466,6 +466,7 @@ dispose_ArtifactRequest(struct ArtifactRequest* r)
 PROCESS_THREAD(artifact_resolver, ev, data)
 {
 	uip_ipaddr_t *rtAddr;
+	uip_ipaddr_t loAddr;
 	struct MapEntry* entry;
 	struct ArtifactRequest* r;
 	PROCESS_BEGIN();
@@ -504,26 +505,29 @@ PROCESS_THREAD(artifact_resolver, ev, data)
 		else if (ev == ARTIFACT_REQUESTED){
 			r = (struct ArtifactRequest*)data;
 			/* TODO: check if it is the same */
-			rtAddr = uip_ds6_defrt_choose();
-			memcpy(&addr, rtAddr, sizeof(addr));
-			addr.u8[0] = 0xaa;
-			addr.u8[1] = 0xaa;
-			if (addr.u8[15] == routerAddr.u8[15] && addr.u8[14] == routerAddr.u8[14]) {
-				PRINTF("INFO: Requesting to BR\n");
-				uip_ip6addr(&addr, 0xaaaa, 0, 0, 0, 0, 0, 0, 1);
-			}
-			PRINTF("INFO: Requesting artifact to:");
-			PRINT6ADDR(&addr);
-			PRINTF("\n");
-
 			entry = find_by_artifact(known_artifacts, r->artifact);
 			if (entry != NULL) {
 				r->notification_routine(r->artifact, entry->filename, r->user_data);
 				dispose_ArtifactRequest(r);
 			}
 			else {
+				rtAddr = uip_ds6_defrt_choose();
+				memcpy(&addr, rtAddr, sizeof(addr));
+				addr.u8[0] = 0xaa;
+				addr.u8[1] = 0xaa;
+				if (addr.u8[15] == routerAddr.u8[15] && addr.u8[14] == routerAddr.u8[14]) {
+					PRINTF("INFO: Requesting to BR\n");
+					uip_ip6addr(&addr, 0xaaaa, 0, 0, 0, 0, 0, 0, 0x1);
+				}
+				PRINTF("INFO: Requesting artifact to:");
+				PRINT6ADDR(&addr);
+				PRINTF("\n");
+				memcpy(&loAddr, get_local_address(), sizeof(loAddr));
+				loAddr.u16[0] = 0xaaaa;
+				build_req_repo_addr(&pkt, &loAddr, r->artifact);
+				simple_udp_sendto(&unicast_connection, &pkt, total_len(&pkt), &addr);
 				list_add(artifact_requests, r);
-				process_post(&udp_retriever_p, NEW_DEPLOY_UNIT_REQUEST, strdup(r->artifact));
+				//process_post(&udp_retriever_p, NEW_DEPLOY_UNIT_REQUEST, strdup(r->artifact));
 			}
 		}
 	}
@@ -569,35 +573,29 @@ getDeployUnit00(const char* deployUnitName)
  * Get the default route
  */
 static void
-kevoree_onRouteRequest(uip_ipaddr_t *reqAddr)
+kevoree_onRepoAddrRequest(uip_ipaddr_t *src, uip_ipaddr_t *reqSrc, char *duName)
 {
-	printf("INFO: Routes requested\n");
-	uint16_t addrs[29];
-	memset(&addrs[0], 0, sizeof(addrs));
-	uip_ipaddr_t *addr;
-	int i;
-	static uip_ds6_route_t *r;
-
-	PRINTF("INFO: Sending IPs\n");
-	addr = uip_ds6_defrt_choose();
-	addrs[0] = addr->u16[8];
-	PRINTF("%x\n", addrs[0]);
-
-	for(r = uip_ds6_route_head(), i = 1; r != NULL; r = uip_ds6_route_next(r)) {
-		addrs[i] = r->ipaddr.u16[8];
-		PRINTF("%x\n", addrs[i]);
-		i++;
+	static uip_ipaddr_t parent;
+	if (checkIfRepo(duName)) {
+		build_repo_addr(&pkt, duName);
+		simple_udp_sendto(&unicast_connection, &pkt, total_len(&pkt), reqSrc);
+	} else {
+		build_req_repo_addr(&pkt, reqSrc, duName);
+		memcpy(&parent, uip_ds6_defrt_choose(), sizeof(parent));
+		parent.u8[0] = 0xaa;
+		parent.u8[1] = 0xaa;
+		if (parent.u8[15] == routerAddr.u8[15] && parent.u8[14] == routerAddr.u8[14]) {
+			PRINTF("INFO: Requesting to BR\n");
+			uip_ip6addr(&parent, 0xaaaa, 0, 0, 0, 0, 0, 0, 0x1);
+		}
+		simple_udp_sendto(&unicast_connection, &pkt, total_len(&pkt), &parent);
 	}
-
-	build_routes_packet(&pkt, addrs, sizeof addrs);
-	simple_udp_sendto(&unicast_connection, &pkt, total_len(&pkt), reqAddr);
 }
 
 static void
-kevoree_onRouteResponse(uint16_t *addrs)
+kevoree_onRepoAddr(uip_ipaddr_t *src, char *duName)
 {
-	int i;
-	for (i = 0; addrs[i] == 0; i++) {
-		PRINTF("%x\n", addrs[i]);
-	}
+	PRINTF("INFO: Repo for %s is: %02x%02x\n", duName, ((uint8_t*)src)[14], ((uint8_t*)src)[15]);
+	memcpy(&addr, src, sizeof(addr));
+	process_post(&udp_retriever_p, NEW_DEPLOY_UNIT_REQUEST, strdup(duName));
 }

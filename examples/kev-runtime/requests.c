@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 struct MapEntry* find_by_artifact(list_t list, const char* a)
 {
@@ -98,11 +99,11 @@ process_message(
 	else if (pkt->cmd == GET_CHUNK) {
 		callbacks->onChunkRequest(pkt->data.get_chunk.session_id, pkt->data.get_chunk.chunk_id);
 	}
-	else if (pkt->cmd == REQ_ROUTES) {
-		callbacks->onRouteRequest(source_address);
+	else if (pkt->cmd == GET_REPO_ADDR) {
+		callbacks->onRepoRequest(source_address, &pkt->data.get_repo.src, pkt->data.get_repo.duName);
 	}
-	else if (pkt->cmd == RESPONSE_ROUTES) {
-		callbacks->onRouteResponse(pkt->data.addrs);
+	else if (pkt->cmd == RESPONSE_REPO_ADDR) {
+		callbacks->onRepoAddr(source_address, pkt->data.get_artifact.artifact);
 	}
 	else {
 		int tt = pkt->cmd;
@@ -165,31 +166,33 @@ build_ack_packet(struct KevoreePacket* pkt)
 }
 
 void
-build_routes_packet(struct KevoreePacket* pkt, uint16_t *addrs, uint8_t length)
+build_repo_addr(struct KevoreePacket* pkt, char *duName)
 {
 	pkt->crc = 0;
-	pkt->cmd = RESPONSE_ROUTES;
-	pkt->len = sizeof(uint16_t) * length;
-	memcpy(pkt->data.addrs, addrs, pkt->len);
+	pkt->cmd = RESPONSE_REPO_ADDR;
+	strcpy(pkt->data.get_artifact.artifact, duName);
+	pkt->len = strlen(duName) + 1;
 	pkt->crc = crc16_data((unsigned char*)pkt, total_len(pkt), 0);
 }
 
 void
-build_req_packet(struct KevoreePacket* pkt)
+build_req_repo_addr(struct KevoreePacket *pkt, uip_ipaddr_t *src, char *duName)
 {
 	pkt->crc = 0;
-	pkt->cmd = REQ_ROUTES;
-	pkt->len = 0;
+	pkt->cmd = GET_REPO_ADDR;
+	pkt->len = sizeof(uip_ipaddr_t) + strlen(duName) + 1;
+	memcpy(&pkt->data.get_repo.src, src, sizeof(uip_ipaddr_t));
+	strcpy(pkt->data.get_repo.duName, duName);
 	pkt->crc = crc16_data((unsigned char*)pkt, total_len(pkt), 0);
 }
 
 /* dealing with requests */
 struct DeployUnitRequest*
-find_request_by_source(list_t list, const uip_ipaddr_t* source_address, const char* artifact)
+find_request_by_source(list_t list, const char *source_address, const char* artifact)
 {
 	struct DeployUnitRequest* r;
 	for (r = list_head(list) ; r != NULL ; r = list_item_next(r)) {
-		if (strcmp(r->deployUnitName, artifact) == 0 && r->source_address == source_address)
+		if (strcmp(r->deployUnitName, artifact) == 0 && strcmp(r->source_address,source_address) == 0)
 			return r;
 	}
 	return NULL;
@@ -207,7 +210,7 @@ find_request_by_session(list_t list, uint16_t session_id)
 }
 
 struct DeployUnitRequest*
-create_request(const uip_ipaddr_t* source_address, const char* artifact, enum State initial_state)
+create_request(const char *source_address, const char* artifact, enum State initial_state)
 {
 	static uint16_t last_session_id = 1;
 	struct DeployUnitRequest* r = (struct DeployUnitRequest*)malloc(sizeof(struct DeployUnitRequest));
@@ -234,3 +237,10 @@ dispose_request(struct DeployUnitRequest* r)
 	free(r);
 }
 
+char *convertAddr(uip_ipaddr_t *_addr)
+{
+	char *addr = malloc(16);
+	sprintf(addr, "%02x%02x::%02x%02x", ((uint8_t*)_addr)[0], ((uint8_t*)_addr)[1], ((uint8_t*)_addr)[14], ((uint8_t*)_addr)[15]);
+	/*printf("INFO: Converted address %s\n", addr);*/
+	return addr;
+}

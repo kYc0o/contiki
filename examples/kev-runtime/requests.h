@@ -38,7 +38,7 @@ struct DeployUnitRequest {
 	/* processing state */
 	enum State state;
 	/* source address of this request (can be NULL) */
-	uip_ipaddr_t* source_address;
+	char *source_address;
 	/* deploy unit being requested */
 	char* deployUnitName;
 	/* local file with the deploy unit */
@@ -63,8 +63,8 @@ enum MessageType {
 	RESPONSE_SUMMARY=5, // the message is a response to GET_ARTIFACT when the artifact is locally available
 	RESPONSE_CHUNK=6, // the message is a response to GET_CHUNK
 	RESPONSE_ACK_LOOKING_FOR_PACKET=7, // the message is a response to GET_ARTIFACT when the artifact must be requested to another server
-	REQ_ROUTES=8, // Get routes from parent
-	RESPONSE_ROUTES=9
+	GET_REPO_ADDR=8, // Get repository from parent
+	RESPONSE_REPO_ADDR=9
 };
 
 
@@ -98,7 +98,10 @@ struct KevoreePacket {
 		} chunk;
 
 		/* relevant ip6 addresses */
-		uint16_t addrs[REQUEST_PACKET_SIZE/2];
+		struct {
+			uip_ipaddr_t src;
+			char duName[32];
+		} get_repo;
 	} data;
 	
 };
@@ -113,8 +116,8 @@ struct RequestProcessingCallback {
 	void (*onAckArtifactRequest)(void);
 	void (*onArtifactRequest)(const uip_ipaddr_t*, const char*);
 	void (*onChunkRequest)(uint16_t, uint16_t);
-	void (*onRouteRequest)(uip_ipaddr_t*);
-	void (*onRouteResponse)(uint16_t*);
+	void (*onRepoRequest)(uip_ipaddr_t*, uip_ipaddr_t*, char*);
+	void (*onRepoAddr)(uip_ipaddr_t*, char*);
 };
 
 enum MessageProcessingErroCode {
@@ -137,9 +140,11 @@ void build_chunk_packet(struct KevoreePacket* dst, uint16_t chunk_id, uint16_t m
 void build_ack_packet(struct KevoreePacket* dst);
 void build_routes_packet(struct KevoreePacket* pkt, uint16_t *addrs, uint8_t length);
 
+char *convertAddr(uip_ipaddr_t*);
+
 /* dealing with requests */
-struct DeployUnitRequest* find_request_by_source(list_t list, const uip_ipaddr_t* source_address, const char* artifact);
+struct DeployUnitRequest* find_request_by_source(list_t list, const char *source_address, const char* artifact);
 struct DeployUnitRequest* find_request_by_session(list_t list, uint16_t session_id);
-struct DeployUnitRequest* create_request(const uip_ipaddr_t* source_address, const char* artifact, enum State initial_state);
+struct DeployUnitRequest* create_request(const char *source_address, const char* artifact, enum State initial_state);
 
 #endif
