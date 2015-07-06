@@ -3,6 +3,8 @@
 
 #include "contiki.h"
 
+#include <stdbool.h>
+
 typedef struct _ContainerRoot ContainerRoot;
 
 enum InterfaceType {
@@ -119,5 +121,8 @@ PROCESS_THREAD(PReg, ev, data) \
 }
 
 #define REGISTER_KEV_TYPES_NOW() process_start(&PReg, NULL)
+bool checkIfRepo(char *duName);
+
+extern bool isRepo;
 
 #endif
