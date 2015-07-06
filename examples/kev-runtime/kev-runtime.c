@@ -65,6 +65,28 @@
 
 #define PRINT6ADDR(addr) printf("[%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x]", ((uint8_t *)addr)[0], ((uint8_t *)addr)[1], ((uint8_t *)addr)[2], ((uint8_t *)addr)[3], ((uint8_t *)addr)[4], ((uint8_t *)addr)[5], ((uint8_t *)addr)[6], ((uint8_t *)addr)[7], ((uint8_t *)addr)[8], ((uint8_t *)addr)[9], ((uint8_t *)addr)[10], ((uint8_t *)addr)[11], ((uint8_t *)addr)[12], ((uint8_t *)addr)[13], ((uint8_t *)addr)[14], ((uint8_t *)addr)[15])
 
+/*static struct simple_udp_connection unicast_connection;
+static struct KevoreePacket pkt;*/
+bool isRepo;
+
+/*static void print_local_addresses(void)
+{
+	int i;
+	uint8_t state;
+
+	printf("Server IPv6 addresses: \n");
+
+	for(i = 0; i < UIP_DS6_ADDR_NB; i++)
+	{
+		state = uip_ds6_if.addr_list[i].state;
+
+		if(uip_ds6_if.addr_list[i].isused && (state == ADDR_TENTATIVE || state == ADDR_PREFERRED))
+		{
+			PRINT6ADDR(&uip_ds6_if.addr_list[i].ipaddr);
+			printf("\n");
+		}
+	}
+}*/
 /* used to find out if the flash is formatted */
 static int
 isFormatted()
@@ -155,6 +177,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 	static struct cfs_dirent dirent;
 	static struct cfs_dir dir;
 	static uint32_t fdFile;
+	static int newModelLength = 0;
 	static char *filename;
 	static int i;
 
@@ -164,10 +187,10 @@ PROCESS_THREAD(kevRuntime, ev, data)
 
 	PROCESS_BEGIN();
 	static struct etimer ipTimer;
-	etimer_set(&ipTimer, CLOCK_SECOND * 60);
+	etimer_set(&ipTimer, CLOCK_SECOND * 90);
 	printf("Size of KevoreePacket: %d\n", sizeof(struct KevoreePacket));
 
-	NETSTACK_MAC.off(1);
+	/*NETSTACK_MAC.off(1);*/
 
 	/* definitively we want to dynamically load modules */
 	elfloader_init();
@@ -191,18 +214,24 @@ PROCESS_THREAD(kevRuntime, ev, data)
 		printf("INFO: removing new_model-compact.json \n");
 		if(!cfs_remove("new_model-compact.json")) {
 			printf("Success!\n");
-			fdFile = cfs_open("new_model-compact.json", CFS_WRITE);
-			cfs_write(fdFile, new_model_const, strlen(new_model_const));
-			cfs_close(fdFile);
-			printf("File with new model was created 000\n");
 		} else {
 			printf("ERROR: cannot remove component!\n");
 		}
 	}
 
+	if ((fdFile = cfs_open("new_model-compact.json", CFS_WRITE)) != -1) {
+		if ((newModelLength = cfs_write(fdFile, new_model_const, strlen(new_model_const))) != -1) {
+			cfs_close(fdFile);
+			printf("INFO: new_model-compact.json was created\n");
+		} else {
+			printf("ERROR: new model cannot be created!\n");
+		}
+	} else {
+		printf("ERROR: Cannot create new model file\n");
+	}
+
 	/* get local address */
 	char* local_address = get_local_address();
-
 	/* initialize Kevoree Runtime */
 	result = 1;
 #if DEPLOY_UNIT_RETRIEVER_STRATEGY == NAIVE_UDP_BASED_RETRIEVER
@@ -283,6 +312,7 @@ PROCESS_THREAD(kevRuntime, ev, data)
 
 				fdFile = cfs_coffee_format();
 				printf("Formatted with result %ld\n", fdFile);
+				mark_as_formatted();
 			}
 			else if (strstr(data, "cat") == data) {
 				int n, jj;
@@ -302,7 +332,11 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				int n, jj;
 				char* tmp = strstr(data, " ");
 				tmp++;
-				cfs_remove(tmp);
+				if ((cfs_remove(tmp)) != -1) {
+					printf("%s removed successfully\n", tmp);
+				} else {
+					printf("Cannot remove file: %s\n", tmp);
+				}
 			}
 			else if (strstr(data, "startInstance") == data) {
 				filename = strstr(data, " ");
@@ -361,13 +395,29 @@ PROCESS_THREAD(kevRuntime, ev, data)
 				cfs_write(fdFile, buf, r);
 			}
 			else  {
-				printf("Unknown commnad => %s\n", (char*)data);
+				printf("Unknown command => %s\n", (char*)data);
 			}
 		}
 		if (ev == PROCESS_EVENT_TIMER) {
-			printf("INFO: Default route: ");
-			PRINT6ADDR(uip_ds6_defrt_choose());
+			uip_ipaddr_t *parent = uip_ds6_defrt_choose();
+			printf("INFO: Default route:\n");
+			PRINT6ADDR(parent);
 			printf("\n");
+			printf("INFO: Children:\n");
+			/*build_req_packet(&pkt);
+			simple_udp_sendto(&unicast_connection, &pkt, total_len(&pkt), parent);*/
+			static uip_ds6_route_t *r;
+			for(r = uip_ds6_route_head(); r != NULL; r = uip_ds6_route_next(r)) {
+				PRINT6ADDR(&r->ipaddr);
+				printf("\n");
+			}
+			if (uip_ds6_route_num_routes() > 1) {
+				isRepo = true;
+				printf("INFO: Node pre-configured as repository\n");
+			} else {
+				isRepo = false;
+				printf("INFO: Node NOT configured as repository\n");
+			}
 		}
 	}
 
