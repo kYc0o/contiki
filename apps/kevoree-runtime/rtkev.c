@@ -38,6 +38,9 @@
 #include "hashmap.h"
 #include "Dictionary.h"
 #include "DictionaryValue.h"
+#include "ContainerNode.h"
+#include "NetworkInfo.h"
+#include "NetworkProperty.h"
 
 #include <stdarg.h>
 
@@ -180,6 +183,59 @@ PROCESS_THREAD(kev_model_installer, ev, data)
 			/* data contains the deploy unit ID */
 			PRINTF("The deploy unit %s was downloaded and now I can install the types inside\n", filename);
 			/* load elf file with the deploy unit */
+			/*
+			 * Make a copy for local repository
+			 */
+			static int fd_read;
+			static int fd_write;
+			static int elfLength;
+			static int err;
+			static int i = 0;
+			static char buf[100];
+			static char elfName[32];
+
+			struct DeployUnitEntry* entry = list_head(runtime.deployUnits);
+			if (entry != NULL && isRepo) {
+				static char *tmp;
+				tmp = strtok(entry->id, "//");
+				PRINTF("%s\n", tmp);
+				tmp = strtok(NULL, "/");
+				PRINTF("%s\n", tmp);
+				sprintf(elfName, "%s.ce", tmp);
+				PRINTF("INFO: DeployUnit %s is being copied for repository use\n", elfName);
+				if ((fd_read = cfs_open(filename, CFS_READ)) != -1) {
+					if ((fd_write = cfs_open(elfName, CFS_WRITE)) != -1) {
+						while ((err = cfs_read(fd_read, buf, sizeof buf)) == 100) {
+							cfs_seek(fd_write, 0, CFS_SEEK_END);
+							if ((err = cfs_write(fd_write, buf, sizeof buf)) != -1) {
+								i++;
+								cfs_seek(fd_read, i*err, CFS_SEEK_SET);
+								PRINTF("INFO: Written %i bytes\n", err);
+							} else {
+								PRINTF("ERROR: Write failed with error %i\n", err);
+							}
+						}
+						if (err != -1) {
+							if ((err = cfs_write(fd_write, buf, sizeof buf)) != -1) {
+								PRINTF("INFO: Written %i bytes\n", err);
+							} else {
+								PRINTF("ERROR: Write failed with error %i\n", err);
+							}
+						} else {
+							PRINTF("ERROR: Read failed with error: %i\n", err);
+						}
+					} else {
+						PRINTF("ERROR: Cannot open file %s\n", elfName);
+					}
+				} else {
+					PRINTF("ERROR: Cannot find DeployUnit %s\n", filename);
+				}
+				cfs_close(fd_write);
+				cfs_close(fd_read);
+			} else {
+				PRINTF("ERROR: Cannot find deployUnit in runtime list\n");
+			}
+
 			loadElfFile(filename);
 			/* here I must free the memory */			
 			free(filename);
@@ -696,4 +752,9 @@ getDictionaryAttributeValue(KevContext* context, const char* att)
 			return pair->value; 
 	}
 	return NULL;
+}
+
+bool checkIfRepo(char *duName)
+{
+	return false;
 }
