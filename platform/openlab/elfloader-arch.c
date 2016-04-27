@@ -77,23 +77,34 @@ elfloader_arch_allocate_ram(int size)
 {
   if(size > sizeof(datamemory_aligned)) {
     PRINTF("RESERVED RAM TOO SMALL\n");
+    return NULL;
   }
   PRINTF("Allocated RAM: %p\n", datamemory);
-  return datamemory;
+  uint8_t* tmp = datamemory;
+  datamemory += size;
+  return tmp;
 }
 /*---------------------------------------------------------------------------*/
 void *
 elfloader_arch_allocate_rom(int size)
 {
-  if (!basePtr)
-    basePtr = (((uint32_t)textmemory) & (~((uint32_t)2047))) + 2048;
-
-  if(size > ((uint32_t)textmemory - basePtr)) {
-    PRINTF("RESERVED FLASH TOO SMALL\n");
+  /* initialize base pointer */
+  if (!basePtr) {
+    basePtr = (((uint32_t)textmemory) & (~((uint32_t)2047)));
+	if (basePtr < (uint32_t)textmemory) basePtr += 2048;
   }
-  PRINTF("Allocated ROM: %p\n", (void*)basePtr);
+  /* is there enough free space?*/
+  if(size > ((uint32_t)(&textmemory[ELFLOADER_TEXTMEMORY_SIZE / 2]) - basePtr)) {
+    PRINTF("RESERVED FLASH TOO SMALL\n");
+    return NULL;
+  }
+  PRINTF("Allocated ROM at: %p\n", (void*)basePtr);
   void* tmp = (void *)basePtr;
-  basePtr += FLASH_SIZE_PAGE;
+  /* how many pages are needed? */
+  int requiredPages = size / FLASH_SIZE_PAGE;
+  if (size % FLASH_SIZE_PAGE != 0) requiredPages ++;
+  /* Ok, let's move the base pointer */
+  basePtr += requiredPages * FLASH_SIZE_PAGE;
   return tmp;
 }
 /*---------------------------------------------------------------------------*/
@@ -106,27 +117,24 @@ elfloader_arch_write_rom(int fd, unsigned short textoff, unsigned int size,
 #if ELFLOADER_CONF_TEXT_IN_ROM
   uint32_t ptr;
   int nbytes;
+  uint8_t* tmpBuf;
+  tmpBuf = (uint8_t*)malloc(size);
+  /* Read data from file into RAM. */
   cfs_seek(fd, textoff, CFS_SEEK_SET);
-  cfs_seek(fd, textoff, CFS_SEEK_SET);
-    /* Read data from file into RAM. */
-  nbytes = cfs_read(fd, (unsigned char *)datamemory, READSIZE);
-  PRINTF("Bytes read: %d\n", nbytes);
+  nbytes = cfs_read(fd, tmpBuf, size);
+  printf("Bytes read: %d\n", nbytes);
   flash_erase_memory_page((uint32_t)mem);
 
   for(ptr = 0; ptr < size; ptr += 2) {
     uint16_t data;
-    data = datamemory[ptr + 1];
+    data = tmpBuf[ptr + 1];
     data = data << 8;
-    data |= datamemory[ptr];
+    data |= tmpBuf[ptr];
     /* Write data to flash. */
     //PRINTF("Writing %x to %x\n", data, (uint32_t)mem + ptr);
     flash_write_memory_half_word((uint32_t) mem + ptr, data);
   }
-  for(ptr = 0; ptr < size; ptr += 2) {
-    uint16_t* data = (uint16_t*)(mem + ptr);
-    /* Write data to flash. */
-    //PRINTF("Reading %x to %p\n", *data, data);
-  }
+  free(tmpBuf);
 #else /* ELFLOADER_CONF_TEXT_IN_ROM */
   PRINTF("Using serial flash\n");
   cfs_seek(fd, textoff, CFS_SEEK_SET);

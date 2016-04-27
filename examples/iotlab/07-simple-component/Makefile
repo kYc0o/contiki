@@ -1,5 +1,5 @@
-CONTIKI_PROJECT = hello-world
-CONTIKI_SOURCEFILES += hello-world.c
+CONTIKI_PROJECT = simple-component
+CONTIKI_SOURCEFILES += simple-component.c
 
 APPS += kevoree-runtime
 
