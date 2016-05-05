@@ -1,5 +1,6 @@
 all: broadcast-example unicast-sender unicast-receiver
 APPS=servreg-hack
+APPS+=powertrace
 CONTIKI=../../..
 
 UIP_CONF_IPV6=1

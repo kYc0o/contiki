@@ -43,13 +43,15 @@
 #include "simple-udp.h"
 #include "servreg-hack.h"
 
+#include "powertrace.h"
+
 #include <stdio.h>
 #include <string.h>
 
 #define UDP_PORT 1234
 #define SERVICE_ID 190
 
-#define SEND_INTERVAL		(60 * CLOCK_SECOND)
+#define SEND_INTERVAL		(3 * CLOCK_SECOND)
 #define SEND_TIME		(random_rand() % (SEND_INTERVAL))
 
 static struct simple_udp_connection unicast_connection;
@@ -97,40 +99,70 @@ PROCESS_THREAD(unicast_sender_process, ev, data)
 {
   static struct etimer periodic_timer;
   static struct etimer send_timer;
+  static rtimer_clock_t clockNow, clockAfter, idleTime;
+  static rtimer_clock_t totalClock = 0;
   uip_ipaddr_t *addr;
+  static int j = 0;
 
   PROCESS_BEGIN();
 
   servreg_hack_init();
+
+  powertrace_start(CLOCK_SECOND * 10);
 
   set_global_address();
 
   simple_udp_register(&unicast_connection, UDP_PORT,
                       NULL, UDP_PORT, receiver);
 
+  /*PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+  etimer_reset(&periodic_timer);*/
+  etimer_set(&send_timer, SEND_TIME);
+
+  PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&send_timer));
   etimer_set(&periodic_timer, SEND_INTERVAL);
-  while(1) {
 
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
-    etimer_reset(&periodic_timer);
-    etimer_set(&send_timer, SEND_TIME);
 
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&send_timer));
-    addr = servreg_hack_lookup(SERVICE_ID);
-    if(addr != NULL) {
-      static unsigned int message_number;
-      char buf[20];
+  idleTime = RTIMER_NOW();
+  printf("Sending 50 packets at %d\n", (unsigned int)idleTime);
 
-      printf("Sending unicast to ");
-      uip_debug_ipaddr_print(addr);
-      printf("\n");
-      sprintf(buf, "Message %d", message_number);
-      message_number++;
-      simple_udp_sendto(&unicast_connection, buf, strlen(buf) + 1, addr);
-    } else {
-      printf("Service %d not found\n", SERVICE_ID);
-    }
+  /*for (i = 0; i < 50; i = i + 1) {*/
+  while (j < 50) {
+      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+      etimer_reset(&periodic_timer);
+      etimer_set(&send_timer, SEND_TIME);
+
+      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&send_timer));
+      addr = servreg_hack_lookup(SERVICE_ID);
+
+      clockNow = RTIMER_NOW();
+
+      /*clock_time();
+      printf("NOW: %d\n", clockNow);*/
+
+      if(addr != NULL) {
+            static unsigned int message_number;
+            char buf[65];
+
+            printf("Sending unicast %d to ", j);
+            uip_debug_ipaddr_print(addr);
+            printf("\n");
+            sprintf(buf, "Message buffer with 64 bytes long abcbdefghijklmnopqrstuvwxy %03d", message_number);
+            message_number++;
+            simple_udp_sendto(&unicast_connection, buf, strlen(buf) + 1, addr);
+            j = j + 1;
+      } else {
+        printf("Service %d not found\n", SERVICE_ID);
+      }
+
+      clockAfter = RTIMER_NOW();
+      totalClock += clockAfter - clockNow;
+      /*printf("AFTER: %d, j is: %d\n", clockAfter, j);*/
   }
+
+  printf("Total active time: %d\n", (unsigned int)totalClock);
+
+  printf("Finished!\n");
 
   PROCESS_END();
 }

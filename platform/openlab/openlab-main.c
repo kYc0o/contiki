@@ -186,6 +186,9 @@ int main()
      *
      */
 
+    energest_init();
+    ENERGEST_ON(ENERGEST_TYPE_CPU);
+
     print_processes(autostart_processes);
     autostart_start(autostart_processes);
     watchdog_start();
@@ -199,6 +202,7 @@ int main()
             r = process_run();
         } while(r > 0);
         idle_count++;
+        ENERGEST_OFF(ENERGEST_TYPE_CPU);
     }
 
     return 0;
