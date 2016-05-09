@@ -238,6 +238,8 @@ rf2xx_wr_transmit(unsigned short transmit_len)
     leds_off(LEDS_RED);
 #endif
 
+    printf("Real sent time: %ld\n", RTIMER_NOW());
+
     restart();
     return ret;
 }
@@ -432,6 +434,7 @@ const struct radio_driver rf2xx_driver =
 PROCESS_THREAD(rf2xx_process, ev, data)
 {
     PROCESS_BEGIN();
+    static rtimer_clock_t clockNow, clockAfter;
 
     while(1)
     {
@@ -460,6 +463,7 @@ PROCESS_THREAD(rf2xx_process, ev, data)
 
         if (flag)
         {
+            clockNow = RTIMER_NOW();
             // get data
             packetbuf_clear();
             len = read(packetbuf_dataptr(), PACKETBUF_SIZE);
@@ -472,6 +476,9 @@ PROCESS_THREAD(rf2xx_process, ev, data)
                 packetbuf_set_datalen(len);
                 NETSTACK_RDC.input();
             }
+            clockAfter = RTIMER_NOW();
+
+            printf("Time spent on reading: %d\n", clockAfter - clockNow);
         }
     }
 
