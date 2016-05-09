@@ -41,8 +41,6 @@
 #include "simple-udp.h"
 #include "servreg-hack.h"
 
-#include "powertrace.h"
-
 #include "net/rpl/rpl.h"
 
 #include <stdio.h>
@@ -132,8 +130,6 @@ PROCESS_THREAD(unicast_receiver_process, ev, data)
   create_rpl_dag(ipaddr);
 
   servreg_hack_register(SERVICE_ID, ipaddr);
-
-  powertrace_start(CLOCK_SECOND * 10);
 
   simple_udp_register(&unicast_connection, UDP_PORT,
                       NULL, UDP_PORT, receiver);
