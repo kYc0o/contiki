@@ -120,8 +120,8 @@ typedef unsigned int uip_stats_t;
 
 #define NETSTACK_CONF_FRAMER        framer_802154
 
-#define NETSTACK_CONF_RDC           contikimac_driver
-//#define NETSTACK_CONF_RDC           nullrdc_driver
+//#define NETSTACK_CONF_RDC           contikimac_driver
+#define NETSTACK_CONF_RDC           nullrdc_driver
 //#define NETSTACK_CONF_RDC           cxmac_driver
 //#define NETSTACK_CONF_RDC           sicslowmac_driver
 
@@ -209,7 +209,7 @@ typedef unsigned int uip_stats_t;
 #define UIP_CONF_IPV6_RPL           1
 
 // TODO replace by default contiki compression RFC6282 HC-06
-#define SICSLOWPAN_CONF_COMPRESSION SICSLOWPAN_COMPRESSION_IPV6
+#define SICSLOWPAN_CONF_COMPRESSION SICSLOWPAN_COMPRESSION_HC06
 #endif /* WITH_UIP6 */
 
 
